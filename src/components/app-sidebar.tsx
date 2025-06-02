@@ -16,18 +16,18 @@ import { Home, AudioLines } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
-import AuthButton from "./auth-button"
+import { AuthButton } from "./auth-button"
 
 // Menu items.
 const items = [
   {
       name: "Home",
-      path: "/",
+      path: "/workspace",
       icon: Home,
     },
     {
       name: "New",
-      path: "/new",
+      path: "/workspace/new",
       icon: AudioLines,
     },
 ]
