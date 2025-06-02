@@ -48,6 +48,11 @@ type UseSupabaseUploadOptions = {
    * When set to false, an error is thrown if the object already exists. Defaults to `false`
    */
   upsert?: boolean
+  /**
+   * Callback function triggered after a file is successfully uploaded.
+   * It receives the full path of the uploaded file in Supabase storage.
+   */
+  onUploadSuccess?: (filePath: string) => void
 }
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>
@@ -61,6 +66,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     maxFiles = 1,
     cacheControl = 3600,
     upsert = false,
+    onUploadSuccess,
   } = options
 
   const [files, setFiles] = useState<FileWithPreview[]>([])
@@ -126,15 +132,19 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
     const responses = await Promise.all(
       filesToUpload.map(async (file) => {
+        const filePath = !!path ? `${path}/${file.name}` : file.name;
         const { error } = await supabase.storage
           .from(bucketName)
-          .upload(!!path ? `${path}/${file.name}` : file.name, file, {
+          .upload(filePath, file, {
             cacheControl: cacheControl.toString(),
             upsert,
           })
         if (error) {
           return { name: file.name, message: error.message }
         } else {
+          if (onUploadSuccess) {
+            onUploadSuccess(filePath);
+          }
           return { name: file.name, message: undefined }
         }
       })
@@ -151,7 +161,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setSuccesses(newSuccesses)
 
     setLoading(false)
-  }, [files, path, bucketName, errors, successes])
+  }, [files, path, bucketName, errors, successes, onUploadSuccess])
 
   useEffect(() => {
     if (files.length === 0) {
