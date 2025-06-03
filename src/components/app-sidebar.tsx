@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar" // Ensure these paths are correct
-import { Home, AudioLines, History, Loader2 } from "lucide-react"
+import { AudioLines, History, Loader2 } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
@@ -23,11 +23,6 @@ import { UploadAudioDialog } from "./upload-audio-dialog"
 
 // Base navigation items
 const baseItems = [
-  {
-    name: "Home",
-    path: "/workspace",
-    icon: Home,
-  },
   {
     name: "New Transcription",
     path: "/workspace/new",
@@ -85,7 +80,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="flex flex-col gap-y-6">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {baseItems.map((item) => {

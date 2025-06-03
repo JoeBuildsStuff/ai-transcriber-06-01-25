@@ -7,8 +7,7 @@ import Summary from '@/components/summary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import { AlertCircle, FileAudio, Trash2, Pencil, Check, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { AlertCircle, Trash2, Pencil, Check, X, CalendarDays, Clock, Ellipsis, FileJson2, } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,9 +19,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { format, formatDistanceToNow } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -84,6 +93,9 @@ export default function MeetingDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editableTitle, setEditableTitle] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [showDeepgramDialog, setShowDeepgramDialog] = useState(false);
+  const [showOpenAIDialog, setShowOpenAIDialog] = useState(false);
 
   useEffect(() => {
     if (meetingId) {
@@ -175,7 +187,7 @@ export default function MeetingDetailPage() {
       router.push('/workspace'); // Redirect to a general page after deletion
       // Optionally, you might want to trigger a refresh of the meetings list in the sidebar
       // This can be done via a shared state/context or by emitting an event
-
+      setIsDeleteDialogOpen(false); // Close dialog on success
     } catch (err) {
       console.error("Error deleting meeting:", err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -271,8 +283,9 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <div className="p-1 md:p-2 lg:p-4 space-y-2">
-        <CardHeader className="px-2 py-2 md:px-4 md:py-3 lg:px-6 lg:py-4 flex flex-row items-start justify-between">
+    <div className="flex flex-col h-full space-y-2 ">
+      {/* Meeting Header */}
+        <div className="flex flex-row items-start justify-between">
             <div className="flex-grow min-w-0">
                 {isEditingTitle ? (
                   <div className="flex items-center gap-2">
@@ -292,7 +305,6 @@ export default function MeetingDetailPage() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl md:text-2xl font-semibold flex items-center min-w-0">
-                        <FileAudio className="w-6 h-6 mr-3 text-primary flex-none" />
                         <span className="truncate">
                           {meeting?.title || meeting?.original_file_name || "Meeting Details"}
                         </span>
@@ -302,108 +314,164 @@ export default function MeetingDetailPage() {
                     </Button>
                   </div>
                 )}
-                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 pt-1">
-                    <span>Uploaded: {new Date(meeting.created_at).toLocaleString()}</span>
-                    {meeting.title && <Badge variant="outline">Custom Title</Badge>}
-                    {meeting.summary && <Badge variant="outline">Summary Available</Badge>}
-                    {displayableTranscript.length > 0 && <Badge variant="outline">Transcript Available</Badge>}
+                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 pt-1 flex items-center flex-wrap">
+                    <span className="flex items-center">
+                        <CalendarDays className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
+                        {format(new Date(meeting.created_at), "MMMM do, yyyy")}
+                    </span>
+                    <span className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
+                        {format(new Date(meeting.created_at), "p")}
+                    </span>
+                    <span>
+                        ({formatDistanceToNow(new Date(meeting.created_at), { addSuffix: true })})
+                    </span>
                 </div>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isDeleting}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {isDeleting ? 'Deleting...' : 'Delete Meeting'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the meeting transcript, summary, and the original audio file.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                    {isDeleting ? 'Deleting...' : 'Yes, delete meeting'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-        </CardHeader>
+            <div className="flex items-center gap-2"> {/* Container for buttons */}            
+              <DropdownMenu>  
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="bottom">
+                  <DropdownMenuItem onSelect={() => setShowDeepgramDialog(true)} className="cursor-pointer">
+                    <FileJson2 className="w-4 h-4 mr-2" />
+                    <span>Deepgram Response</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setShowOpenAIDialog(true)} className="cursor-pointer">
+                    <FileJson2 className="w-4 h-4 mr-2" />
+                    <span>OpenAI Response</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onSelect={() => setIsDeleteDialogOpen(true)} 
+                    disabled={isDeleting}
+                    className="cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed text-destructive hover:!text-red-600 focus:!text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2 text-destructive " />
+                    <span>Delete Meeting</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+        </div>
 
-      <Tabs defaultValue="transcript" className="w-full">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the meeting transcript, summary, and the original audio file.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting ? 'Deleting...' : 'Yes, delete meeting'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deepgram Response Dialog */}
+      <Dialog open={showDeepgramDialog} onOpenChange={setShowDeepgramDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Deepgram API Response</DialogTitle>
+            <DialogDescription>
+              Raw JSON response from the Deepgram transcription service.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+            {meeting?.transcription ? (
+              <pre className="text-xs">
+                {JSON.stringify(meeting.transcription, null, 2)}
+              </pre>
+            ) : (
+              <p className="text-muted-foreground">No Deepgram data available for this meeting.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeepgramDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OpenAI Response Dialog */}
+      <Dialog open={showOpenAIDialog} onOpenChange={setShowOpenAIDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>OpenAI API Response</DialogTitle>
+            <DialogDescription>
+              Raw JSON response from the OpenAI service.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+            {meeting?.openai_response ? (
+              <pre className="text-xs">
+                {(() => {
+                  try {
+                    const parsedResponse = JSON.parse(meeting.openai_response);
+                    return JSON.stringify(parsedResponse, null, 2);
+                  } catch {
+                    // If already a string and not JSON, display as is
+                    console.error("Raw OpenAI Response: Could not parse JSON string. Displaying raw string."); // Keep the log
+                    return meeting.openai_response;
+                  }
+                })()}
+              </pre>
+            ) : (
+              <p className="text-muted-foreground">No OpenAI data available for this meeting.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOpenAIDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Meeting Tabs */}
+      <Tabs defaultValue="transcript" className="w-full grow mt-3"> {/* Added mt-3 for spacing */}
         <TabsList className="">
           <TabsTrigger value="transcript">Transcript</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="raw_transcription">Raw Transcription</TabsTrigger>
-          <TabsTrigger value="raw_openai_response">Raw OpenAI Response</TabsTrigger>
         </TabsList>
         
         <TabsContent value="transcript">
-          {displayableTranscript.length > 0 ? (
-            <Transcript formattedTranscript={displayableTranscript} />
-          ) : (
-            <p className="text-center text-muted-foreground p-4">
-                {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
-            </p>
-          )}
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Meeting Transcript</CardTitle>
+              <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {displayableTranscript.length > 0 ? (
+                <Transcript formattedTranscript={displayableTranscript} />
+              ) : (
+                <p className="text-center text-muted-foreground p-4">
+                    {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="summary">
-          {meeting.summary ? (
-            <Summary summary={meeting.summary} />
-          ) : (
-            <p className="text-center text-muted-foreground p-4">No summary available for this meeting.</p>
-          )}
-        </TabsContent>
-
-        <TabsContent value="raw_transcription">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Raw Transcription Data</CardTitle>
-                    <CardDescription>Full JSON response from the transcription service (Deepgram).</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {meeting.transcription ? (
-                        <pre className="text-xs p-2 md:p-4 bg-muted rounded-md overflow-x-auto max-h-[600px]">
-                            {JSON.stringify(meeting.transcription, null, 2)}
-                        </pre>
-                    ) : (
-                        <p className="text-muted-foreground">No raw transcription data available.</p>
-                    )}
-                </CardContent>
-            </Card>
-        </TabsContent>
-
-        <TabsContent value="raw_openai_response">
-          <Card>
+          <Card className="h-full">
             <CardHeader>
-              <CardTitle className="text-lg">Raw OpenAI Response</CardTitle>
-              <CardDescription>Full JSON response from the OpenAI API.</CardDescription>
+              <CardTitle className="text-lg">Meeting Summary</CardTitle>
+              <CardDescription>AI-generated summary of the meeting transcript.</CardDescription>
             </CardHeader>
             <CardContent>
-              {meeting.openai_response ? (
-                <pre className="text-xs p-2 md:p-4 bg-muted rounded-md overflow-x-auto max-h-[600px]">
-                  {(() => {
-                    try {
-                      // Assuming meeting.openai_response is a string containing JSON
-                      const parsedResponse = JSON.parse(meeting.openai_response);
-                      return JSON.stringify(parsedResponse, null, 2);
-                    } catch (error) {
-                      console.error("Raw OpenAI Response: Could not parse JSON string. Displaying raw string.", error);
-                      return meeting.openai_response; // Fallback to displaying the raw string
-                    }
-                  })()}
-                </pre>
+              {meeting.summary ? (
+                <Summary summary={meeting.summary} />
               ) : (
-                <p className="text-muted-foreground">No raw OpenAI response available.</p>
+                <p className="text-center text-muted-foreground p-4">No summary available for this meeting.</p>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
     </div>
   );
 } 
