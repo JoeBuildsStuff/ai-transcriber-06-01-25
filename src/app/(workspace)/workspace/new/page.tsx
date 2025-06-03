@@ -2,18 +2,18 @@
 
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from '@/components/dropzone'
 import { useSupabaseUpload } from '@/hooks/use-supabase-upload'
-import { useState, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from "@/contexts/auth-context"
 import Transcript from '@/components/transcript';
 import { useTranscription } from '@/hooks/useTranscription';
 import Summary from '@/components/summary';
+import { useRouter } from 'next/navigation';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function New() {
     const { user } = useAuth();
-    const [showDropzone, setShowDropzone] = useState(true);
-    const hideDropzoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const router = useRouter();
 
     const {
         isTranscribing,
@@ -24,6 +24,7 @@ export default function New() {
         isSummarizing,
         summaryError,
         resetTranscription,
+        currentMeetingId,
     } = useTranscription();
 
     const maxFileSize = user ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
@@ -35,34 +36,17 @@ export default function New() {
         allowedMimeTypes: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/flac', 'audio/m4a', 'audio/mp4', 'audio/x-m4a'],
         maxFiles: 5,
         maxFileSize: maxFileSize,
-        onUploadSuccess: (filePath: string) => {
+        onUploadSuccess: (filePath: string, originalFileName: string) => {
             resetTranscription();
-            initiateTranscription(filePath);
+            initiateTranscription(filePath, originalFileName);
         },
     });
 
     useEffect(() => {
-        if (uploaderProps.isSuccess) {
-            if (hideDropzoneTimeoutRef.current) {
-                clearTimeout(hideDropzoneTimeoutRef.current);
-            }
-            hideDropzoneTimeoutRef.current = setTimeout(() => {
-                setShowDropzone(false);
-            }, 0);
-        } else if (!isTranscribing && !isSummarizing && formattedTranscript.length === 0 && !summary) {
-            setShowDropzone(true);
-            if (hideDropzoneTimeoutRef.current) {
-                clearTimeout(hideDropzoneTimeoutRef.current);
-                hideDropzoneTimeoutRef.current = null;
-            }
+        if (currentMeetingId) {
+            router.push(`/workspace/meetings/${currentMeetingId}`);
         }
-
-        return () => {
-            if (hideDropzoneTimeoutRef.current) {
-                clearTimeout(hideDropzoneTimeoutRef.current);
-            }
-        };
-    }, [uploaderProps.isSuccess, isTranscribing, isSummarizing, formattedTranscript, summary]);
+    }, [currentMeetingId, router]);
 
     let currentStatusMessage = summaryStatus;
     if (isTranscribing) {
@@ -71,22 +55,19 @@ export default function New() {
         currentStatusMessage = summaryStatus || 'Generating summary...';
     }
 
-    const showStatusBox = isTranscribing || isSummarizing || (summaryStatus && !formattedTranscript.length && !summary);
-    const showResultsTabs = formattedTranscript.length > 0 || summary;
+    const showStatusBox = isTranscribing || isSummarizing || summaryStatus;
 
     return (
         <div className="">
             <div className="w-full mx-auto">
-                {showDropzone && (
-                    <div className="w-full max-w-xl mx-auto">
-                        <Dropzone {...uploaderProps}>
-                            <DropzoneEmptyState />
-                            <DropzoneContent />
-                        </Dropzone>
-                    </div>
-                )}
+                <div className="w-full max-w-xl mx-auto">
+                    <Dropzone {...uploaderProps}>
+                        <DropzoneEmptyState />
+                        <DropzoneContent />
+                    </Dropzone>
+                </div>
                 
-                {showStatusBox && (
+                {showStatusBox && !currentMeetingId && (
                      <div className="w-full max-w-xl mx-auto mt-4 p-4 border rounded-md bg-secondary/50">
                          <p className={`text-center text-secondary-foreground ${isTranscribing || isSummarizing ? 'animate-pulse' : ''}`}>{currentStatusMessage}</p>
                      </div>
@@ -98,7 +79,7 @@ export default function New() {
                     </div>
                 )}
                 
-                {showResultsTabs && (
+                {formattedTranscript.length > 0 || summary && (
                     <div className="mt-4">
                         <Tabs defaultValue="transcript" className="w-full max-w-3xl mx-auto">
                             <TabsList className="mb-5">

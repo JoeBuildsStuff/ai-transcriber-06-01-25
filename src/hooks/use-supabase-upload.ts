@@ -52,7 +52,7 @@ type UseSupabaseUploadOptions = {
    * Callback function triggered after a file is successfully uploaded.
    * It receives the full path of the uploaded file in Supabase storage.
    */
-  onUploadSuccess?: (filePath: string) => void
+  onUploadSuccess?: (filePath: string, originalFileName: string) => void
 }
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>
@@ -143,7 +143,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
           return { name: file.name, message: error.message }
         } else {
           if (onUploadSuccess) {
-            onUploadSuccess(filePath);
+            onUploadSuccess(filePath, file.name);
           }
           return { name: file.name, message: undefined }
         }
