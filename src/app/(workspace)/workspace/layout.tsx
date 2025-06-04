@@ -27,7 +27,7 @@ return (
                   <AudioLines className="w-4 h-4 mr-2" /> New
                 </Button>
               </UploadAudioDialog>
-              <ModeToggle />
+              <ModeToggle variant="button" />
             </div>
           </header>
           <div className="mb-4 overflow-auto">

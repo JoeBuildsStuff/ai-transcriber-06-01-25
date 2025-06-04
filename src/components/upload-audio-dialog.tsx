@@ -48,7 +48,7 @@ export function UploadAudioDialog({ children, onOpenChange }: UploadAudioDialogP
         'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac',
         'audio/flac', 'audio/m4a', 'audio/mp4', 'audio/x-m4a'
     ],
-    maxFiles: 1, // Dialog typically handles one file at a time for this flow
+    maxFiles: 5, // Dialog typically handles one file at a time for this flow
     maxFileSize: maxFileSize,
     onUploadSuccess: (filePath: string, originalFileName: string) => {
       console.log('Upload success in dialog, initiating transcription:', filePath);
