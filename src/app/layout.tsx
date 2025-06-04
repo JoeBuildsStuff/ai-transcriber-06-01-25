@@ -16,7 +16,7 @@ children: React.ReactNode;
 }>) {
 return (
   <html lang="en" suppressHydrationWarning>
-      <body className={inter.className + " h-screen"}>
+      <body className={inter.className + ""}>
       <Providers>
         {children}
       </Providers>

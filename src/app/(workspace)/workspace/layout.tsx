@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"; 
 import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar"; 
 import { AudioLines } from "lucide-react";
@@ -27,7 +26,6 @@ return (
                   <AudioLines className="w-4 h-4 mr-2" /> New
                 </Button>
               </UploadAudioDialog>
-              <ModeToggle variant="button" />
             </div>
           </header>
           <div className="mb-4 overflow-auto">

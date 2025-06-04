@@ -4,6 +4,8 @@ import {
   // CreditCard,
   ChevronsUpDown,
   LogOut,
+  Moon,
+  Sun,
   // Bell,
   // UserCircle,
 } from "lucide-react"
@@ -31,10 +33,12 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { CurrentUserAvatar } from "./current-user-avatar"
+import { useTheme } from "next-themes"
 
 export function AuthButton() {
   const { isMobile } = useSidebar()
   const { user, isLoading, signOut } = useAuth()
+  const { setTheme, resolvedTheme } = useTheme();
 
   if (isLoading) {
     return (
@@ -128,9 +132,24 @@ export function AuthButton() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator /> */}
+            <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
+              {resolvedTheme === "dark" ? (
+                <>
+                  <Sun className="h-[1.2rem] w-[1.2rem] mr-2" />
+                  <span>Toggle Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-[1.2rem] w-[1.2rem] mr-2" />
+                  <span>Toggle Dark Mode</span>
+                </>
+              )}
+              <span className="sr-only">Toggle Theme</span>
+          
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={async () => await signOut()}>
               <LogOut className="mr-2 h-4 w-4" />
-              Log out
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
