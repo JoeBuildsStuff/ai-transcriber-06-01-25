@@ -8,7 +8,7 @@ interface Params {
 }
 
 // The first parameter is Request, renaming to _ if unused.
-export async function GET(_req: Request, { params }: { params: Params }) {
+export async function GET(_req: Request, { params }: { params: Promise<Params> }) {
   try {
     const supabase = await createClient();
     const { meetingId } = await params;
@@ -54,7 +54,7 @@ export async function GET(_req: Request, { params }: { params: Params }) {
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Params }) {
+export async function DELETE(req: Request, { params }: { params: Promise<Params> }) {
   try {
     const supabase = await createClient();
     const { meetingId } = await params;
@@ -132,7 +132,7 @@ export async function DELETE(req: Request, { params }: { params: Params }) {
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Params }) {
+export async function PUT(req: Request, { params }: { params: Promise<Params> }) {
   try {
     const supabase = await createClient();
     const { meetingId } = await params;
