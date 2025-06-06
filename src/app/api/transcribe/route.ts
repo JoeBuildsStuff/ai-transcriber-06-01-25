@@ -10,7 +10,6 @@ const encoder = new TextEncoder();
 export async function POST(req: NextRequest) {
 
   console.log('Received request to transcribe');
-  console.log('\n\n\n');
 
   try {
 
@@ -92,8 +91,7 @@ export async function POST(req: NextRequest) {
 
     console.log('File downloaded successfully');
     const arrayBuffer = await downloadData.arrayBuffer();
-    console.log('ArrayBuffer created, size:', arrayBuffer.byteLength);
-    
+
     const customReadable = new ReadableStream({
       async start(controller) {
         try {
@@ -115,7 +113,7 @@ export async function POST(req: NextRequest) {
             throw deepgramError;
           }
 
-          console.log('Deepgram result:', deepgramResult);
+          console.log('Deepgram result for meetingId', meetingId, JSON.stringify(deepgramResult).substring(0, 100) + '...');
 
           // Update meeting record with transcription
           const { error: meetingUpdateError } = await supabase

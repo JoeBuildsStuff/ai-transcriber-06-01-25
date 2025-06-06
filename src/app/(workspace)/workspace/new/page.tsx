@@ -5,7 +5,7 @@ import { useSupabaseUpload } from '@/hooks/use-supabase-upload'
 import { useEffect } from 'react';
 import { useAuth } from "@/contexts/auth-context"
 import Transcript from '@/components/transcript';
-import { useTranscription } from '@/hooks/useTranscription';
+import { useTranscription } from '@/hooks/use-Transcription';
 import Summary from '@/components/summary';
 import { useRouter } from 'next/navigation';
 

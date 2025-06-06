@@ -1,10 +1,10 @@
 import { AppSidebar } from "@/components/app-sidebar"; 
 import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
-import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar"; 
-import { AudioLines } from "lucide-react";
-import { UploadAudioDialog } from "@/components/upload-audio-dialog";
 
+import { SidebarTrigger } from "@/components/ui/sidebar"; 
+import UploadAudioProcess from "@/components/upload-audio-process";
+import { Button } from "@/components/ui/button";
+import { AudioLines } from "lucide-react";
 
 export default function RootLayout({
 children,
@@ -21,11 +21,9 @@ return (
               <DynamicBreadcrumbs />
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <UploadAudioDialog>
-                <Button variant="outline" size="sm">
-                  <AudioLines className="w-4 h-4 mr-2" /> New
-                </Button>
-              </UploadAudioDialog>
+              <UploadAudioProcess>
+                <Button variant="outline" size="sm"><AudioLines className="mr-1 h-4 w-4" />New</Button>
+              </UploadAudioProcess>
             </div>
           </header>
           <div className="mb-4 overflow-auto">

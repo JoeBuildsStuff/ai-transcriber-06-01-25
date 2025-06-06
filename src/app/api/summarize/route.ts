@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           const body = await req.json();
+          console.log('Summarize route body:', body);
           const { transcript, meetingId } = body;
 
           if (!meetingId) {
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
             stream: false,
           });
 
-          console.log('OpenAI result for meetingId', meetingId, response);
+          console.log('OpenAI result for meetingId', meetingId, JSON.stringify(response).substring(0, 100) + '...');
           const rawContent = response.output_parsed;
 
           

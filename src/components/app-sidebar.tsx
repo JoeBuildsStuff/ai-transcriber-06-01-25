@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils" // Ensure this path is correct
 import { AuthButton } from "./auth-button"
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { UploadAudioDialog } from "./upload-audio-dialog"
+import UploadAudioProcess from "./upload-audio-process"
 
 // Base navigation items
 const baseItems = [
@@ -87,7 +87,7 @@ export function AppSidebar() {
                 if (item.name === "New Transcription") {
                   return (
                     <SidebarMenuItem key={item.name}>
-                      <UploadAudioDialog>
+                      <UploadAudioProcess>
                         <SidebarMenuButton
                           className={cn(
                             "w-full justify-start",
@@ -99,7 +99,7 @@ export function AppSidebar() {
                           <item.icon className="w-4 h-4 mr-2 flex-none" />
                           <span>{item.name}</span>
                         </SidebarMenuButton>
-                      </UploadAudioDialog>
+                      </UploadAudioProcess>
                     </SidebarMenuItem>
                   );
                 }
