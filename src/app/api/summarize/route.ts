@@ -15,6 +15,7 @@ const MeetingSummary = z.object({
 });
 
 export async function POST(req: NextRequest) {
+
   try {
     const supabase = await supabaseClient();
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
           }
 
           const response = await openai.responses.parse({
-            model: "gpt-4o-mini",
+            model: "gpt-4o-2024-08-06",
             input: [
                 {
                   role: "system", 

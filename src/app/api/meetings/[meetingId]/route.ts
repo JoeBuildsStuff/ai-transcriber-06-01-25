@@ -144,39 +144,56 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      console.error('User not authenticated for updating meeting title:', userError);
+      console.error('User not authenticated for updating meeting:', userError);
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const { title } = await req.json();
+    const { title, meeting_at } = await req.json();
+    const updatePayload: { title?: string; meeting_at?: string; updated_at: string } = {
+      updated_at: new Date().toISOString()
+    };
 
-    if (typeof title !== 'string' || title.trim() === '') {
-      return NextResponse.json({ error: 'A valid title is required' }, { status: 400 });
+    if (title !== undefined) {
+      if (typeof title !== 'string' || title.trim() === '') {
+        return NextResponse.json({ error: 'A valid title is required' }, { status: 400 });
+      }
+      updatePayload.title = title.trim();
+    }
+    
+    if (meeting_at !== undefined) {
+      if (typeof meeting_at !== 'string' || !new Date(meeting_at).getTime()) {
+        return NextResponse.json({ error: 'A valid meeting time is required' }, { status: 400 });
+      }
+      updatePayload.meeting_at = meeting_at;
+    }
+
+    if (Object.keys(updatePayload).length === 1) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
     const { data, error: updateError } = await supabase
       .schema('ai_transcriber')
       .from('meetings')
-      .update({ title: title.trim(), updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', meetingId)
       .eq('user_id', user.id)
-      .select('id, title, updated_at')
+      .select('id, title, updated_at, meeting_at')
       .single();
 
     if (updateError) {
       if (updateError.code === 'PGRST116') { // Not found or no permission
         return NextResponse.json({ error: 'Meeting not found or access denied for update' }, { status: 404 });
       }
-      console.error(`Error updating title for meeting ${meetingId}:`, updateError);
-      return NextResponse.json({ error: 'Failed to update meeting title', details: updateError.message }, { status: 500 });
+      console.error(`Error updating meeting ${meetingId}:`, updateError);
+      return NextResponse.json({ error: 'Failed to update meeting', details: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Meeting title updated successfully', meeting: data }, { status: 200 });
+    return NextResponse.json({ message: 'Meeting details updated successfully', meeting: data }, { status: 200 });
 
   } catch (error) {
     console.error('Unexpected error in /api/meetings/[meetingId] PUT:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ error: 'An unexpected error occurred while updating title', details: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred while updating meeting', details: errorMessage }, { status: 500 });
   }
 }
  

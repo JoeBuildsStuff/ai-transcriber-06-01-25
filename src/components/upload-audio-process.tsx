@@ -62,6 +62,7 @@ interface FileProcessingState {
   summaryStatus: string
   meetingId?: string | null
   errorMessage?: string
+  meetingAt: Date
 }
 
 export default function UploadAudioProcess({ children }: { children: ReactNode }) {
@@ -84,7 +85,8 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
         id: `${Date.now()}-${file.name}-${index}`,
         file: fileWithPreview,
         status: 'queued',
-        summaryStatus: 'Ready to process'
+        summaryStatus: 'Ready to process',
+        meetingAt: new Date(file.lastModified),
       }
     })
 
@@ -135,7 +137,7 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
   }, [])
   
   const transcribeAndSummarize = useCallback(async (fileState: FileProcessingState, filePath: string) => {
-    const { id, file } = fileState
+    const { id, file, meetingAt } = fileState
     
     // --- Transcription ---
     updateFileState(id, { status: 'transcribing', summaryStatus: "Initiating transcription..." })
@@ -143,7 +145,11 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
       const transcribeResponse = await fetch('/api/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath, originalFileName: file.name }),
+        body: JSON.stringify({
+          filePath,
+          originalFileName: file.name,
+          meetingAt: meetingAt.toISOString(),
+        }),
       })
 
       if (!transcribeResponse.ok || !transcribeResponse.body) {

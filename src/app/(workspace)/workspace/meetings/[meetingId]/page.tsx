@@ -7,9 +7,8 @@ import Summary from '@/components/summary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import { AlertCircle, Trash2, Pencil, Check, X, CalendarDays, Clock, Ellipsis, FileJson2, } from 'lucide-react';
+import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +31,8 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { marked } from 'marked';
+import MeetingEditModal from './meeting-edit-modal';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -79,6 +80,7 @@ interface MeetingDetails {
   summary: string | null;
   created_at: string;
   updated_at: string;
+  meeting_at: string;
   openai_response: string | null;
 }
 
@@ -91,11 +93,14 @@ export default function MeetingDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editableTitle, setEditableTitle] = useState("");
+  const [isEditDetailsDialogOpen, setIsEditDetailsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [showDeepgramDialog, setShowDeepgramDialog] = useState(false);
   const [showOpenAIDialog, setShowOpenAIDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('transcript');
+  const [copyButtonText, setCopyButtonText] = useState("Copy");
+  const [copyIcon, setCopyIcon] = useState<"copy" | "check">("copy");
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
   useEffect(() => {
     if (meetingId) {
@@ -111,7 +116,6 @@ export default function MeetingDetailPage() {
         })
         .then(data => {
           setMeeting(data as MeetingDetails);
-          setEditableTitle(data.title || data.original_file_name || "");
         })
         .catch(err => {
           console.error("Error fetching meeting details:", err);
@@ -123,50 +127,113 @@ export default function MeetingDetailPage() {
     }
   }, [meetingId]);
 
-  const handleTitleEditToggle = () => {
-    if (meeting) {
-      setEditableTitle(meeting.title || meeting.original_file_name || "");
-    }
-    setIsEditingTitle(!isEditingTitle);
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEditableTitle(event.target.value);
+  const handleCopyToClipboard = async () => {
+    const resetCopyButton = () => {
+        setTimeout(() => {
+            setCopyButtonText("Copy");
+            setCopyIcon("copy");
+        }, 2000);
+    }
+
+    if (activeTab === 'transcript') {
+        if (meeting?.formatted_transcript && meeting.formatted_transcript.length > 0) {
+            const contentToCopy = meeting.formatted_transcript
+                .map(
+                    (group) =>
+                        `Speaker ${group.speaker} [${formatTime(group.start)}]: ${group.text}`
+                )
+                .join("\n");
+            try {
+                await navigator.clipboard.writeText(contentToCopy);
+                toast("Copied to clipboard", { description: "Transcript copied to clipboard" });
+                setCopyButtonText("Copied");
+                setCopyIcon("check");
+                resetCopyButton();
+            } catch (err) {
+                console.error("Failed to copy transcript: ", err);
+                toast.error("Copy failed", {
+                    description: "Failed to copy transcript to clipboard",
+                });
+            }
+        } else {
+            toast.error("Nothing to copy", { description: "The transcript is empty." });
+        }
+    } else if (activeTab === 'summary') {
+        if (meeting?.summary) {
+            const summaryText = meeting.summary;
+            try {
+                // `marked` is async, so we wait for it
+                const htmlContent = await marked(summaryText);
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        "text/plain": new Blob([summaryText], { type: "text/plain" }),
+                        "text/html": new Blob([htmlContent], { type: "text/html" }),
+                    }),
+                ]);
+                toast("Copied to clipboard", { description: "Summary copied to clipboard (formatted)" });
+                setCopyButtonText("Copied");
+                setCopyIcon("check");
+                resetCopyButton();
+            } catch (err) {
+                console.error("Failed to copy summary: ", err);
+                toast.error("Copy failed", {
+                    description: "Failed to copy summary to clipboard",
+                });
+            }
+        } else {
+            toast.error("Nothing to copy", { description: "The summary is empty." });
+        }
+    }
   };
 
-  const handleSaveTitle = async () => {
-    if (!meetingId || !meeting || editableTitle.trim() === (meeting.title || meeting.original_file_name)) {
-      setIsEditingTitle(false);
-      return;
+  const handleUpdateMeetingDetails = async (details: { title: string; meeting_at: string }) => {
+    if (!meetingId || !meeting) return;
+
+    const { title, meeting_at } = details;
+
+    const trimmedTitle = title.trim();
+    if (trimmedTitle === "") {
+        toast.error("Title cannot be empty.");
+        return;
     }
-    if (editableTitle.trim() === "") {
-      toast.error("Title cannot be empty.");
-      return;
+
+    const isTitleChanged = trimmedTitle !== (meeting.title || meeting.original_file_name);
+    const isMeetingAtChanged = new Date(meeting_at).getTime() !== new Date(meeting.meeting_at).getTime();
+    
+    if (!isTitleChanged && !isMeetingAtChanged) {
+        setIsEditDetailsDialogOpen(false);
+        return;
     }
+
+    const payload: { title?: string; meeting_at?: string } = {};
+    if (isTitleChanged) payload.title = trimmedTitle;
+    if (isMeetingAtChanged) payload.meeting_at = meeting_at;
 
     try {
-      const response = await fetch(`/api/meetings/${meetingId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: editableTitle.trim() }),
-      });
-      const responseData = await response.json();
+        const response = await fetch(`/api/meetings/${meetingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const responseData = await response.json();
 
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to update title');
-      }
+        if (!response.ok) {
+            throw new Error(responseData.error || 'Failed to update meeting details');
+        }
 
-      setMeeting(prev => prev ? { ...prev, title: responseData.meeting.title, updated_at: responseData.meeting.updated_at } : null);
-      toast.success('Meeting title updated!');
-      setIsEditingTitle(false);
-      // Optionally refresh sidebar or ensure data consistency if title is shown there directly
-      // For now, local state update and next sidebar fetch will handle it.
+        setMeeting(prev => prev ? { ...prev, ...responseData.meeting } : null);
+        toast.success('Meeting details updated!');
+        setIsEditDetailsDialogOpen(false);
     } catch (err) {
-      console.error("Error updating title:", err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      toast.error('Failed to update title', { description: errorMessage });
+        console.error("Error updating meeting details:", err);
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        toast.error('Failed to update meeting details', { description: errorMessage });
     }
   };
 
@@ -196,6 +263,178 @@ export default function MeetingDetailPage() {
       setIsDeleting(false);
     }
   };
+
+  const handleReprocess = async () => {
+    if (!meeting) {
+        toast.error("Meeting data not available.");
+        return;
+    }
+    if (isReprocessing) {
+        toast.info("A reprocessing task is already in progress.");
+        return;
+    }
+
+    setIsReprocessing(true);
+    const processToastId = toast.loading(`Reprocessing ${activeTab}...`);
+
+    try {
+        if (activeTab === 'summary') {
+            await reprocessSummary(processToastId);
+        } else if (activeTab === 'transcript') {
+            await reprocessTranscript(processToastId);
+        }
+    } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during reprocessing.";
+        console.error(`Error reprocessing ${activeTab}:`, err);
+        toast.error(`Failed to reprocess ${activeTab}`, {
+            id: processToastId,
+            description: errorMessage,
+        });
+    } finally {
+        setIsReprocessing(false);
+        // Refetch data after any kind of reprocessing
+        fetch(`/api/meetings/${meetingId}`)
+            .then(res => res.json())
+            .then(data => {
+                setMeeting(data as MeetingDetails);
+            }).catch(err => {
+                console.error("Error refetching meeting details:", err);
+                toast.error("Failed to refresh meeting data.");
+            });
+    }
+  };
+
+  const reprocessSummary = async (toastId: string | number, transcriptToSummarize?: FormattedTranscriptGroup[]) => {
+    const transcript = transcriptToSummarize || meeting?.formatted_transcript;
+    if (!transcript) {
+        throw new Error("Formatted transcript is not available for summarization.");
+    }
+
+    toast.loading("Generating new summary...", { id: toastId });
+    const summarizeResponse = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript, meetingId: meeting!.id }),
+    });
+
+    if (!summarizeResponse.ok || !summarizeResponse.body) {
+        const errorBody = await summarizeResponse.text();
+        throw new Error(`Summarization API request failed: ${errorBody}`);
+    }
+
+    const reader = summarizeResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedData = '';
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        accumulatedData += decoder.decode(value, { stream: true });
+
+        let eventSeparatorIndex;
+        while ((eventSeparatorIndex = accumulatedData.indexOf('\n\n')) !== -1) {
+            const eventDataString = accumulatedData.substring(0, eventSeparatorIndex);
+            accumulatedData = accumulatedData.substring(eventSeparatorIndex + 2);
+
+            if (eventDataString.startsWith('data:')) {
+                const jsonString = eventDataString.substring(5).trim();
+                if (jsonString) {
+                    try {
+                        const eventData = JSON.parse(jsonString);
+                        if (eventData.message) {
+                            toast.loading(eventData.message, { id: toastId });
+                        }
+                    } catch (e) {
+                        console.error('Error parsing summary SSE:', e);
+                    }
+                }
+            }
+        }
+    }
+    toast.success("Summary reprocessed successfully!", { id: toastId });
+  };
+
+  const reprocessTranscript = async (toastId: string | number) => {
+    if (!meeting) throw new Error("Meeting data is missing.");
+
+    toast.loading("Initiating re-transcription...", { id: toastId });
+    const transcribeResponse = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            filePath: meeting.audio_file_path,
+            originalFileName: meeting.original_file_name,
+            meetingId: meeting.id, // Assumes API can handle updates
+        }),
+    });
+
+    if (!transcribeResponse.ok || !transcribeResponse.body) {
+        const errorBody = await transcribeResponse.text();
+        throw new Error(`Transcription API request failed: ${errorBody}`);
+    }
+
+    const reader = transcribeResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedData = '';
+    let fullTranscriptionResponse: DeepgramTranscription | null = null;
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        accumulatedData += decoder.decode(value, { stream: true });
+
+        let eventSeparatorIndex;
+        while ((eventSeparatorIndex = accumulatedData.indexOf('\n\n')) !== -1) {
+            const eventDataString = accumulatedData.substring(0, eventSeparatorIndex);
+            accumulatedData = accumulatedData.substring(eventSeparatorIndex + 2);
+
+            if (eventDataString.startsWith('data:')) {
+                const jsonString = eventDataString.substring(5).trim();
+                if (jsonString) {
+                    try {
+                        const eventData = JSON.parse(jsonString);
+                        if (eventData.status) {
+                            toast.loading(eventData.status, { id: toastId });
+                        }
+                        if (eventData.results) {
+                            fullTranscriptionResponse = eventData;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing transcription SSE:', e);
+                    }
+                }
+            }
+        }
+    }
+
+    if (!fullTranscriptionResponse || !fullTranscriptionResponse.results) {
+        throw new Error("Did not receive full transcription results from the stream.");
+    }
+    
+    toast.loading("Formatting transcript...", { id: toastId });
+    const words = fullTranscriptionResponse.results.channels[0].alternatives[0].words;
+    let newFormattedTranscript: FormattedTranscriptGroup[] = [];
+
+    if (words && words.length > 0) {
+        newFormattedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: DeepgramWord) => {
+            const lastGroup = acc[acc.length - 1];
+            if (lastGroup && word.speaker !== undefined && lastGroup.speaker === word.speaker) {
+                lastGroup.text += ` ${word.punctuated_word}`;
+            } else {
+                acc.push({
+                    speaker: word.speaker === undefined ? -1 : word.speaker,
+                    start: word.start,
+                    text: word.punctuated_word,
+                });
+            }
+            return acc;
+        }, [] as FormattedTranscriptGroup[]);
+    }
+
+    // Now re-summarize with the new transcript
+    await reprocessSummary(toastId, newFormattedTranscript);
+    toast.success("Transcript reprocessed and re-summarized successfully!", { id: toastId });
+  }
 
   if (isLoading) {
     return (
@@ -287,44 +526,27 @@ export default function MeetingDetailPage() {
       {/* Meeting Header */}
         <div className="flex flex-row items-start justify-between">
             <div className="flex-grow min-w-0">
-                {isEditingTitle ? (
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      value={editableTitle}
-                      onChange={handleTitleChange}
-                      className="text-xl md:text-2xl font-semibold h-auto p-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                    />
-                    <Button variant="ghost" size="icon" onClick={handleSaveTitle} className="text-green-500 hover:text-green-600">
-                      <Check className="w-5 h-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="text-red-500 hover:text-red-600">
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-                ) : (
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl md:text-2xl font-semibold flex items-center min-w-0">
                         <span className="truncate">
                           {meeting?.title || meeting?.original_file_name || "Meeting Details"}
                         </span>
                     </CardTitle>
-                    <Button variant="ghost" size="icon" onClick={handleTitleEditToggle} className="text-muted-foreground hover:text-foreground">
+                    <Button variant="ghost" size="icon" onClick={() => setIsEditDetailsDialogOpen(true)} className="text-muted-foreground hover:text-foreground">
                         <Pencil className="w-4 h-4" />
                     </Button>
                   </div>
-                )}
                 <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 pt-1 flex items-center flex-wrap">
                     <span className="flex items-center">
                         <CalendarDays className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
-                        {format(new Date(meeting.created_at), "MMMM do, yyyy")}
+                        {format(new Date(meeting.meeting_at), "MMMM do, yyyy")}
                     </span>
                     <span className="flex items-center">
                         <Clock className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
-                        {format(new Date(meeting.created_at), "p")}
+                        {format(new Date(meeting.meeting_at), "p")}
                     </span>
                     <span>
-                        ({formatDistanceToNow(new Date(meeting.created_at), { addSuffix: true })})
+                        ({formatDistanceToNow(new Date(meeting.meeting_at), { addSuffix: true })})
                     </span>
                 </div>
             </div>
@@ -372,6 +594,13 @@ export default function MeetingDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MeetingEditModal
+        isOpen={isEditDetailsDialogOpen}
+        onClose={() => setIsEditDetailsDialogOpen(false)}
+        meeting={meeting}
+        onSave={handleUpdateMeetingDetails}
+      />
 
       {/* Deepgram Response Dialog */}
       <Dialog open={showDeepgramDialog} onOpenChange={setShowDeepgramDialog}>
@@ -431,11 +660,23 @@ export default function MeetingDetailPage() {
       </Dialog>
 
       {/* Meeting Tabs */}
-      <Tabs defaultValue="transcript" className="w-full grow mt-3"> {/* Added mt-3 for spacing */}
-        <TabsList className="">
-          <TabsTrigger value="transcript">Transcript</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="transcript" className="w-full grow mt-3" onValueChange={setActiveTab}>
+        <div className='flex justify-between items-center mb-2'>
+          <TabsList>
+            <TabsTrigger value="transcript">Transcript</TabsTrigger>
+            <TabsTrigger value="summary">Summary</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleCopyToClipboard}>
+              {copyIcon === 'copy' ? <Copy className="mr-2 h-4 w-4" /> : <SquareCheckBig className="mr-2 h-4 w-4" />}
+              {copyButtonText}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleReprocess} disabled={isReprocessing}>
+                {isReprocessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Reprocess
+            </Button>
+          </div>
+        </div>
         
         <TabsContent value="transcript">
           <Card className="h-full">

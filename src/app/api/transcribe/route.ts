@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id;
 
-    const { filePath, originalFileName } = await req.json();
+    const { filePath, originalFileName, meetingAt } = await req.json();
     
     console.log('Attempting to download filePath:', filePath);
     console.log('Original file name:', originalFileName);
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         audio_file_path: filePath,
         original_file_name: originalFileName,
+        meeting_at: meetingAt,
       })
       .select('id')
       .single();
