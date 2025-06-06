@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormattedTranscriptGroup, TranscriptionData } from "@/hooks/use-Transcription";
 import { createClient } from "@/lib/supabase/server";
-import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import { format, isToday, isYesterday, parseISO, formatDistanceToNow } from 'date-fns';
 import Link from "next/link";
 
 export type OpenAIResponse = {
@@ -90,13 +90,14 @@ export type Meeting = {
   summary: string | null;
   created_at: string;
   updated_at: string;
+  meeting_at: string;
   openai_response: OpenAIResponse | null;
   title: string | null;
 }
 
 function groupMeetingsByDate(meetings: Meeting[]): Record<string, Meeting[]> {
   return meetings.reduce((acc, meeting) => {
-    const meetingDate = parseISO(meeting.created_at);
+    const meetingDate = parseISO(meeting.meeting_at);
     const dateKey = format(meetingDate, 'yyyy-MM-dd');
     if (!acc[dateKey]) {
       acc[dateKey] = [];
@@ -124,7 +125,7 @@ export default async function WorkspacePage() {
     .schema('ai_transcriber')
     .from('meetings')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('meeting_at', { ascending: false })
     .limit(10)
 
   if (error) {
@@ -142,18 +143,22 @@ export default async function WorkspacePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {meetingsOnDate.map((meeting) => (
                 <Link key={meeting.id} href={`/workspace/meetings/${meeting.id}`}>
-                  <Card className="h-full hover:bg-accent transition-colors cursor-pointer">
+                  <Card className="h-full hover:bg-accent transition-colors cursor-pointer flex flex-col">
                     <CardHeader>
                       <CardTitle className="truncate">
                         {meeting.title || meeting.original_file_name || 'Untitled Meeting'}
                       </CardTitle>
-                      <CardDescription>
-                        {format(parseISO(meeting.created_at), 'p')} • {meeting.user_id}
-                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-grow">
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>{format(parseISO(meeting.meeting_at), 'MMMM do, yyyy')}</p>
+                        <div className="flex items-center gap-2">
+                          <span>{format(parseISO(meeting.meeting_at), 'p')}</span>
+                          <span className="text-xs">({formatDistanceToNow(parseISO(meeting.meeting_at), { addSuffix: true })})</span>
+                        </div>
+                      </div>
                        {meeting.summary && (
-                        <p className="text-sm text-muted-foreground line-clamp-3">
+                        <p className="mt-4 text-sm text-foreground line-clamp-3">
                           {meeting.summary}
                         </p>
                       )}
