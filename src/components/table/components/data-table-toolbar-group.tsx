@@ -30,7 +30,7 @@ export function DataTableToolbarGroup<TData>({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-8">
-          <Network className="h-4 w-4" />
+          <Network className="h-4 w-4 text-muted-foreground" strokeWidth={1}/>
           Grouped by <Badge variant="blue">{table.getState().grouping.length}</Badge> column(s)
         </Button>
       </PopoverTrigger>

@@ -30,7 +30,7 @@ export function DataTableToolbarSort<TData>({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-8">
-          <ArrowDownUp className="h-4 w-4" />
+          <ArrowDownUp className="h-4 w-4 text-muted-foreground" strokeWidth={1}/>
           Sorted by <Badge variant="blue">{table.getState().sorting.length}</Badge> rule(s)
         </Button>
       </PopoverTrigger>

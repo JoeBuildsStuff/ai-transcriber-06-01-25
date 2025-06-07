@@ -1,11 +1,11 @@
-import DataTableAdvanced from "@/components/table/data-table-advanced";
+import DataTableAdvancedContacts from "@/components/table/data-table-advanced-contacts";
 
 export default async function ContactsPage() {
 
 
     return (
         <div className="w-full mt-5">
-            <DataTableAdvanced searchParams={Promise.resolve({})} />
+            <DataTableAdvancedContacts searchParams={Promise.resolve({})} />
         </div>
     )
 }

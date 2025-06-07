@@ -3,7 +3,7 @@ import DataTablePagination from './components/data-table-pagination'
 import { DataTable } from './components/data-table'
 import { columns } from './components/columns'
 
-export default async function DataTableAdvanced({
+export default async function DataTableAdvancedContacts({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>

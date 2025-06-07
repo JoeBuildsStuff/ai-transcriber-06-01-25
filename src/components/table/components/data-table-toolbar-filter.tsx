@@ -40,7 +40,7 @@ export function DataTableToolbarFilter<TData>({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-8">
-          <Filter className="h-4 w-4" />
+          <Filter className="h-4 w-4 text-muted-foreground" strokeWidth={1}/>
           Filtered by <Badge variant="blue">{table.getState().columnFilters.length}</Badge> rule(s)
         </Button>
       </PopoverTrigger>
