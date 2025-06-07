@@ -23,18 +23,18 @@ export async function createContact(formData: FormData) {
   const supabase = await createClient()
 
   const rawData = {
-    first_name: formData.get("first_name"),
-    last_name: formData.get("last_name"),
-    display_name: formData.get("display_name"),
-    nickname: formData.get("nickname"),
-    primary_email: formData.get("primary_email"),
-    primary_phone: formData.get("primary_phone"),
-    company: formData.get("company"),
-    job_title: formData.get("job_title"),
-    birthday: formData.get("birthday"),
-    notes: formData.get("notes"),
+    first_name: formData.get("first_name") || undefined,
+    last_name: formData.get("last_name") || undefined,
+    display_name: formData.get("display_name") || undefined,
+    nickname: formData.get("nickname") || undefined,
+    primary_email: formData.get("primary_email") || undefined,
+    primary_phone: formData.get("primary_phone") || undefined,
+    company: formData.get("company") || undefined,
+    job_title: formData.get("job_title") || undefined,
+    birthday: formData.get("birthday") || undefined,
+    notes: formData.get("notes") || undefined,
     is_favorite: formData.get("is_favorite"),
-    tags: formData.get("tags"),
+    tags: formData.get("tags") || undefined,
   }
 
   const validatedFields = newContactSchema.safeParse(rawData)
@@ -59,6 +59,7 @@ export async function createContact(formData: FormData) {
   }
 
   const { error } = await supabase
+    .schema("ai_transcriber")
     .from("contacts")
     .insert({ ...contactData, tags: tagsArray, user_id: userData.user.id })
 

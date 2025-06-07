@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -84,6 +85,7 @@ interface MeetingDetails {
   meeting_at: string;
   openai_response: string | null;
   audioUrl: string | null;
+  speaker_names: Record<number, string> | null;
 }
 
 export default function MeetingDetailPage() {
@@ -103,6 +105,8 @@ export default function MeetingDetailPage() {
   const [copyButtonText, setCopyButtonText] = useState("Copy");
   const [copyIcon, setCopyIcon] = useState<"copy" | "check">("copy");
   const [isReprocessing, setIsReprocessing] = useState(false);
+  const [deepgramCopyIcon, setDeepgramCopyIcon] = useState<"copy" | "check">("copy");
+  const [openAICopyIcon, setOpenAICopyIcon] = useState<"copy" | "check">("copy");
 
   useEffect(() => {
     if (meetingId) {
@@ -191,6 +195,43 @@ export default function MeetingDetailPage() {
         } else {
             toast.error("Nothing to copy", { description: "The summary is empty." });
         }
+    }
+  };
+
+  const handleJsonCopy = async (content: DeepgramTranscription | string | null, type: 'Deepgram' | 'OpenAI') => {
+    const setIcon = type === 'Deepgram' ? setDeepgramCopyIcon : setOpenAICopyIcon;
+
+    if (!content) {
+        toast.error(`No ${type} data to copy.`, {
+            description: "The content is empty or not available.",
+        });
+        return;
+    }
+
+    let textToCopy = '';
+    if (typeof content === 'string') {
+        try {
+            const parsedJson = JSON.parse(content);
+            textToCopy = JSON.stringify(parsedJson, null, 2);
+        } catch {
+            textToCopy = content; 
+        }
+    } else {
+        textToCopy = JSON.stringify(content, null, 2);
+    }
+
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        toast("Copied to clipboard", {
+            description: `The ${type} response has been copied.`,
+        });
+        setIcon("check");
+        setTimeout(() => setIcon("copy"), 2000);
+    } catch (err) {
+        console.error(`Failed to copy ${type} response: `, err);
+        toast.error("Copy failed", {
+            description: `Could not copy the ${type} response to the clipboard.`,
+        });
     }
   };
 
@@ -618,7 +659,15 @@ export default function MeetingDetailPage() {
               Raw JSON response from the Deepgram transcription service.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+          <div className="relative mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+          <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleJsonCopy(meeting?.transcription, 'Deepgram')}
+            >
+              {deepgramCopyIcon === 'copy' ? <Copy className="h-4 w-4" /> : <SquareCheckBig className="h-4 w-4" />}
+            </Button>
             {meeting?.transcription ? (
               <pre className="text-xs">
                 {JSON.stringify(meeting.transcription, null, 2)}
@@ -642,9 +691,18 @@ export default function MeetingDetailPage() {
               Raw JSON response from the OpenAI service.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+          <div className="relative mt-4 max-h-[60vh] overflow-auto rounded-md bg-muted p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleJsonCopy(meeting?.openai_response, 'OpenAI')}
+            >
+              {openAICopyIcon === 'copy' ? <Copy className="h-4 w-4" /> : <SquareCheckBig className="h-4 w-4" />}
+            </Button>
             {meeting?.openai_response ? (
-              <pre className="text-xs">
+              <pre className=" text-xs">
+
                 {(() => {
                   try {
                     const parsedResponse = JSON.parse(meeting.openai_response);
@@ -679,6 +737,7 @@ export default function MeetingDetailPage() {
       <Tabs defaultValue="transcript" className="w-full grow mt-3" onValueChange={setActiveTab}>
         <div className='flex justify-between items-center mb-2'>
           <TabsList>
+            <TabsTrigger value="speakers">Speakers</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
           </TabsList>
@@ -693,6 +752,29 @@ export default function MeetingDetailPage() {
             </Button>
           </div>
         </div>
+        
+        <TabsContent value="speakers">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Meeting Speakers</CardTitle>
+              <CardDescription>List of speakers in the meeting.</CardDescription>
+            </CardHeader>
+            <CardContent>
+             {meeting.speaker_names ? (
+              <div className="space-y-2">
+                {Object.entries(meeting.speaker_names).map(([speakerNum, speakerName]) => (
+                  <div key={speakerNum} className="flex items-center gap-2">
+                    <Badge variant="gray"><span className="text-xs">Speaker {speakerNum}</span></Badge>
+                    <span>{speakerName}</span>
+                  </div>
+                ))}
+              </div>
+             ) : (
+              <p className="text-center text-muted-foreground p-4">No speakers available for this meeting.</p>
+             )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="transcript">
           <Card className="h-full">

@@ -81,9 +81,8 @@ export function NewContactSheet({
   async function onSubmit(values: NewContactFormValues) {
     const formData = new FormData()
     Object.entries(values).forEach(([key, value]) => {
-      if (value) {
-        formData.append(key, String(value))
-      }
+      // Always append the field, even if it's empty
+      formData.append(key, value ? String(value) : "")
     })
 
     const result = await createContact(formData)

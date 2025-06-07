@@ -5,6 +5,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
@@ -12,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar" // Ensure these paths are correct
-import { AudioLines, History, Loader2 } from "lucide-react"
+import { AudioLines, History, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
@@ -20,6 +21,7 @@ import { AuthButton } from "./auth-button"
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
+import Link from "next/link"
 
 // Base navigation items
 const baseItems = [
@@ -122,9 +124,33 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+              <SidebarMenuItem>
+
+
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel><span>Recent Contacts</span></SidebarGroupLabel>
+          <SidebarGroupAction title="Add Contact">
+            <Plus /> <span className="sr-only">Add Contact</span>
+          </SidebarGroupAction>
+          <SidebarGroupContent>
+            <SidebarMenu>
+                  <SidebarMenuItem >
+                    <SidebarMenuButton asChild>
+                      <Link href="/workspace/contacts">
+                        <Users className="w-3.5 h-3.5 mr-2 flex-none" />
+                        <span>All</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
 
         {user && (
           <SidebarGroup className="overflow-y-auto flex-grow">
