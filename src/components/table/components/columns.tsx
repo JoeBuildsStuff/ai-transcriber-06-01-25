@@ -6,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Contact } from "../data/schema"
 import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
-import { Badge } from "@/components/ui/badge"
 import { GripVertical } from "lucide-react"
 
 //create default size for columns
