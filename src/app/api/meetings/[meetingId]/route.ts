@@ -45,7 +45,23 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
       return NextResponse.json({ error: 'Meeting not found or access denied' }, { status: 404 });
     }
 
-    return NextResponse.json(meeting);
+    let audioUrl = null;
+    if (meeting.audio_file_path) {
+        const { data, error: signedUrlError } = await supabase.storage
+            .from('ai-transcriber-audio')
+            .createSignedUrl(meeting.audio_file_path, 3600); // 1 hour expiration
+
+        if (signedUrlError) {
+            console.error('Error creating signed URL:', signedUrlError);
+            // Not returning an error, just proceeding without the URL
+        } else {
+            audioUrl = data.signedUrl;
+        }
+    }
+
+    const meetingWithUrl = { ...meeting, audioUrl };
+
+    return NextResponse.json(meetingWithUrl);
 
   } catch (error) {
     console.error('Unexpected error in /api/meetings/[meetingId] GET:', error);

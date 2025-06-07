@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormattedTranscriptGroup, TranscriptionData } from "@/hooks/use-Transcription";
 import { createClient } from "@/lib/supabase/server";
-import { format, isToday, isYesterday, parseISO, formatDistanceToNow } from 'date-fns';
-import Link from "next/link";
+import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import MeetingCard from "./meeting-card";
 
 export type OpenAIResponse = {
   id: string;
@@ -142,29 +141,7 @@ export default async function WorkspacePage() {
             <h2 className="text-xl font-semibold mb-4">{formatDateGroup(date)}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {meetingsOnDate.map((meeting) => (
-                <Link key={meeting.id} href={`/workspace/meetings/${meeting.id}`}>
-                  <Card className="h-full hover:bg-accent transition-colors cursor-pointer flex flex-col">
-                    <CardHeader>
-                      <CardTitle className="truncate">
-                        {meeting.title || meeting.original_file_name || 'Untitled Meeting'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p>{format(parseISO(meeting.meeting_at), 'MMMM do, yyyy')}</p>
-                        <div className="flex items-center gap-2">
-                          <span>{format(parseISO(meeting.meeting_at), 'p')}</span>
-                          <span className="text-xs">({formatDistanceToNow(parseISO(meeting.meeting_at), { addSuffix: true })})</span>
-                        </div>
-                      </div>
-                       {meeting.summary && (
-                        <p className="mt-4 text-sm text-foreground line-clamp-3">
-                          {meeting.summary}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
+                <MeetingCard key={meeting.id} meeting={meeting} />
               ))}
             </div>
           </div>

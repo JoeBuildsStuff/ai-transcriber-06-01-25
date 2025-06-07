@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const userId = user.id;
 
     const { filePath, originalFileName, meetingAt } = await req.json();
+    console.log('Meeting at:', meetingAt);
     
     console.log('Attempting to download filePath:', filePath);
     console.log('Original file name:', originalFileName);

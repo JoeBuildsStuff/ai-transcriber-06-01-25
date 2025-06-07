@@ -33,6 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/component
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './meeting-edit-modal';
+import AudioPlayer from '@/components/audio-player';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -82,6 +83,7 @@ interface MeetingDetails {
   updated_at: string;
   meeting_at: string;
   openai_response: string | null;
+  audioUrl: string | null;
 }
 
 export default function MeetingDetailPage() {
@@ -658,6 +660,15 @@ export default function MeetingDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {meeting.audioUrl && meeting.transcription?.metadata?.duration ? (
+        <div className="pt-4">
+            <AudioPlayer
+                audioUrl={meeting.audioUrl}
+                duration={meeting.transcription.metadata.duration}
+            />
+        </div>
+      ) : null}
 
       {/* Meeting Tabs */}
       <Tabs defaultValue="transcript" className="w-full grow mt-3" onValueChange={setActiveTab}>

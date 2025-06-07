@@ -16,7 +16,7 @@ export async function GET() {
     const { data: meetings, error: meetingsError } = await supabase
       .schema('ai_transcriber')
       .from('meetings')
-      .select('id, original_file_name, created_at, updated_at, summary, title')
+      .select('id, original_file_name, created_at, updated_at, title')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
