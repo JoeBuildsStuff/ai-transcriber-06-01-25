@@ -61,6 +61,7 @@ export function DataTable<TData, TValue>({
     "primary_email",
     "primary_phone",
     "company",
+    "actions",
   ])
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
@@ -75,8 +76,6 @@ export function DataTable<TData, TValue>({
       "created_at": false,
       "updated_at": false,
       "user_id": false,
-      "actions": false,
-
     })
   const [grouping, setGrouping] = React.useState<string[]>([])
 

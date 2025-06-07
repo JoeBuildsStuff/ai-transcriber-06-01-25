@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Contact } from "../data/schema"
 import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
-import { Heart } from "lucide-react"
+import { Star } from "lucide-react"
 import { format } from "date-fns"
 import { CopyableCell } from "./copyable-cell"
 
@@ -62,9 +62,9 @@ export const columns: ColumnDef<Contact>[] = [
     cell: ({ row }) => (
       <div className="w-fit">
         {row.getValue("is_favorite") ? (
-          <Heart className="h-4 w-4 fill-red-150 text-red-700 dark:text-red-400 dark:fill-red-900/30" strokeWidth={1} />
+          <Star className="h-4 w-4 fill-yellow-150 text-yellow-700 dark:text-yellow-400 dark:fill-yellow-900/30" strokeWidth={1} />
         ) : (
-          <Heart className="h-4 w-4 fill-gray-50 text-gray-600 dark:text-gray-400 dark:fill-gray-900/30" />
+          <Star className="h-4 w-4 fill-gray-50 text-gray-600 dark:text-gray-400 dark:fill-gray-900/30" />
         )}
       </div>
     ),

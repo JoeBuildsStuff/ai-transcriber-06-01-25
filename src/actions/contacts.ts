@@ -75,3 +75,176 @@ export async function createContact(formData: FormData) {
     data: "Contact created successfully",
   }
 } 
+
+// Add to src/actions/contacts.ts
+
+export async function deleteContact(contactId: string) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to delete a contact.",
+    }
+  }
+
+  const { error } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .delete()
+    .eq('id', contactId)
+    .eq('user_id', userData.user.id)
+
+  if (error) {
+    return {
+      error: error.message,
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+
+  return {
+    data: "Contact deleted successfully",
+  }
+}
+
+export async function deleteMultipleContacts(contactIds: string[]) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to delete contacts.",
+    }
+  }
+
+  const { error } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .delete()
+    .in('id', contactIds)
+    .eq('user_id', userData.user.id)
+
+  if (error) {
+    return {
+      error: error.message,
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+
+  return {
+    data: `${contactIds.length} contact(s) deleted successfully`,
+  }
+}
+
+export async function duplicateContact(contactId: string) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to duplicate a contact.",
+    }
+  }
+
+  // First, fetch the original contact
+  const { data: originalContact, error: fetchError } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .select('*')
+    .eq('id', contactId)
+    .eq('user_id', userData.user.id)
+    .single()
+
+  if (fetchError || !originalContact) {
+    return {
+      error: "Contact not found or you don't have permission to duplicate it.",
+    }
+  }
+
+  // Create a new contact based on the original, extracting only the fields we want to copy
+  const contactData = {
+    first_name: originalContact.first_name,
+    last_name: originalContact.last_name,
+    display_name: originalContact.display_name,
+    nickname: originalContact.nickname,
+    primary_email: originalContact.primary_email,
+    primary_phone: originalContact.primary_phone,
+    company: originalContact.company,
+    job_title: originalContact.job_title,
+    birthday: originalContact.birthday,
+    notes: originalContact.notes,
+    is_favorite: originalContact.is_favorite,
+    tags: originalContact.tags,
+  }
+
+  // Modify the data to indicate it's a copy
+  const duplicatedData = {
+    ...contactData,
+    // Set user_id to current user
+    user_id: userData.user.id
+  }
+
+  const { data: newContact, error: createError } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .insert(duplicatedData)
+    .select('*')
+    .single()
+
+  if (createError) {
+    return {
+      error: createError.message,
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+
+  return {
+    data: "Contact duplicated successfully",
+    newContact: newContact
+  }
+}
+
+export async function getContactById(contactId: string) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    throw new Error("You must be logged in to view contacts.")
+  }
+
+  const { data: contact, error } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .select('*')
+    .eq('id', contactId)
+    .eq('user_id', userData.user.id)
+    .single()
+
+  if (error || !contact) {
+    throw new Error("Contact not found or you don't have permission to view it.")
+  }
+
+  // Transform snake_case to camelCase for frontend
+  return {
+    id: contact.id,
+    firstName: contact.first_name || '',
+    lastName: contact.last_name || '',
+    displayName: contact.display_name || '',
+    nickname: contact.nickname || '',
+    primaryEmail: contact.primary_email || '',
+    primaryPhone: contact.primary_phone || '',
+    company: contact.company || '',
+    jobTitle: contact.job_title || '',
+    birthday: contact.birthday || '',
+    notes: contact.notes || '',
+    isFavorite: contact.is_favorite || false,
+    tags: contact.tags || [],
+    createdAt: contact.created_at,
+    updatedAt: contact.updated_at,
+    userId: contact.user_id
+  }
+}
+
