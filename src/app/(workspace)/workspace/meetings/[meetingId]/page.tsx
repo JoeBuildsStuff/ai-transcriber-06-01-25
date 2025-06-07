@@ -440,26 +440,31 @@ export default function MeetingDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-4">
-        <Skeleton className="h-8 w-1/2" /> 
-        <Skeleton className="h-6 w-1/4 mb-4" />
-        <div className="space-y-2 mb-6">
-          <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="h-4 w-1/4" />
-        </div>
-        <Tabs defaultValue="transcript" className="w-full">
-            <TabsList className="mb-5">
-                <Skeleton className="h-10 w-24 mr-2" />
-                <Skeleton className="h-10 w-24" />
-            </TabsList>
-            <TabsContent value="transcript">
-                <Skeleton className="h-40 w-full" />
-            </TabsContent>
-            <TabsContent value="summary">
-                <Skeleton className="h-40 w-full" />
-            </TabsContent>
-        </Tabs>
+    <div className="flex flex-col space-y-4 pt-2 h-full">
+      <div className="w-full h-16 flex flex-row items-start justify-between" >
+          <div className="flex flex-col w-96 h-full space-y-2" >
+            <Skeleton className="w-full h-10" />
+            <Skeleton className="w-full h-5" />
+          </div>
+          <Skeleton className="w-10 h-10" />
       </div>
+      <div className="w-full h-19 " >
+        <Skeleton className="w-full h-full rounded-xl" />
+      </div>
+      <div className="w-full h-10 flex flex-row items-start justify-between" >
+        <Skeleton className="w-45 h-10" />
+        <div className="flex flex-row items-center space-x-2" >
+          <Skeleton className="w-15 h-8" />
+          <Skeleton className="w-15 h-8" />
+        </div>
+      </div>
+      <div className="w-full flex-1" >
+        <Skeleton className="w-full h-full rounded-xl p-6 space-y-2" >
+          <CardTitle className="text-lg">Meeting Transcript</CardTitle>
+          <CardDescription className="text-sm">Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
+        </Skeleton>
+      </div>
+    </div>
     );
   }
 

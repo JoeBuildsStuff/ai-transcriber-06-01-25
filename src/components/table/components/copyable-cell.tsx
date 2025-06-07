@@ -35,7 +35,7 @@ export function CopyableCell({ value }: CopyableCellProps) {
         onClick={onCopy}
       >
         {isCopied ? (
-          <Check className="h-4 w-4 text-green-500" />
+          <Check className="h-4 w-4" />
         ) : (
           <Copy className="h-4 w-4" />
         )}
