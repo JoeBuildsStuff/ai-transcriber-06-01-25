@@ -136,7 +136,7 @@ const Transcript: React.FC<TranscriptProps> = ({
     <div className="mx-2 h-full">
 
       {/* Speaker badges row */}
-      <div className="border-1 border-border rounded-lg p-4 mb-4">
+      <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-4 mb-4">
       <div className="text-sm font-medium mb-2">Speakers:</div>
         <div className="flex flex-wrap gap-2">
           {uniqueSpeakers.map((speakerNumber) => (
@@ -160,14 +160,18 @@ const Transcript: React.FC<TranscriptProps> = ({
             ref={(el) => {
               if (el) itemRefs.current[groupIndex] = el;
             }}
-            className={`mb-5 p-3 rounded-lg transition-all duration-300 ${isActive ? 'border-1 border-border bg-secondary' : ''}`}
+            className={`mb-2 p-3 rounded-lg transition-all duration-300 ${isActive ? 'border-1 border-border bg-secondary' : ''}`}
             >
             <div className="flex items-center gap-2 mb-2">
               <Badge
                 variant="outline"
                 className={`${getSpeakerColor(
                   group.speaker
-                )} border font-medium rounded-md`}
+                )} border font-medium rounded-md cursor-pointer`}
+                onClick={() => handleOpenModal(group.speaker)}
+                title={`Associate speaker for ${getSpeakerDisplayName(
+                  group.speaker
+                )}`}
               >
                 {getSpeakerDisplayName(group.speaker)}
               </Badge>
