@@ -26,6 +26,8 @@ interface TranscriptProps {
   speakerContacts?: Record<number, string> | null;
   contacts?: Contact[] | null;
   onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
+  onSeekAndPlay: (time: number) => void;
+  onContactsUpdate: () => void;
 }
 
 const Transcript: React.FC<TranscriptProps> = ({ 
@@ -34,6 +36,8 @@ const Transcript: React.FC<TranscriptProps> = ({
   speakerContacts = null,
   contacts = null,
   onSpeakerContactsUpdate,
+  onSeekAndPlay,
+  onContactsUpdate,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
@@ -148,6 +152,9 @@ const Transcript: React.FC<TranscriptProps> = ({
         contacts={contacts || []}
         speakerContacts={speakerContacts || {}}
         onSpeakerContactsUpdate={onSpeakerContactsUpdate}
+        formattedTranscript={formattedTranscript}
+        onSeekAndPlay={onSeekAndPlay}
+        onContactsUpdate={onContactsUpdate}
       />
     </div>
   );

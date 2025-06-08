@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // To get meetingId from URL and useRouter
 import Transcript, { FormattedTranscriptGroup } from '@/components/transcript';
 import Summary from '@/components/summary';
@@ -34,7 +34,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/component
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
-import AudioPlayer from '@/components/audio-player';
+import AudioPlayer, { AudioPlayerRef } from '@/components/audio-player';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -88,6 +88,15 @@ interface MeetingDetails {
   speaker_names: Record<number, string> | null;
 }
 
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  primaryEmail: string;
+  company: string;
+}
+
 export default function MeetingDetailPage() {
   const params = useParams();
   const meetingId = params.meetingId as string;
@@ -107,21 +116,9 @@ export default function MeetingDetailPage() {
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [deepgramCopyIcon, setDeepgramCopyIcon] = useState<"copy" | "check">("copy");
   const [openAICopyIcon, setOpenAICopyIcon] = useState<"copy" | "check">("copy");
-// Add this state to store contacts data
-const [contacts, setContacts] = useState<Contact[]>([])
+  const audioPlayerRef = useRef<AudioPlayerRef>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
-// Add this interface near the top with other interfaces
-interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  primaryEmail: string;
-  company: string;
-}
-
-// Add this useEffect to fetch contacts when component mounts
-useEffect(() => {
   const fetchContacts = async () => {
     try {
       const { getAllContacts } = await import('@/actions/contacts')
@@ -133,13 +130,18 @@ useEffect(() => {
     }
   }
 
-  fetchContacts()
-
-}, [meeting?.speaker_names])
-
+  useEffect(() => {
+    fetchContacts()
+  }, [])
 
   const handleSpeakerContactsUpdate = (speakerContacts: Record<number, string>) => {
     setMeeting(prev => prev ? { ...prev, speaker_names: speakerContacts } : null);
+  };
+
+  const handleSeekAndPlay = (time: number) => {
+    if (audioPlayerRef.current) {
+        audioPlayerRef.current.seek(time);
+    }
   };
 
   useEffect(() => {
@@ -789,6 +791,7 @@ useEffect(() => {
       {meeting.audioUrl && meeting.transcription?.metadata?.duration ? (
         <div className="pt-4">
             <AudioPlayer
+                ref={audioPlayerRef}
                 audioUrl={meeting.audioUrl}
                 duration={meeting.transcription.metadata.duration}
             />
@@ -828,6 +831,8 @@ useEffect(() => {
                   speakerContacts={meeting?.speaker_names}
                   contacts={contacts}
                   onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
+                  onSeekAndPlay={handleSeekAndPlay}
+                  onContactsUpdate={fetchContacts}
                 />
               ) : (
                 <p className="text-center text-muted-foreground p-4">

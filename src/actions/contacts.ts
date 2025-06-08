@@ -58,10 +58,12 @@ export async function createContact(formData: FormData) {
     }
   }
 
-  const { error } = await supabase
+  const { data: newContact, error } = await supabase
     .schema("ai_transcriber")
     .from("contacts")
     .insert({ ...contactData, tags: tagsArray, user_id: userData.user.id })
+    .select()
+    .single()
 
   if (error) {
     return {
@@ -73,10 +75,9 @@ export async function createContact(formData: FormData) {
 
   return {
     data: "Contact created successfully",
+    contact: newContact,
   }
 } 
-
-// Add to src/actions/contacts.ts
 
 export async function deleteContact(contactId: string) {
   const supabase = await createClient()

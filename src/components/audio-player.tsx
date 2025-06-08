@@ -8,7 +8,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "./ui/hover-card";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent } from "./ui/card";
 
 interface AudioPlayerProps {
@@ -16,13 +16,28 @@ interface AudioPlayerProps {
   duration: number;
 }
 
-export default function AudioPlayer({ audioUrl, duration }: AudioPlayerProps) {
+export interface AudioPlayerRef {
+  seek: (time: number) => void;
+}
+
+const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, duration }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(50);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+
+  useImperativeHandle(ref, () => ({
+    seek(time: number) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = time;
+        if (audioRef.current.paused) {
+            audioRef.current.play();
+        }
+      }
+    }
+  }));
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -176,4 +191,7 @@ export default function AudioPlayer({ audioUrl, duration }: AudioPlayerProps) {
         </CardContent>
     </Card>
   );
-}
+});
+
+AudioPlayer.displayName = "AudioPlayer";
+export default AudioPlayer;
