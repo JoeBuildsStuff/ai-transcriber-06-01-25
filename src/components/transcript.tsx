@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import SpeakerAssociationModal from "../app/(workspace)/workspace/meetings/[meetingId]/_components/speaker-association-modal";
 
 export interface FormattedTranscriptGroup {
@@ -28,6 +29,7 @@ interface TranscriptProps {
   onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
   onSeekAndPlay: (time: number) => void;
   onContactsUpdate: () => void;
+  currentTime: number;
 }
 
 const Transcript: React.FC<TranscriptProps> = ({ 
@@ -38,9 +40,37 @@ const Transcript: React.FC<TranscriptProps> = ({
   onSpeakerContactsUpdate,
   onSeekAndPlay,
   onContactsUpdate,
+  currentTime,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    itemRefs.current = itemRefs.current.slice(0, formattedTranscript.length);
+  }, [formattedTranscript]);
+
+  useEffect(() => {
+    // Find the currently active transcript item
+    let activeIndex = -1;
+    for (let i = formattedTranscript.length - 1; i >= 0; i--) {
+        if (currentTime >= formattedTranscript[i].start) {
+            activeIndex = i;
+            break;
+        }
+    }
+
+    if (activeIndex !== -1) {
+        const itemRef = itemRefs.current[activeIndex];
+        if (itemRef) {
+            itemRef.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center', 
+            });
+        }
+    }
+  }, [currentTime, formattedTranscript]);
 
   if (formattedTranscript.length === 0) return null;
 
@@ -103,7 +133,6 @@ const Transcript: React.FC<TranscriptProps> = ({
   const uniqueSpeakers = Array.from(new Set(formattedTranscript.map(group => group.speaker))).sort();
 
   return (
-
     <div className="mx-2 h-full">
 
       {/* Speaker badges row */}
@@ -122,9 +151,17 @@ const Transcript: React.FC<TranscriptProps> = ({
         </div>
         </div>
 
-      <div className="p-2 rounded">
-        {formattedTranscript.map((group, groupIndex) => (
-          <div key={groupIndex} className="mb-5">
+      <div className="p-2 rounded" ref={transcriptContainerRef}>
+        {formattedTranscript.map((group, groupIndex) => {
+          const isActive = currentTime >= group.start && (groupIndex === formattedTranscript.length - 1 || currentTime < formattedTranscript[groupIndex + 1].start);
+          return (
+          <div 
+            key={groupIndex} 
+            ref={(el) => {
+              if (el) itemRefs.current[groupIndex] = el;
+            }}
+            className={`mb-5 p-3 rounded-lg transition-all duration-300 ${isActive ? 'border-1 border-border bg-secondary' : ''}`}
+            >
             <div className="flex items-center gap-2 mb-2">
               <Badge
                 variant="outline"
@@ -134,13 +171,18 @@ const Transcript: React.FC<TranscriptProps> = ({
               >
                 {getSpeakerDisplayName(group.speaker)}
               </Badge>
-              <span className="text-sm text-muted-foreground">
+              <Button
+                variant="ghost"
+                className="text-xs text-muted-foreground h-6"
+                onClick={() => onSeekAndPlay(group.start)}
+                title={`Jump to ${formatTime(group.start)}`}
+              >
                 {formatTime(group.start)}
-              </span>
+              </Button>
             </div>
             <p className="ml-4">{group.text}</p>
           </div>
-        ))}
+        )})}
       </div>
       
       <SpeakerAssociationModal

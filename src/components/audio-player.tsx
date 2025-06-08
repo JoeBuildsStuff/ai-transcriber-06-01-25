@@ -14,13 +14,14 @@ import { Card, CardContent } from "./ui/card";
 interface AudioPlayerProps {
   audioUrl: string;
   duration: number;
+  onTimeUpdate?: (time: number) => void;
 }
 
 export interface AudioPlayerRef {
   seek: (time: number) => void;
 }
 
-const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, duration }, ref) => {
+const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, duration, onTimeUpdate }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(50);
@@ -58,6 +59,9 @@ const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, du
 
     const updateProgress = () => {
       setCurrentTime(audio.currentTime);
+      if (onTimeUpdate) {
+        onTimeUpdate(audio.currentTime);
+      }
       if (duration > 0) {
         setProgress((audio.currentTime / duration) * 100);
       }
@@ -77,7 +81,7 @@ const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, du
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handlePause);
     };
-  }, [duration, audioUrl]);
+  }, [duration, audioUrl, onTimeUpdate]);
 
   const togglePlayPause = () => {
     if (isPlaying) {

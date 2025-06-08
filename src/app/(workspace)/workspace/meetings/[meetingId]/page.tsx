@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import {
   AlertDialog,
@@ -118,6 +119,7 @@ export default function MeetingDetailPage() {
   const [openAICopyIcon, setOpenAICopyIcon] = useState<"copy" | "check">("copy");
   const audioPlayerRef = useRef<AudioPlayerRef>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [currentAudioTime, setCurrentAudioTime] = useState(0);
 
   const fetchContacts = async () => {
     try {
@@ -794,6 +796,7 @@ export default function MeetingDetailPage() {
                 ref={audioPlayerRef}
                 audioUrl={meeting.audioUrl}
                 duration={meeting.transcription.metadata.duration}
+                onTimeUpdate={setCurrentAudioTime}
             />
         </div>
       ) : null}
@@ -818,12 +821,14 @@ export default function MeetingDetailPage() {
         </div>
         
         <TabsContent value="transcript">
-          <Card className=" h-full">
+          <Card className="h-full">
             <CardHeader>
               <CardTitle className="text-lg">Meeting Transcript</CardTitle>
               <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
             </CardHeader>
             <CardContent>
+            <ScrollArea className="h-[530px]">
+              <div className="pr-2">
               {displayableTranscript.length > 0 ? (
                 <Transcript 
                   meetingId={meetingId}
@@ -833,12 +838,15 @@ export default function MeetingDetailPage() {
                   onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
                   onSeekAndPlay={handleSeekAndPlay}
                   onContactsUpdate={fetchContacts}
+                  currentTime={currentAudioTime}
                 />
               ) : (
                 <p className="text-center text-muted-foreground p-4">
                     {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
                 </p>
               )}
+              </div>
+                    </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
