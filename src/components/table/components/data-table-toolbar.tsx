@@ -10,7 +10,7 @@ import { DataTableViewOptions } from "./data-table-view-options"
 import { DataTableToolbarSort } from "./data-table-toolbar-sort"
 import { DataTableToolbarFilter } from "./data-table-toolbar-filter"
 import { DataTableToolbarGroup } from "./data-table-toolbar-group"
-import { NewContactSheet } from "./new-contact-sheet"
+import { ContactSheet } from "./contact-sheet"
 import { SheetTrigger } from "@/components/ui/sheet"
 import {
   AlertDialog,
@@ -73,7 +73,7 @@ export function DataTableToolbar<TData>({
     <>
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2">
-          <NewContactSheet
+          <ContactSheet
             open={isNewContactSheetOpen}
             onOpenChange={setIsNewContactSheetOpen}
           >
@@ -82,7 +82,7 @@ export function DataTableToolbar<TData>({
                 <Plus className="h-4 w-4 text-muted-foreground" strokeWidth={1} />
               </Button>
             </SheetTrigger>
-          </NewContactSheet>
+          </ContactSheet>
           
           {selectedCount > 0 && (
             <Button

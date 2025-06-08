@@ -19,6 +19,10 @@ const newContactSchema = z.object({
   tags: z.string().optional(),
 })
 
+const updateContactSchema = newContactSchema.extend({
+  id: z.string(),
+})
+
 export async function createContact(formData: FormData) {
   const supabase = await createClient()
 
@@ -77,7 +81,71 @@ export async function createContact(formData: FormData) {
     data: "Contact created successfully",
     contact: newContact,
   }
-} 
+}
+
+export async function updateContact(formData: FormData) {
+  const supabase = await createClient()
+
+  const rawData = {
+    id: formData.get("id") as string,
+    first_name: formData.get("first_name") || undefined,
+    last_name: formData.get("last_name") || undefined,
+    display_name: formData.get("display_name") || undefined,
+    nickname: formData.get("nickname") || undefined,
+    primary_email: formData.get("primary_email") || undefined,
+    primary_phone: formData.get("primary_phone") || undefined,
+    company: formData.get("company") || undefined,
+    job_title: formData.get("job_title") || undefined,
+    birthday: formData.get("birthday") || undefined,
+    notes: formData.get("notes") || undefined,
+    is_favorite: formData.get("is_favorite"),
+    tags: formData.get("tags") || undefined,
+  }
+
+  const validatedFields = updateContactSchema.safeParse(rawData)
+
+  if (!validatedFields.success) {
+    console.error(validatedFields.error.flatten().fieldErrors)
+    return {
+      error: "Invalid fields",
+    }
+  }
+
+  const { id, tags, ...contactData } = validatedFields.data
+  const tagsArray = tags
+    ? tags.split(",").map((tag) => tag.trim())
+    : undefined
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to update a contact.",
+    }
+  }
+
+  const { data: updatedContact, error } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .update({ ...contactData, tags: tagsArray })
+    .eq("id", id)
+    .eq("user_id", userData.user.id)
+    .select()
+    .single()
+
+  if (error) {
+    return {
+      error: error.message,
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+  revalidatePath(`/workspace/contacts/${id}`)
+
+  return {
+    data: "Contact updated successfully",
+    contact: updatedContact,
+  }
+}
 
 export async function deleteContact(contactId: string) {
   const supabase = await createClient()

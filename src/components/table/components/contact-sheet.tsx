@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,11 +25,12 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { createContact } from "@/actions/contacts"
+import { createContact, updateContact } from "@/actions/contacts"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 
-const newContactSchema = z.object({
+const contactSchema = z.object({
+  id: z.string().optional(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   display_name: z.string().optional(),
@@ -47,52 +49,72 @@ const newContactSchema = z.object({
   tags: z.string().optional(),
 })
 
-type NewContactFormValues = z.infer<typeof newContactSchema>
+export type ContactFormValues = z.infer<typeof contactSchema>
 
-interface NewContactSheetProps {
-  children: React.ReactNode
+interface ContactSheetProps {
+  children?: React.ReactNode
   open: boolean
   onOpenChange: (open: boolean) => void
+  contact?: ContactFormValues
 }
 
-export function NewContactSheet({
+export function ContactSheet({
   children,
   open,
   onOpenChange,
-}: NewContactSheetProps) {
-  const form = useForm<NewContactFormValues>({
-    resolver: zodResolver(newContactSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      display_name: "",
-      nickname: "",
-      primary_email: "",
-      primary_phone: "",
-      company: "",
-      job_title: "",
-      birthday: "",
-      notes: "",
-      is_favorite: false,
-      tags: "",
-    },
+  contact,
+}: ContactSheetProps) {
+  const isEditMode = !!contact
+
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(contactSchema),
   })
 
-  async function onSubmit(values: NewContactFormValues) {
+  useEffect(() => {
+    if (isEditMode) {
+      form.reset({
+        ...contact,
+        tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : "",
+      })
+    } else {
+      form.reset({
+        first_name: "",
+        last_name: "",
+        display_name: "",
+        nickname: "",
+        primary_email: "",
+        primary_phone: "",
+        company: "",
+        job_title: "",
+        birthday: "",
+        notes: "",
+        is_favorite: false,
+        tags: "",
+      })
+    }
+  }, [open, contact, isEditMode, form])
+
+  async function onSubmit(values: ContactFormValues) {
     const formData = new FormData()
+    if (isEditMode && contact?.id) {
+      formData.append("id", contact.id)
+    }
+
     Object.entries(values).forEach(([key, value]) => {
-      // Always append the field, even if it's empty
       formData.append(key, value ? String(value) : "")
     })
 
-    const result = await createContact(formData)
+    const result = isEditMode
+      ? await updateContact(formData)
+      : await createContact(formData)
 
     if (result?.error) {
       toast.error(result.error)
     } else {
-      toast.success("Contact created successfully")
+      toast.success(
+        `Contact ${isEditMode ? "updated" : "created"} successfully`
+      )
       onOpenChange(false)
-      form.reset()
     }
   }
 
@@ -101,9 +123,13 @@ export function NewContactSheet({
       {children}
       <SheetContent className="">
         <SheetHeader>
-          <SheetTitle>Create New Contact</SheetTitle>
+          <SheetTitle>
+            {isEditMode ? "Edit Contact" : "Create New Contact"}
+          </SheetTitle>
           <SheetDescription>
-            Fill in the details below to create a new contact.
+            {isEditMode
+              ? "Update the details of your contact."
+              : "Fill in the details below to create a new contact."}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -222,7 +248,11 @@ export function NewContactSheet({
                 <FormItem>
                   <FormLabel>Birthday</FormLabel>
                   <FormControl>
-                    <Input placeholder="YYYY-MM-DD" {...field} />
+                    <Input
+                      placeholder="YYYY-MM-DD"
+                      {...field}
+                      value={field.value ? field.value.split("T")[0] : ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -274,42 +304,31 @@ export function NewContactSheet({
                 )}
               />
             </div>
+            {isEditMode && (
+              <>
+                <div className="col-span-2 border-t pt-4">
+                  <h3 className="text-sm font-medium text-gray-500">
+                    System Information
+                  </h3>
+                </div>
+                <FormItem>
+                  <FormLabel>ID</FormLabel>
+                  <FormControl>
+                    <Input disabled value={contact?.id} />
+                  </FormControl>
+                </FormItem>
+              </>
+            )}
 
-            <div className="col-span-2 border-t pt-4">
-                <h3 className="text-sm font-medium text-gray-500">System Information</h3>
-            </div>
-             <FormItem>
-                <FormLabel>ID</FormLabel>
-                <FormControl>
-                <Input disabled value="(auto-generated)" />
-                </FormControl>
-            </FormItem>
-            <FormItem>
-                <FormLabel>User ID</FormLabel>
-                <FormControl>
-                <Input disabled value="(auto-generated)" />
-                </FormControl>
-            </FormItem>
-            <FormItem>
-                <FormLabel>Created At</FormLabel>
-                <FormControl>
-                <Input disabled value="(auto-generated)" />
-                </FormControl>
-            </FormItem>
-            <FormItem>
-                <FormLabel>Updated At</FormLabel>
-                <FormControl>
-                <Input disabled value="(auto-generated)" />
-                </FormControl>
-            </FormItem>
-       
-            <SheetFooter className="flex flex-row justify-between w-full">
+            <SheetFooter className="col-span-2 flex flex-row justify-between w-full pt-4">
               <SheetClose asChild>
                 <Button type="button" variant="ghost">
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit" variant="secondary">Create Contact</Button>
+              <Button type="submit" variant="secondary">
+                {isEditMode ? "Save Changes" : "Create Contact"}
+              </Button>
             </SheetFooter>
           </form>
         </Form>

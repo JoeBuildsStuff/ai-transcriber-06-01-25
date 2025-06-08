@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteContact, duplicateContact } from "@/actions/contacts"
+import { ContactSheet, type ContactFormValues } from "./contact-sheet"
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
@@ -37,38 +38,39 @@ export function DataTableRowActions<TData>({
 }: DataTableRowActionsProps<TData>) {
   const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDuplicating, setIsDuplicating] = useState(false)
   
+  const contact = row.original as ContactFormValues
   const contactId = row.getValue('id') as string
   const firstName = row.getValue('first_name') as string
   const lastName = row.getValue('last_name') as string
   const displayName = `${firstName || ''} ${lastName || ''}`.trim() || 'Unknown Contact'
 
   const handleDuplicate = async () => {
-  setIsDuplicating(true)
-  try {
-    const result = await duplicateContact(contactId)
-    
-    if (result?.error) {
+    setIsDuplicating(true)
+    try {
+      const result = await duplicateContact(contactId)
+      
+      if (result?.error) {
+        toast.error("Failed to duplicate contact", {
+          description: result.error
+        })
+      } else {
+        toast.success("Contact duplicated successfully", {
+          description: "The new contact has been created"
+        })
+      }
+    } catch (error) {
+      console.error('Error duplicating contact', error)
       toast.error("Failed to duplicate contact", {
-        description: result.error
+        description: "An unexpected error occurred"
       })
-    } else {
-      toast.success("Contact duplicated successfully", {
-        description: "The new contact has been created"
-      })
+    } finally {
+      setIsDuplicating(false)
     }
-  } catch (error) {
-    console.error('Error duplicating contact', error)
-    toast.error("Failed to duplicate contact", {
-      description: "An unexpected error occurred"
-    })
-  } finally {
-    setIsDuplicating(false)
   }
-}
-
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -95,6 +97,11 @@ export function DataTableRowActions<TData>({
 
   return (
     <>
+      <ContactSheet
+        open={isEditSheetOpen}
+        onOpenChange={setIsEditSheetOpen}
+        contact={contact}
+      />
       <div className="flex justify-end items-center space-x-2">
         <Button
           variant="ghost"
@@ -119,7 +126,7 @@ export function DataTableRowActions<TData>({
               Actions
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setIsEditSheetOpen(true)}>
               <PencilRuler className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
