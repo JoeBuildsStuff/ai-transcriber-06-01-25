@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,8 +33,9 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
-import MeetingEditModal from './meeting-edit-modal';
+import MeetingEditModal from './_components/meeting-edit-modal';
 import AudioPlayer from '@/components/audio-player';
+import SpeakersManagement from './_components/speakers-management';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -107,6 +108,41 @@ export default function MeetingDetailPage() {
   const [isReprocessing, setIsReprocessing] = useState(false);
   const [deepgramCopyIcon, setDeepgramCopyIcon] = useState<"copy" | "check">("copy");
   const [openAICopyIcon, setOpenAICopyIcon] = useState<"copy" | "check">("copy");
+// Add this state to store contacts data
+const [contacts, setContacts] = useState<Contact[]>([])
+
+// Add this interface near the top with other interfaces
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  primaryEmail: string;
+  company: string;
+}
+
+// Add this useEffect to fetch contacts when component mounts
+useEffect(() => {
+  const fetchContacts = async () => {
+    try {
+      const { getAllContacts } = await import('@/actions/contacts')
+      const contactsData = await getAllContacts()
+      setContacts(contactsData)
+    } catch (error) {
+      console.error('Error fetching contacts for transcript:', error)
+      // Don't show error to user since this is just for display enhancement
+    }
+  }
+
+  if (meeting?.speaker_names) {
+    fetchContacts()
+  }
+}, [meeting?.speaker_names])
+
+
+  const handleSpeakerContactsUpdate = (speakerContacts: Record<number, string>) => {
+    setMeeting(prev => prev ? { ...prev, speaker_names: speakerContacts } : null);
+  };
 
   useEffect(() => {
     if (meetingId) {
@@ -139,63 +175,89 @@ export default function MeetingDetailPage() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
+  const getSpeakerDisplayName = (speakerNumber: number): string => {
+    // If no speaker contacts or contacts data, fall back to default
+    if (!meeting?.speaker_names || !contacts || contacts.length === 0) {
+      return `Speaker ${speakerNumber}`;
+    }
+  
+    // Get the contact ID for this speaker
+    const contactId = meeting.speaker_names[speakerNumber];
+    if (!contactId) {
+      return `Speaker ${speakerNumber}`;
+    }
+  
+    // Find the contact in the contacts array
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) {
+      return `Speaker ${speakerNumber}`;
+    }
+  
+    // Return the best available display name
+    return contact.displayName || 
+           `${contact.firstName} ${contact.lastName}`.trim() || 
+           contact.primaryEmail || 
+           `Speaker ${speakerNumber}`;
+  };
+  
   const handleCopyToClipboard = async () => {
-    const resetCopyButton = () => {
-        setTimeout(() => {
-            setCopyButtonText("Copy");
-            setCopyIcon("copy");
-        }, 2000);
-    }
-
-    if (activeTab === 'transcript') {
-        if (meeting?.formatted_transcript && meeting.formatted_transcript.length > 0) {
-            const contentToCopy = meeting.formatted_transcript
-                .map(
-                    (group) =>
-                        `Speaker ${group.speaker} [${formatTime(group.start)}]: ${group.text}`
-                )
-                .join("\n");
-            try {
-                await navigator.clipboard.writeText(contentToCopy);
-                toast("Copied to clipboard", { description: "Transcript copied to clipboard" });
-                setCopyButtonText("Copied");
-                setCopyIcon("check");
-                resetCopyButton();
-            } catch (err) {
-                console.error("Failed to copy transcript: ", err);
-                toast.error("Copy failed", {
-                    description: "Failed to copy transcript to clipboard",
-                });
-            }
-        } else {
-            toast.error("Nothing to copy", { description: "The transcript is empty." });
-        }
-    } else if (activeTab === 'summary') {
-        if (meeting?.summary) {
-            const summaryText = meeting.summary;
-            try {
-                // `marked` is async, so we wait for it
-                const htmlContent = await marked(summaryText);
-                await navigator.clipboard.write([
-                    new ClipboardItem({
-                        "text/plain": new Blob([summaryText], { type: "text/plain" }),
-                        "text/html": new Blob([htmlContent], { type: "text/html" }),
-                    }),
-                ]);
-                toast("Copied to clipboard", { description: "Summary copied to clipboard (formatted)" });
-                setCopyButtonText("Copied");
-                setCopyIcon("check");
-                resetCopyButton();
-            } catch (err) {
-                console.error("Failed to copy summary: ", err);
-                toast.error("Copy failed", {
-                    description: "Failed to copy summary to clipboard",
-                });
-            }
-        } else {
-            toast.error("Nothing to copy", { description: "The summary is empty." });
-        }
-    }
+      const resetCopyButton = () => {
+          setTimeout(() => {
+              setCopyButtonText("Copy");
+              setCopyIcon("copy");
+          }, 2000);
+      }
+  
+      if (activeTab === 'transcript') {
+          if (meeting?.formatted_transcript && meeting.formatted_transcript.length > 0) {
+              // Use the same speaker name logic as the display
+              const contentToCopy = meeting.formatted_transcript
+                  .map(
+                      (group) =>
+                          `${getSpeakerDisplayName(group.speaker)} [${formatTime(group.start)}]: ${group.text}`
+                  )
+                  .join("\n");
+              try {
+                  await navigator.clipboard.writeText(contentToCopy);
+                  toast("Copied to clipboard", { description: "Transcript copied to clipboard with speaker names" });
+                  setCopyButtonText("Copied");
+                  setCopyIcon("check");
+                  resetCopyButton();
+              } catch (err) {
+                  console.error("Failed to copy transcript: ", err);
+                  toast.error("Copy failed", {
+                      description: "Failed to copy transcript to clipboard",
+                  });
+              }
+          } else {
+              toast.error("Nothing to copy", { description: "The transcript is empty." });
+          }
+      } else if (activeTab === 'summary') {
+          if (meeting?.summary) {
+              const summaryText = meeting.summary;
+              try {
+                  // `marked` is async, so we wait for it
+                  const htmlContent = await marked(summaryText);
+                  await navigator.clipboard.write([
+                      new ClipboardItem({
+                          "text/plain": new Blob([summaryText], { type: "text/plain" }),
+                          "text/html": new Blob([htmlContent], { type: "text/html" }),
+                      }),
+                  ]);
+                  toast("Copied to clipboard", { description: "Summary copied to clipboard (formatted)" });
+                  setCopyButtonText("Copied");
+                  setCopyIcon("check");
+                  resetCopyButton();
+              } catch (err) {
+                  console.error("Failed to copy summary: ", err);
+                  toast.error("Copy failed", {
+                      description: "Failed to copy summary to clipboard",
+                  });
+              }
+          } else {
+              toast.error("Nothing to copy", { description: "The summary is empty." });
+          }
+      }
   };
 
   const handleJsonCopy = async (content: DeepgramTranscription | string | null, type: 'Deepgram' | 'OpenAI') => {
@@ -754,45 +816,35 @@ export default function MeetingDetailPage() {
         </div>
         
         <TabsContent value="speakers">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Meeting Speakers</CardTitle>
-              <CardDescription>List of speakers in the meeting.</CardDescription>
-            </CardHeader>
-            <CardContent>
-             {meeting.speaker_names ? (
-              <div className="space-y-2">
-                {Object.entries(meeting.speaker_names).map(([speakerNum, speakerName]) => (
-                  <div key={speakerNum} className="flex items-center gap-2">
-                    <Badge variant="gray"><span className="text-xs">Speaker {speakerNum}</span></Badge>
-                    <span>{speakerName}</span>
-                  </div>
-                ))}
-              </div>
-             ) : (
-              <p className="text-center text-muted-foreground p-4">No speakers available for this meeting.</p>
-             )}
-            </CardContent>
-          </Card>
+         <SpeakersManagement
+        meetingId={meetingId}
+        formattedTranscript={displayableTranscript}
+        speakerContacts={meeting.speaker_names}
+        onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
+      />
         </TabsContent>
         
-        <TabsContent value="transcript">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Meeting Transcript</CardTitle>
-              <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {displayableTranscript.length > 0 ? (
-                <Transcript formattedTranscript={displayableTranscript} />
-              ) : (
-                <p className="text-center text-muted-foreground p-4">
-                    {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+<TabsContent value="transcript">
+  <Card className="h-full">
+    <CardHeader>
+      <CardTitle className="text-lg">Meeting Transcript</CardTitle>
+      <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {displayableTranscript.length > 0 ? (
+        <Transcript 
+          formattedTranscript={displayableTranscript}
+          speakerContacts={meeting?.speaker_names}
+          contacts={contacts}
+        />
+      ) : (
+        <p className="text-center text-muted-foreground p-4">
+            {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
+        </p>
+      )}
+    </CardContent>
+  </Card>
+</TabsContent>
         
         <TabsContent value="summary">
           <Card className="h-full">

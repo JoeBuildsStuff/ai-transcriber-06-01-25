@@ -9,11 +9,26 @@ export interface FormattedTranscriptGroup {
   text: string;
 }
 
-interface TranscriptProps {
-  formattedTranscript: FormattedTranscriptGroup[];
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  primaryEmail: string;
+  company: string;
 }
 
-const Transcript: React.FC<TranscriptProps> = ({ formattedTranscript }) => {
+interface TranscriptProps {
+  formattedTranscript: FormattedTranscriptGroup[];
+  speakerContacts?: Record<number, string> | null;
+  contacts?: Contact[] | null;
+}
+
+const Transcript: React.FC<TranscriptProps> = ({ 
+  formattedTranscript, 
+  speakerContacts = null,
+  contacts = null 
+}) => {
 
   if (formattedTranscript.length === 0) return null;
 
@@ -37,6 +52,31 @@ const Transcript: React.FC<TranscriptProps> = ({ formattedTranscript }) => {
     return colors[speakerNumber % colors.length];
   };
 
+  const getSpeakerDisplayName = (speakerNumber: number) => {
+    // If no speaker contacts or contacts data, fall back to default
+    if (!speakerContacts || !contacts) {
+      return `Speaker ${speakerNumber}`;
+    }
+
+    // Get the contact ID for this speaker
+    const contactId = speakerContacts[speakerNumber];
+    if (!contactId) {
+      return `Speaker ${speakerNumber}`;
+    }
+
+    // Find the contact in the contacts array
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) {
+      return `Speaker ${speakerNumber}`;
+    }
+
+    // Return the best available display name
+    return contact.displayName || 
+           `${contact.firstName} ${contact.lastName}`.trim() || 
+           contact.primaryEmail || 
+           `Speaker ${speakerNumber}`;
+  };
+
   return (
     <div className="mx-2 h-full">
       <div className="p-2 rounded ">
@@ -49,7 +89,7 @@ const Transcript: React.FC<TranscriptProps> = ({ formattedTranscript }) => {
                   group.speaker
                 )} border font-medium rounded-md`}
               >
-                Speaker {group.speaker}
+                {getSpeakerDisplayName(group.speaker)}
               </Badge>
               <span className="text-sm text-muted-foreground">
                 {formatTime(group.start)}
