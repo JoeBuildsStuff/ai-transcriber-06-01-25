@@ -5,6 +5,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import UploadAudioProcess from "@/components/upload-audio-process";
 import { Button } from "@/components/ui/button";
 import { AudioLines } from "lucide-react";
+import ReportIssueButton from "@/components/report-issue-button";
 
 export default function RootLayout({
 children,
@@ -21,6 +22,7 @@ return (
               <DynamicBreadcrumbs />
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <ReportIssueButton />
               <UploadAudioProcess>
                 <Button variant="outline" size="sm"><AudioLines className="mr-1 h-4 w-4" />New</Button>
               </UploadAudioProcess>

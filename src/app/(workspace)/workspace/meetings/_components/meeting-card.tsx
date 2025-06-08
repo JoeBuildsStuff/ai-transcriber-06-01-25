@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
 import Link from "next/link"
-import type { Meeting } from "./page"
+import type { Meeting } from "../../page"
 import { useEffect, useState } from "react"
 
 interface MeetingCardProps {

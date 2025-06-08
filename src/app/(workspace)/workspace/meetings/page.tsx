@@ -1,7 +1,7 @@
 import { FormattedTranscriptGroup, TranscriptionData } from "@/hooks/use-Transcription";
 import { createClient } from "@/lib/supabase/server";
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import MeetingCard from "./meetings/_components/meeting-card";
+import MeetingCard from "./_components/meeting-card";
 
 export type OpenAIResponse = {
   id: string;

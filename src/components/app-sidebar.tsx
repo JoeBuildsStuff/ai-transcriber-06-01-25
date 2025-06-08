@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar" // Ensure these paths are correct
-import { AudioLines, History, Loader2, Plus, Users } from "lucide-react"
+import { AudioLines, History, Loader2, Plus, Users, Calendar } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
@@ -23,14 +23,6 @@ import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 
-// Base navigation items
-const baseItems = [
-  {
-    name: "New Transcription",
-    path: "/workspace/new",
-    icon: AudioLines,
-  },
-]
 
 interface Meeting {
   id: string;
@@ -81,77 +73,72 @@ export function AppSidebar() {
         <SidebarLogo />
       </SidebarHeader>
       <SidebarContent className="flex flex-col gap-y-6">
+        {/* Quick Actions */}
         <SidebarGroup>
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {baseItems.map((item) => {
-                if (item.name === "New Transcription") {
-                  return (
-                    <SidebarMenuItem key={item.name}>
-                      <UploadAudioProcess>
-                        <SidebarMenuButton
-                          className={cn(
-                            "w-full justify-start",
-                            pathname === item.path // This path is no longer relevant, but style might still be desired
-                              ? "bg-muted/50 hover:bg-muted"
-                              : "hover:bg-muted"
-                          )}
-                        >
-                          <item.icon className="w-4 h-4 mr-2 flex-none" />
-                          <span>{item.name}</span>
-                        </SidebarMenuButton>
-                      </UploadAudioProcess>
-                    </SidebarMenuItem>
-                  );
-                }
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton
-                      asChild
-                      className={cn(
-                        "w-full justify-start",
-                        pathname === item.path
-                          ? "bg-muted/50 hover:bg-muted"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <a href={item.path}>
-                        <item.icon className="w-4 h-4 mr-2 flex-none" />
-                        <span>{item.name}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
               <SidebarMenuItem>
-
-
+                {/* opens the upload audio process modal */}
+                <UploadAudioProcess> 
+                  <SidebarMenuButton
+                    className="w-full justify-start">
+                    <AudioLines className="w-4 h-4 mr-2 flex-none" />
+                    <span>New Transcription</span>
+                  </SidebarMenuButton>
+                </UploadAudioProcess> 
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
+
+        {/* Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/workspace/contacts">
+                    <Users className="w-3.5 h-3.5 mr-2 flex-none" />
+                    <span>Contacts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/workspace/meetings">
+                    <History className="w-3.5 h-3.5 mr-2 flex-none" />
+                    <span>Meetings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/workspace/calendar">
+                    <Calendar className="w-3.5 h-3.5 mr-2 flex-none" />
+                    <span>Calendar</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+
+        {/* Contacts */}
         <SidebarGroup>
           <SidebarGroupLabel><span>Recent Contacts</span></SidebarGroupLabel>
           <SidebarGroupAction title="Add Contact">
             <Plus /> <span className="sr-only">Add Contact</span>
           </SidebarGroupAction>
           <SidebarGroupContent>
-            <SidebarMenu>
-                  <SidebarMenuItem >
-                    <SidebarMenuButton asChild>
-                      <Link href="/workspace/contacts">
-                        <Users className="w-3.5 h-3.5 mr-2 flex-none" />
-                        <span>All</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-            </SidebarMenu>
+            <p className="text-xs text-muted-foreground px-3">No recent contacts found.</p>
           </SidebarGroupContent>
         </SidebarGroup>
 
-
+        {/* Meetings */}
         {user && (
           <SidebarGroup className="overflow-y-auto flex-grow">
             <SidebarGroupLabel className="flex items-center justify-between">
