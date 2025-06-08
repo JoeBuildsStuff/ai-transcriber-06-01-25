@@ -35,7 +35,6 @@ import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
 import AudioPlayer from '@/components/audio-player';
-import SpeakersManagement from './_components/speakers-management';
 
 // Interface for individual words from Deepgram
 interface DeepgramWord {
@@ -134,9 +133,8 @@ useEffect(() => {
     }
   }
 
-  if (meeting?.speaker_names) {
-    fetchContacts()
-  }
+  fetchContacts()
+
 }, [meeting?.speaker_names])
 
 
@@ -530,6 +528,7 @@ useEffect(() => {
                     speaker: word.speaker === undefined ? -1 : word.speaker,
                     start: word.start,
                     text: word.punctuated_word,
+                    company: ""
                 });
             }
             return acc;
@@ -621,6 +620,7 @@ useEffect(() => {
                     speaker: word.speaker === undefined ? -1 : word.speaker, // Handle undefined speaker gracefully
                     start: word.start,
                     text: word.punctuated_word,
+                    company: ""
                 });
             }
             return acc;
@@ -799,7 +799,6 @@ useEffect(() => {
       <Tabs defaultValue="transcript" className="w-full grow mt-3" onValueChange={setActiveTab}>
         <div className='flex justify-between items-center mb-2'>
           <TabsList>
-            <TabsTrigger value="speakers">Speakers</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
           </TabsList>
@@ -815,36 +814,29 @@ useEffect(() => {
           </div>
         </div>
         
-        <TabsContent value="speakers">
-         <SpeakersManagement
-        meetingId={meetingId}
-        formattedTranscript={displayableTranscript}
-        speakerContacts={meeting.speaker_names}
-        onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
-      />
+        <TabsContent value="transcript">
+          <Card className=" h-full">
+            <CardHeader>
+              <CardTitle className="text-lg">Meeting Transcript</CardTitle>
+              <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {displayableTranscript.length > 0 ? (
+                <Transcript 
+                  meetingId={meetingId}
+                  formattedTranscript={displayableTranscript}
+                  speakerContacts={meeting?.speaker_names}
+                  contacts={contacts}
+                  onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
+                />
+              ) : (
+                <p className="text-center text-muted-foreground p-4">
+                    {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
-        
-<TabsContent value="transcript">
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle className="text-lg">Meeting Transcript</CardTitle>
-      <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {displayableTranscript.length > 0 ? (
-        <Transcript 
-          formattedTranscript={displayableTranscript}
-          speakerContacts={meeting?.speaker_names}
-          contacts={contacts}
-        />
-      ) : (
-        <p className="text-center text-muted-foreground p-4">
-            {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
-        </p>
-      )}
-    </CardContent>
-  </Card>
-</TabsContent>
         
         <TabsContent value="summary">
           <Card className="h-full">

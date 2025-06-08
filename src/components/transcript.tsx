@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "./ui/badge";
+import SpeakerAssociationModal from "../app/(workspace)/workspace/meetings/[meetingId]/_components/speaker-association-modal";
 
 export interface FormattedTranscriptGroup {
   speaker: number;
   start: number;
   text: string;
+  company: string;
 }
 
 interface Contact {
@@ -19,18 +21,34 @@ interface Contact {
 }
 
 interface TranscriptProps {
+  meetingId: string;
   formattedTranscript: FormattedTranscriptGroup[];
   speakerContacts?: Record<number, string> | null;
   contacts?: Contact[] | null;
+  onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
 }
 
 const Transcript: React.FC<TranscriptProps> = ({ 
+  meetingId,
   formattedTranscript, 
   speakerContacts = null,
-  contacts = null 
+  contacts = null,
+  onSpeakerContactsUpdate,
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
 
   if (formattedTranscript.length === 0) return null;
+
+  const handleOpenModal = (speakerNumber: number) => {
+    setSelectedSpeaker(speakerNumber);
+    setIsModalOpen(true);
+  }
+
+  const handleCloseModal = () => {
+    setSelectedSpeaker(null);
+    setIsModalOpen(false);
+  }
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -77,9 +95,30 @@ const Transcript: React.FC<TranscriptProps> = ({
            `Speaker ${speakerNumber}`;
   };
 
+  // Get unique speakers from the transcript
+  const uniqueSpeakers = Array.from(new Set(formattedTranscript.map(group => group.speaker))).sort();
+
   return (
+
     <div className="mx-2 h-full">
-      <div className="p-2 rounded ">
+
+      {/* Speaker badges row */}
+      <div className="border-1 border-border rounded-lg p-4 mb-4">
+      <div className="text-sm font-medium mb-2">Speakers:</div>
+        <div className="flex flex-wrap gap-2">
+          {uniqueSpeakers.map((speakerNumber) => (
+            <button
+              key={speakerNumber}
+              onClick={() => handleOpenModal(speakerNumber)}
+              className={`${getSpeakerColor(speakerNumber)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
+            >
+              {getSpeakerDisplayName(speakerNumber)}
+            </button>
+          ))}
+        </div>
+        </div>
+
+      <div className="p-2 rounded">
         {formattedTranscript.map((group, groupIndex) => (
           <div key={groupIndex} className="mb-5">
             <div className="flex items-center gap-2 mb-2">
@@ -99,6 +138,17 @@ const Transcript: React.FC<TranscriptProps> = ({
           </div>
         ))}
       </div>
+      
+      <SpeakerAssociationModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        meetingId={meetingId}
+        speakerNumber={selectedSpeaker}
+        currentContactId={selectedSpeaker !== null ? speakerContacts?.[selectedSpeaker] || null : null}
+        contacts={contacts || []}
+        speakerContacts={speakerContacts || {}}
+        onSpeakerContactsUpdate={onSpeakerContactsUpdate}
+      />
     </div>
   );
 };
