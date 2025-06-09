@@ -208,7 +208,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
                       </div>
                     </div>
 
-                    <div className="space-y-1">
+                    {/* <div className="space-y-1">
                       <Label className="text-sm font-medium text-muted-foreground">
                         Audio File Path
                       </Label>
@@ -250,7 +250,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
                           {format(new Date(meeting.updated_at), "PPP p")}
                         </p>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </AccordionContent>
               </AccordionItem>
