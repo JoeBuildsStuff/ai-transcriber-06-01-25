@@ -52,7 +52,7 @@ export default function CalendarPage() {
     const { data: meetingsData, error } = await supabase
       .schema("ai_transcriber")
       .from("meetings")
-      .select("*, original_file_name, audio_file_path, formatted_transcript")
+      .select("id, title, created_at, updated_at, meeting_at, speaker_names, summary, user_id, audio_file_path, original_file_name, transcription, formatted_transcript, summary_jsonb, openai_response, audioUrl")
       .order("meeting_at", { ascending: false });
 
     if (error) {
@@ -155,14 +155,16 @@ export default function CalendarPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        {[...Array(2)].map((_, i) => (
+        {[...Array(1)].map((_, i) => (
           <div key={i} className="flex flex-col gap-4">
             <div className="flex items-end gap-2">
               <Skeleton className="h-7 w-64" />
-              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-4 w-24" />
             </div>
             <div className="flex flex-col gap-4 ml-8">
-              <Skeleton className="h-48 w-full max-w-3xl rounded-lg" />
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-53 w-full max-w-3xl rounded-xl" />
+            ))}
             </div>
           </div>
         ))}
