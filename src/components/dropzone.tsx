@@ -41,7 +41,7 @@ const Dropzone = ({
   const isInvalid =
     (restProps.isDragActive && restProps.isDragReject) ||
     (restProps.errors.length > 0 && !restProps.isSuccess) ||
-    restProps.files.some((file) => file.errors.length !== 0)
+    restProps.files.some((file) => file.errors?.length !== 0)
 
   return (
     <DropzoneContext.Provider value={{ ...restProps }}>
@@ -121,7 +121,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
               <p title={file.name} className="text-sm truncate max-w-full">
                 {file.name}
               </p>
-              {file.errors.length > 0 ? (
+              {file.errors && file.errors.length > 0 ? (
                 <p className="text-xs text-destructive">
                   {file.errors
                     .map((e) =>
@@ -166,7 +166,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
           <Button
             variant="outline"
             onClick={onUpload}
-            disabled={files.some((file) => file.errors.length !== 0) || loading}
+            disabled={files.some((file) => file.errors?.length !== 0) || loading}
           >
             {loading ? (
               <>
