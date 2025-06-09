@@ -11,7 +11,7 @@ import { Clock, FileText, Users } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { Contact, MeetingDetails } from "@/types";
+import { Contact, MeetingCardSummary } from "@/types";
 
 import EditMeetingButtons from "./_components/edit-meeting-buttons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,13 +32,13 @@ const getSpeakerColor = (speakerIndex: number) => {
 };
 
 export default function CalendarPage() {
-  const [meetings, setMeetings] = useState<MeetingDetails[] | null>(null);
+  const [meetings, setMeetings] = useState<MeetingCardSummary[] | null>(null);
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
   const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false)
   const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null)
-  const [selectedMeeting, setSelectedMeeting] = useState<MeetingDetails | null>(
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingCardSummary | null>(
     null,
   )
 
@@ -52,9 +52,11 @@ export default function CalendarPage() {
     const { data: meetingsData, error } = await supabase
       .schema("ai_transcriber")
       .from("meetings")
-      .select("id, title, created_at, updated_at, meeting_at, speaker_names, summary, user_id, audio_file_path, original_file_name, transcription, formatted_transcript, summary_jsonb, openai_response, audioUrl")
+      .select("id, title, meeting_at, speaker_names, summary, transcription, formatted_transcript, original_file_name")
       .order("meeting_at", { ascending: false });
 
+
+      
     if (error) {
       console.error(error);
       setMeetings([]);
@@ -82,7 +84,7 @@ export default function CalendarPage() {
     fetchMeetingsAndContacts();
   }, []);
 
-  const handleMeetingUpdate = (updatedMeetingData: Partial<MeetingDetails>) => {
+  const handleMeetingUpdate = (updatedMeetingData: Partial<MeetingCardSummary>) => {
     setMeetings(currentMeetings => {
       if (!currentMeetings) return null;
       return currentMeetings.map(m => {
@@ -109,7 +111,7 @@ export default function CalendarPage() {
   };
 
   const handleOpenSpeakerModal = (
-    meeting: MeetingDetails,
+    meeting: MeetingCardSummary,
     speakerNumber: number,
   ) => {
     setSelectedMeeting(meeting)
@@ -123,7 +125,7 @@ export default function CalendarPage() {
     setSelectedMeeting(null)
   }
   
-  const getSpeakerDisplayData = (meeting: MeetingDetails, contacts: Contact[] | null) => {
+  const getSpeakerDisplayData = (meeting: MeetingCardSummary, contacts: Contact[] | null) => {
     const words = meeting.transcription?.results?.channels[0]?.alternatives[0]?.words ?? [];
     const uniqueSpeakers = [...new Set(words.map(w => w.speaker).filter(s => s !== undefined))] as number[];
     
@@ -137,10 +139,10 @@ export default function CalendarPage() {
     });
   };
 
-  const groupMeetingsByDate = (meetings: MeetingDetails[] | null) => {
+  const groupMeetingsByDate = (meetings: MeetingCardSummary[] | null) => {
     if (!meetings) return {};
     
-    return meetings.reduce((groups: { [key: string]: MeetingDetails[] }, meeting) => {
+    return meetings.reduce((groups: { [key: string]: MeetingCardSummary[] }, meeting) => {
       const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
       if (!groups[date]) {
         groups[date] = [];

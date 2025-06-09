@@ -6,12 +6,12 @@ import { PencilRuler } from "lucide-react"
 
 import { toast } from "sonner"
 
-import { MeetingDetails } from "@/types"
+import { MeetingCardSummary } from "@/types"
 import MeetingEditModal from "../[meetingId]/_components/meeting-edit-modal"
 
 interface EditMeetingButtonsProps {
-  meeting: MeetingDetails
-  onMeetingUpdate: (meeting: Partial<MeetingDetails>) => void
+  meeting: MeetingCardSummary
+  onMeetingUpdate: (meeting: Partial<MeetingCardSummary>) => void
 }
 
 export default function EditMeetingButtons({

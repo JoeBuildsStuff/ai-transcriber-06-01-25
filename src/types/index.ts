@@ -22,6 +22,17 @@ export interface Meeting {
     summary: string;
 }
 
+export interface MeetingCardSummary {
+  id: string;
+  title: string;
+  meeting_at: string;
+  speaker_names: { [key: string]: string } | null;
+  summary: string;
+  transcription: DeepgramTranscription | null;
+  formatted_transcript: FormattedTranscriptGroup[] | null;
+  original_file_name?: string;
+}
+
 export interface MeetingDetails extends Meeting {
   user_id: string;
   audio_file_path: string;
@@ -160,7 +171,7 @@ export interface SpeakerAssociationModalProps {
 export interface MeetingEditModalProps {
     isOpen: boolean;
     onClose: () => void;
-    meeting: MeetingDetails | null;
+    meeting: MeetingDetails | MeetingCardSummary | null;
     onSave: (details: { title: string; meeting_at: string }) => void;
 }
 
