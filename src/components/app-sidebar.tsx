@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar" // Ensure these paths are correct
-import { AudioLines, History, Loader2, Plus, Users, Calendar } from "lucide-react"
+import { AudioLines, Calendar, History, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
@@ -30,6 +30,19 @@ interface Meeting {
   created_at: string;
   title: string | null;
 }
+
+const navigationItems = [
+  {
+    label: "Meetings",
+    href: "/workspace/meetings",
+    icon: Calendar,
+  },
+  {
+    label: "Contacts",
+    href: "/workspace/contacts",
+    icon: Users,
+  },
+]
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -72,7 +85,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarLogo />
       </SidebarHeader>
-      <SidebarContent className="flex flex-col gap-y-6">
+      <SidebarContent className="flex flex-col">
         {/* Quick Actions */}
         <SidebarGroup>
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
@@ -98,30 +111,24 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/workspace/contacts">
-                    <Users className="w-3.5 h-3.5 mr-2 flex-none" />
-                    <span>Contacts</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/workspace/meetings">
-                    <History className="w-3.5 h-3.5 mr-2 flex-none" />
-                    <span>Meetings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/workspace/calendar">
-                    <Calendar className="w-3.5 h-3.5 mr-2 flex-none" />
-                    <span>Calendar</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton 
+                    asChild
+                    className={cn(
+                      "w-full justify-start",
+                      pathname.startsWith(item.href)
+                        ? "bg-muted/50 hover:bg-muted font-semibold"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <Link href={item.href}>
+                      <item.icon className="w-3.5 h-3.5 mr-2 flex-none" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -160,10 +167,10 @@ export function AppSidebar() {
                             : "hover:bg-muted"
                         )}
                       >
-                        <a href={`/workspace/meetings/${meeting.id}`}>
+                        <Link href={`/workspace/meetings/${meeting.id}`}>
                           <History className="w-3.5 h-3.5 mr-2 flex-none" />
                           <span className="truncate">{meeting.title || meeting.original_file_name || 'Untitled Meeting'}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}

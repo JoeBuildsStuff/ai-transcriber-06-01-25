@@ -18,12 +18,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Check, X, PlayCircle, PlusCircle } from "lucide-react"
+import { Check, X, PlusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createContact, updateSpeakerContacts } from "@/actions/contacts"
 import { FormattedTranscriptGroup } from "@/components/transcript"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 
 // From speakers-management.tsx
 interface Contact {
@@ -33,6 +34,7 @@ interface Contact {
   displayName: string
   primaryEmail: string
   company: string
+  notes?: string
 }
 
 interface SpeakerAssociationModalProps {
@@ -158,17 +160,55 @@ export default function SpeakerAssociationModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Current Association */}
+        <div className="space-y-2 pt-2">
+          <h4 className="font-medium text-sm">Current Association</h4>
+          <div className="rounded-md border p-3 text-sm">
+            {currentContactId ? (
+              (() => {
+                const currentContact = contacts.find(c => c.id === currentContactId);
+                return currentContact ? (
+                  <div className="flex flex-col">
+                    <div className="font-medium">
+                      {getContactDisplayName(currentContact)}
+                    </div>
+                    {currentContact.company && (
+                      <div className="text-sm text-muted-foreground">
+                        {currentContact.company}
+                      </div>
+                    )}
+                    {currentContact.primaryEmail && (
+                      <div className="text-xs text-muted-foreground">
+                        {currentContact.primaryEmail}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Contact not found</span>
+                );
+              })()
+            ) : (
+              <span className="text-muted-foreground">No contact associated</span>
+            )}
+          </div>
+        </div>
+
         {topSegments.length > 0 && (
             <div className="space-y-3 pt-2">
-                <h4 className="font-medium text-sm">Top 5 Longest Segments</h4>
+                <h4 className="font-medium text-sm">1. Sample segements</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto rounded-md border p-3">
                     {topSegments.map((segment, index) => (
-                        <div key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <button onClick={() => handleSegmentClick(segment.start)} className="pt-1">
-                                <PlayCircle className="h-4 w-4 text-primary hover:text-primary/80" />
-                            </button>
-                            <p className="line-clamp-3">&quot;{segment.text}&quot;</p>
-                        </div>
+                      <>
+                        <Button 
+                            key={index} 
+                            onClick={() => handleSegmentClick(segment.start)} 
+                            variant="ghost" 
+                            className="w-full justify-start text-left h-auto p-2 text-sm text-muted-foreground hover:text-foreground"
+                        >
+                            <p className="whitespace-normal">&quot;{segment.text.length > 200 ? segment.text.slice(0, 100) + '...' : segment.text}&quot;</p>
+                        </Button>
+                        <Separator />
+                        </>
                     ))}
                 </div>
             </div>
@@ -199,6 +239,8 @@ export default function SpeakerAssociationModal({
             </div>
           </div>
         ) : (
+        <>
+        <h4 className="font-medium text-sm">2. Select Contact</h4>
         <Command>
           <CommandInput placeholder="Search contacts..." />
           <CommandList>
@@ -254,6 +296,7 @@ export default function SpeakerAssociationModal({
             </CommandGroup>
           </CommandList>
         </Command>
+        </>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isPending}>

@@ -81,6 +81,7 @@ interface MeetingDetails {
   transcription: DeepgramTranscription | null; 
   formatted_transcript: FormattedTranscriptGroup[] | null;
   summary: string | null;
+  summary_jsonb: Record<string, string> | null;
   created_at: string;
   updated_at: string;
   meeting_at: string;
@@ -96,6 +97,7 @@ interface Contact {
   displayName: string;
   primaryEmail: string;
   company: string;
+  notes?: string;
 }
 
 export default function MeetingDetailPage() {
@@ -235,8 +237,40 @@ export default function MeetingDetailPage() {
               toast.error("Nothing to copy", { description: "The transcript is empty." });
           }
       } else if (activeTab === 'summary') {
-          if (meeting?.summary) {
-              const summaryText = meeting.summary;
+          if (meeting?.summary_jsonb) {
+            const sectionOrder = [
+              'executive_summary',
+              'discussion_outline',
+              'decisions',
+              'questions_asked',
+              'action_items',
+              'next_meeting_open_items',
+              'participants',
+            ];
+
+            const formatTitle = (key: string): string => {
+                if (!key) return "";
+                return key
+                    .replace(/_/g, ' ')
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+            };
+
+            const sections = Object.entries(meeting.summary_jsonb).filter(
+              ([key, value]) => key !== 'title' && key !== 'date' && value && value.trim() !== ""
+            );
+
+            sections.sort(([keyA], [keyB]) => {
+              const indexA = sectionOrder.indexOf(keyA);
+              const indexB = sectionOrder.indexOf(keyB);
+              if (indexA === -1 && indexB === -1) return 0;
+              if (indexA === -1) return 1;
+              if (indexB === -1) return -1;
+              return indexA - indexB;
+            });
+
+            const summaryText = sections.map(([key, value]) => `## ${formatTitle(key)}\n\n${value}`).join('\n\n');
               try {
                   // `marked` is async, so we wait for it
                   const htmlContent = await marked(summaryText);
@@ -358,7 +392,7 @@ export default function MeetingDetailPage() {
       }
 
       toast.success('Meeting deleted successfully!');
-      router.push('/workspace'); // Redirect to a general page after deletion
+      router.push('/workspace/meetings'); // Redirect to a general page after deletion
       // Optionally, you might want to trigger a refresh of the meetings list in the sidebar
       // This can be done via a shared state/context or by emitting an event
       setIsDeleteDialogOpen(false); // Close dialog on success
@@ -417,11 +451,26 @@ export default function MeetingDetailPage() {
         throw new Error("Formatted transcript is not available for summarization.");
     }
 
+    const speakerDetails: Record<number, { displayName: string; notes?: string }> = {};
+    if (meeting?.speaker_names && contacts) {
+        for (const speakerNumStr in meeting.speaker_names) {
+            const speakerNum = parseInt(speakerNumStr, 10);
+            const contactId = meeting.speaker_names[speakerNum];
+            const contact = contacts.find(c => c.id === contactId);
+            if (contact) {
+                speakerDetails[speakerNum] = {
+                    displayName: contact.displayName || `${contact.firstName} ${contact.lastName}`.trim(),
+                    notes: contact.notes
+                };
+            }
+        }
+    }
+
     toast.loading("Generating new summary...", { id: toastId });
     const summarizeResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, meetingId: meeting!.id }),
+        body: JSON.stringify({ transcript, meetingId: meeting!.id, speakerDetails }),
     });
 
     if (!summarizeResponse.ok || !summarizeResponse.body) {
@@ -858,8 +907,8 @@ export default function MeetingDetailPage() {
               <CardDescription>AI-generated summary of the meeting transcript.</CardDescription>
             </CardHeader>
             <CardContent>
-              {meeting.summary ? (
-                <Summary summary={meeting.summary} />
+              {meeting.summary_jsonb ? (
+                <Summary summary={meeting.summary_jsonb} />
               ) : (
                 <p className="text-center text-muted-foreground p-4">No summary available for this meeting.</p>
               )}

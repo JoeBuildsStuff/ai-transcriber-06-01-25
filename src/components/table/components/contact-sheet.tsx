@@ -33,7 +33,6 @@ const contactSchema = z.object({
   id: z.string().optional(),
   first_name: z.string().optional(),
   last_name: z.string().optional(),
-  display_name: z.string().optional(),
   nickname: z.string().optional(),
   primary_email: z
     .string()
@@ -73,14 +72,23 @@ export function ContactSheet({
   useEffect(() => {
     if (isEditMode) {
       form.reset({
-        ...contact,
-        tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : "",
+        id: contact.id,
+        first_name: contact.first_name || "",
+        last_name: contact.last_name || "",
+        nickname: contact.nickname || "",
+        primary_email: contact.primary_email || "",
+        primary_phone: contact.primary_phone || "",
+        company: contact.company || "",
+        job_title: contact.job_title || "",
+        birthday: contact.birthday || "",
+        notes: contact.notes || "",
+        is_favorite: contact.is_favorite || false,
+        tags: Array.isArray(contact.tags) ? contact.tags.join(", ") : (contact.tags || ""),
       })
     } else {
       form.reset({
         first_name: "",
         last_name: "",
-        display_name: "",
         nickname: "",
         primary_email: "",
         primary_phone: "",
@@ -163,19 +171,7 @@ export function ContactSheet({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="display_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Display Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John D." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="nickname"

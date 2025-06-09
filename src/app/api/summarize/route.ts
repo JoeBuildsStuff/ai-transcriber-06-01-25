@@ -11,7 +11,14 @@ const encoder = new TextEncoder();
 
 const MeetingSummary = z.object({
   title: z.string(),
-  summary_notes: z.string(),
+  date: z.string(),
+  executive_summary: z.string(),
+  participants: z.string(),
+  discussion_outline: z.string(),
+  decisions: z.string(),
+  questions_asked: z.string(),
+  action_items: z.string(),
+  next_meeting_open_items: z.string(),
 });
 
 export async function POST(req: NextRequest) {
@@ -29,8 +36,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           const body = await req.json();
-          console.log('Summarize route body:', body);
-          const { transcript, meetingId } = body;
+          const { transcript, meetingId, speakerDetails } = body;
 
           if (!meetingId) {
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "meetingId is required" }) + "\n\n"));
@@ -51,6 +57,11 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ message: `Processing summary... ${i * 33}%`, meetingId }) + "\n\n"));
           }
 
+          const promptData = {
+            transcript,
+            participants: speakerDetails,
+          };
+
           const response = await openai.responses.parse({
             model: "gpt-4o-2024-08-06",
             input: [
@@ -59,57 +70,52 @@ export async function POST(req: NextRequest) {
                   content: 
                   `
                   # System Prompt: Meeting Notes Generator
-    
-                  You are an AI assistant specialized in converting meeting transcripts into concise, well-structured meeting notes. When presented with a transcript, follow these guidelines:
-    
-                  1. **Generate a concise and descriptive title for the meeting.** The title should be on the very first line of your response, formatted as: "Title: [Your Generated Title]".
-                  2. Analyze the transcript to identify:
-                     - Participants and their roles
-                     - Main topics discussed
-                     - Key decisions or action items
-                     - Important details or updates
-    
-                  2. Structure the notes as follows:
-                     - Title: A Title for the meeting
-                     - Date: If provided, otherwise omit
-                     - Participants: List with roles if known
-                     - Agenda: If explicitly stated, otherwise create a brief summary
-                     - Key Points: Bulleted list of main topics and important information
-                     - Action Items: Numbered list of tasks, assignments, or follow-ups
-                     - Next Steps: If applicable
-    
-                  3. Use Markdown formatting:
-                     - Use headers (##) for main sections
-                     - Use bold (**) for emphasis on important points or names
-                     - Use bullet points (-) for lists of information
-                     - Use numbered lists (1.) for action items
-    
-                  4. Keep the notes concise:
-                     - Summarize discussions, don't transcribe them
-                     - Focus on outcomes and decisions rather than the process of reaching them
-                     - Omit small talk or off-topic discussions
-    
-                  5. Maintain a professional tone:
-                     - Use clear, business-appropriate language
-                     - Avoid editorializing or including personal opinions
-                     - Stick to factual information presented in the transcript
-    
-                  6. Handle unclear or ambiguous information:
-                     - If something is unclear, note it as "To be clarified: [topic]"
-                     - Don't make assumptions about unclear points
-    
-                  7. Conclude with:
-                     - Next meeting date/time if mentioned
-                     - Any open questions or unresolved issues
-    
-                  Remember, your goal is to create a clear, actionable summary that attendees and non-attendees alike can quickly understand and use for follow-up purposes.
+
+                  You are an AI assistant specialized in converting meeting transcripts into concise, well-structured meeting notes. You will receive input as a JSON object with two keys: \`transcript\` and \`participants\`.
+
+                  - The \`transcript\` is an array of objects, each with a \`speaker\` (numeric ID) and \`text\`.
+                  - The \`participants\` object maps the numeric speaker ID to their details, including \`displayName\` and \`notes\`. The \`notes\` field contains contextual information about the person (e.g., their role, company, or relationship to the project). Use this information to add depth and accuracy to your summary, especially when describing participant contributions and roles.
+
+                  ## Output Format
+
+                  When presented with this data, generate structured meeting notes with the following sections:
+
+                  1. **Title:** Generate a concise and descriptive meeting title. Format as \`Title: [Your Generated Title]\` on the first line of the response.
+                  2. **Date:** If provided in the transcript or metadata, include it; otherwise omit.
+                  3. **Executive Summary:** A clear 2–3 paragraph recap of the meeting's main discussion and outcomes, written in a concise, professional tone. It should be easily digestible for someone who did not attend.
+                  4. **Participants:** A list of attendees with their roles (using the \`participants\` object).
+                  5. **Discussion Outline:** A bulleted list summarizing the main topics and key points discussed.
+                  6. **Decisions:** Clearly note any decisions made during the meeting.
+                  7. **Questions Asked:** Bullet list of any questions raised or discussed during the meeting.
+                  8. **Action Items:** A numbered table (or list) with:
+                     - Task
+                     - Owner
+                     - Due Date (if mentioned)
+                  9. **Next Meeting / Open Items:** If a next meeting date or unresolved items were mentioned, list them here.
+
+                  ## Formatting Guidelines
+
+                  - Use Markdown formatting
+                    - Use \`##\` for each major section header
+                    - Use \`**bold**\` for emphasis on names, roles, or key outcomes
+                    - Use \`-\` for bullet lists
+                    - Use \`1.\` for numbered action items
+                  - Keep the notes concise
+                    - Summarize, don't transcribe
+                    - Focus on key takeaways, decisions, and deliverables
+                  - Maintain a business-professional tone
+                    - Avoid opinions or unnecessary detail
+                    - Be neutral and fact-based
+                  - If information is unclear, denote it as: \`To be clarified: [topic or question]\`
+
+                  Your output should serve as a useful summary for both attendees and non-attendees to understand what happened and what comes next.
                   `
                 },
                 {
                     role: "user",
                     content: 
                     `
-                    ${JSON.stringify(transcript)} 
+                    ${JSON.stringify(promptData)} 
                     `
                 },
             ],
@@ -119,27 +125,16 @@ export async function POST(req: NextRequest) {
             stream: false,
           });
 
-          console.log('OpenAI result for meetingId', meetingId, JSON.stringify(response).substring(0, 100) + '...');
           const rawContent = response.output_parsed;
 
-          
-          let meetingTitle: string | null = null;
-          let summaryContent: string | null = null;
-
-          if (rawContent) {
-            meetingTitle = rawContent.title;
-            summaryContent = rawContent.summary_notes;
-          } else {
-            console.warn("OpenAI response.output_parsed was null or undefined for meetingId:", meetingId);
-          }
-
-          if (summaryContent || meetingTitle) { // Proceed if we have at least a summary or a title
-            const updatePayload: { summary?: string | null; formatted_transcript?: typeof transcript; openai_response?: string; title?: string | null } = {
+          if (rawContent && (rawContent.executive_summary || rawContent.title)) {
+            const updatePayload = {
               openai_response: JSON.stringify(response), // Store the full stringified OpenAI response object
               formatted_transcript: transcript, // Make sure transcript is included
+              summary_jsonb: rawContent,
+              summary: rawContent.executive_summary,
+              title: rawContent.title,
             };
-            if (summaryContent) updatePayload.summary = summaryContent;
-            if (meetingTitle) updatePayload.title = meetingTitle;
 
             const { error: updateError } = await supabase
               .schema('ai_transcriber')
@@ -152,11 +147,13 @@ export async function POST(req: NextRequest) {
               console.error('Error updating meeting with summary:', updateError);
               controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "Failed to save summary to database", meetingId, details: updateError.message }) + "\n\n"));
             } else {
-              console.log('Meeting record updated with summary and/or title for ID:', meetingId);
-              controller.enqueue(encoder.encode("data: " + JSON.stringify({ summary: summaryContent, title: meetingTitle, meetingId }) + "\n\n"));
+              controller.enqueue(encoder.encode("data: " + JSON.stringify({ summary: rawContent.executive_summary, title: rawContent.title, meetingId }) + "\n\n"));
             }
           } else {
-             controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "OpenAI returned empty content", meetingId }) + "\n\n"));
+            if (!rawContent) {
+              console.warn("OpenAI response.output_parsed was null or undefined for meetingId:", meetingId);
+            }
+            controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "OpenAI returned empty content", meetingId }) + "\n\n"));
           }
           
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing completed", meetingId })}\n\n`));
