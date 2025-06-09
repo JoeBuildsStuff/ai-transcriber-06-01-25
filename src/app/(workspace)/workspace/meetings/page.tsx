@@ -1,30 +1,21 @@
-import { createClient } from "@/lib/supabase/server";
+'use client'
+
+import { createClient } from "@/lib/supabase/client";
 import { redirect } from "next/navigation";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { useEffect, useState } from "react";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Users } from "lucide-react";
+import { Clock, FileText, Users } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import { Contact, MeetingDetails } from "@/types";
 
-interface Contact {
-  id: string;
-  display_name: string;
-  first_name: string;
-  last_name: string;
-}
-
-interface Meeting {
-  id: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  meeting_at: string;
-  speaker_names: { [key: string]: string } | null;
-  summary: string;
-}
+import EditMeetingButtons from "./_components/edit-meeting-buttons";
+import { Skeleton } from "@/components/ui/skeleton";
+import SpeakerAssociationModal from "./[meetingId]/_components/speaker-association-modal";
 
 const getSpeakerColor = (speakerIndex: number) => {
   const colors = [
@@ -40,54 +31,116 @@ const getSpeakerColor = (speakerIndex: number) => {
   return colors[speakerIndex % colors.length];
 };
 
-export default async function CalendarPage() {
-  const supabase = await createClient()
+export default function CalendarPage() {
+  const [meetings, setMeetings] = useState<MeetingDetails[] | null>(null);
+  const [contacts, setContacts] = useState<Contact[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
+  const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false)
+  const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null)
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingDetails | null>(
+    null,
+  )
 
-  // check user is logged in
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/signin")
-  }
+  const fetchMeetingsAndContacts = async () => {
+    setIsLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      redirect("/signin");
+    }
 
-  // get meetings
-  const { data: meetings, error } = await supabase
-    .schema("ai_transcriber")
-    .from("meetings")
-    .select("id, title, created_at, updated_at, meeting_at, speaker_names, summary")
-    .order("meeting_at", { ascending: false })
+    const { data: meetingsData, error } = await supabase
+      .schema("ai_transcriber")
+      .from("meetings")
+      .select("*, original_file_name, audio_file_path, formatted_transcript")
+      .order("meeting_at", { ascending: false });
 
-  if (error) {
-    console.error(error)
-  }
+    if (error) {
+      console.error(error);
+      setMeetings([]);
+    } else {
+      setMeetings(meetingsData);
+    }
 
-  // get contacts
-  const { data: contacts, error: contactsError } = await supabase
-    .schema("ai_transcriber")
-    .from("contacts")
-    .select("id, display_name, first_name, last_name")
-    .order("created_at", { ascending: false })
+    const { data: contactsData, error: contactsError } = await supabase
+      .schema("ai_transcriber")
+      .from("contacts")
+      .select("id, displayName:display_name, firstName:first_name, lastName:last_name, notes, primaryEmail:primary_email, company")
+      .order("created_at", { ascending: false });
 
-  if (contactsError) {
-    console.error(contactsError)
-  }
+    if (contactsError) {
+      console.error(contactsError);
+      setContacts([]);
+    } else {
+      setContacts(contactsData);
+    }
 
-  // Helper function to get contact name by ID
-  const getContactName = (contactId: string): string => {
-    const contact = contacts?.find((c: Contact) => c.id === contactId);
-    return contact ? contact.display_name : "Unknown Speaker";
+    setIsLoading(false);
   };
 
-  // Helper function to get speaker names for a meeting
-  const getSpeakerNames = (speakerNames: { [key: string]: string } | null): string[] => {
-    if (!speakerNames) return [];
-    return Object.values(speakerNames).map(getContactName);
+  useEffect(() => {
+    fetchMeetingsAndContacts();
+  }, []);
+
+  const handleMeetingUpdate = (updatedMeetingData: Partial<MeetingDetails>) => {
+    setMeetings(currentMeetings => {
+      if (!currentMeetings) return null;
+      return currentMeetings.map(m => {
+        if (m.id === updatedMeetingData.id) {
+          return { ...m, ...updatedMeetingData };
+        }
+        return m;
+      });
+    });
   };
 
-  // Group meetings by date
-  const groupMeetingsByDate = (meetings: Meeting[] | null) => {
+  const handleContactsUpdate = async () => {
+    const { data: contactsData, error: contactsError } = await supabase
+      .schema("ai_transcriber")
+      .from("contacts")
+      .select("id, displayName:display_name, firstName:first_name, lastName:last_name, notes, primaryEmail:primary_email, company")
+      .order("created_at", { ascending: false });
+
+    if (contactsError) {
+      console.error(contactsError);
+    } else {
+      setContacts(contactsData);
+    }
+  };
+
+  const handleOpenSpeakerModal = (
+    meeting: MeetingDetails,
+    speakerNumber: number,
+  ) => {
+    setSelectedMeeting(meeting)
+    setSelectedSpeaker(speakerNumber)
+    setIsSpeakerModalOpen(true)
+  }
+
+  const handleCloseSpeakerModal = () => {
+    setIsSpeakerModalOpen(false)
+    setSelectedSpeaker(null)
+    setSelectedMeeting(null)
+  }
+  
+  const getSpeakerDisplayData = (meeting: MeetingDetails, contacts: Contact[] | null) => {
+    const words = meeting.transcription?.results?.channels[0]?.alternatives[0]?.words ?? [];
+    const uniqueSpeakers = [...new Set(words.map(w => w.speaker).filter(s => s !== undefined))] as number[];
+    
+    return uniqueSpeakers.sort((a, b) => a - b).map(speakerNum => {
+        const contactId = meeting.speaker_names?.[speakerNum];
+        const contact = contacts?.find((c: Contact) => c.id === contactId);
+        const name = contact 
+            ? (contact.displayName || `${contact.firstName} ${contact.lastName}`.trim()) 
+            : `Speaker ${speakerNum}`;
+        return { speakerNumber: speakerNum, name };
+    });
+  };
+
+  const groupMeetingsByDate = (meetings: MeetingDetails[] | null) => {
     if (!meetings) return {};
     
-    return meetings.reduce((groups: { [key: string]: Meeting[] }, meeting) => {
+    return meetings.reduce((groups: { [key: string]: MeetingDetails[] }, meeting) => {
       const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
       if (!groups[date]) {
         groups[date] = [];
@@ -98,6 +151,24 @@ export default async function CalendarPage() {
   };
 
   const groupedMeetings = groupMeetingsByDate(meetings);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="flex flex-col gap-4">
+            <div className="flex items-end gap-2">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-5 w-24" />
+            </div>
+            <div className="flex flex-col gap-4 ml-8">
+              <Skeleton className="h-48 w-full max-w-3xl rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -111,42 +182,46 @@ export default async function CalendarPage() {
           </div>
           <div className="flex flex-col gap-4 ml-8">
             {dateMeetings.map((meeting) => {
-              const speakers = getSpeakerNames(meeting.speaker_names);
+              const speakers = getSpeakerDisplayData(meeting, contacts);
               return (
-                <Card key={meeting.id}>
+                <Card key={meeting.id} className="relative max-w-3xl group">
+                  <div className="absolute top-1 right-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <EditMeetingButtons
+                      meeting={meeting}
+                      onMeetingUpdate={handleMeetingUpdate}
+                    />
+                  </div>
                   <CardHeader>
                     <CardTitle><Link href={`/workspace/meetings/${meeting.id}`} className="">{meeting.title}</Link></CardTitle>
-                    <CardDescription>
-                    <span className="flex items-center">
-                        <Clock className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
-                        {format(new Date(meeting.meeting_at), "p")}
+                    <span className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{format(new Date(meeting.meeting_at), "p")}</span>
                     </span>
-                    </CardDescription>
+    
                     {speakers.length > 0 && (
                       <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-sm font-medium"><Users className="w-3.5 h-3.5" /></span>
-                        {speakers.map((speaker, speakerIndex) => (
+                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                        {speakers.map((speaker) => (
                           <Badge 
-                            key={speakerIndex} 
+                            key={speaker.speakerNumber} 
                             variant="outline"
-                            className={`${getSpeakerColor(speakerIndex)} border font-medium rounded-md`}
+                            className={`${getSpeakerColor(speaker.speakerNumber)} border font-medium rounded-md cursor-pointer`}
+                            onClick={() => handleOpenSpeakerModal(meeting, speaker.speakerNumber)}
                           >
-                            {speaker}
+                            {speaker.name}
                           </Badge>
                         ))}
                       </div>
                     )}
-                  </CardHeader>
-                  <CardContent>
+                    <div className="flex items-start gap-2">
+                    <FileText className="w-3.5 h-3.5 mt-1.5 text-muted-foreground" />
                     <div className="prose prose-md max-w-none dark:prose-invert">
                       <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                         {meeting.summary ? meeting.summary.substring(0, 200) + '...' : 'No summary available'}
                       </ReactMarkdown>
                     </div>
-                  </CardContent>
-                  <CardFooter className="text-sm text-muted-foreground">
-                    Updated: {format(parseISO(meeting.updated_at), 'MMM d, yyyy h:mm a')}
-                  </CardFooter>
+                    </div>
+                  </CardHeader>
                 </Card>
               );
             })}
@@ -158,6 +233,29 @@ export default async function CalendarPage() {
         <div className="text-center text-muted-foreground py-8">
           No meetings found.
         </div>
+      )}
+
+      {selectedMeeting && selectedSpeaker !== null && (
+        <SpeakerAssociationModal
+          isOpen={isSpeakerModalOpen}
+          onClose={handleCloseSpeakerModal}
+          meetingId={selectedMeeting.id}
+          speakerNumber={selectedSpeaker}
+          currentContactId={
+            selectedMeeting.speaker_names?.[selectedSpeaker] || null
+          }
+          contacts={contacts || []}
+          speakerContacts={selectedMeeting.speaker_names}
+          onSpeakerContactsUpdate={updatedSpeakerContacts => {
+            handleMeetingUpdate({
+              id: selectedMeeting.id,
+              speaker_names: updatedSpeakerContacts,
+            })
+          }}
+          formattedTranscript={selectedMeeting.formatted_transcript || []}
+          onSeekAndPlay={() => {}} // No audio player on this page
+          onContactsUpdate={handleContactsUpdate}
+        />
       )}
     </div>
   );

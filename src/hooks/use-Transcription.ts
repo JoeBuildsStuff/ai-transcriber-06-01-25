@@ -3,56 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-
-// Define the WordDetail and FormattedTranscriptGroup interfaces
-interface WordDetail {
-  word: string;
-  start: number;
-  end: number;
-  confidence: number;
-  speaker: number;
-  speaker_confidence: number;
-  punctuated_word: string;
-}
-
-export interface FormattedTranscriptGroup {
-  speaker: number;
-  start: number;
-  text: string;
-}
-
-export interface TranscriptionData {
-  results?: {
-    channels?: [
-      {
-        alternatives?: [
-          {
-            words: WordDetail[];
-            transcript: string;
-            confidence: number;
-          }
-        ];
-      }
-    ];
-    utterances?: any[]; // Consider defining a more specific type if needed
-  };
-  metadata?: any; // Consider defining a more specific type if needed
-  meetingId?: string; 
-}
-
-export interface TranscriptionHook {
-  isTranscribing: boolean;
-  transcriptionResult: TranscriptionData | null; // Changed to store the whole object, including meetingId
-  formattedTranscript: FormattedTranscriptGroup[];
-  summaryStatus: string;
-  currentMeetingId: string | null;
-  currentMeetingTitle: string | null; // Added to store the title
-  initiateTranscription: (filePath: string, originalFileName: string) => Promise<void>; // Added originalFileName
-  resetTranscription: () => void;
-  summary: string | null;
-  isSummarizing: boolean;
-  summaryError: string | null;
-}
+import { DeepgramWord, FormattedTranscriptGroup, TranscriptionData, TranscriptionHook } from '@/types';
 
 export function useTranscription(): TranscriptionHook {
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionData | null>(null);
@@ -309,13 +260,13 @@ export function useTranscription(): TranscriptionHook {
       if (words.length > 0) {
         setSummaryStatus("Formatting transcript...");
         try {
-          const groupedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: WordDetail) => {
+          const groupedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: DeepgramWord) => {
             const lastGroup = acc[acc.length - 1];
             if (lastGroup && lastGroup.speaker === word.speaker) {
               lastGroup.text += ` ${word.punctuated_word}`;
             } else {
               acc.push({
-                speaker: word.speaker,
+                speaker: word.speaker === undefined ? -1 : word.speaker,
                 start: word.start,
                 text: word.punctuated_word,
               });

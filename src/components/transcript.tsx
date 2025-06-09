@@ -4,33 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import SpeakerAssociationModal from "../app/(workspace)/workspace/meetings/[meetingId]/_components/speaker-association-modal";
-
-export interface FormattedTranscriptGroup {
-  speaker: number;
-  start: number;
-  text: string;
-  company: string;
-}
-
-interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  primaryEmail: string;
-  company: string;
-}
-
-interface TranscriptProps {
-  meetingId: string;
-  formattedTranscript: FormattedTranscriptGroup[];
-  speakerContacts?: Record<number, string> | null;
-  contacts?: Contact[] | null;
-  onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
-  onSeekAndPlay: (time: number) => void;
-  onContactsUpdate: () => void;
-  currentTime: number;
-}
+import { TranscriptProps } from "@/types";
 
 const Transcript: React.FC<TranscriptProps> = ({ 
   meetingId,

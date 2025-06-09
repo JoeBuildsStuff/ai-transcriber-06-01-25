@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // To get meetingId from URL and useRouter
-import Transcript, { FormattedTranscriptGroup } from '@/components/transcript';
+import Transcript from '@/components/transcript';
 import Summary from '@/components/summary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,70 +35,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/component
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
-import AudioPlayer, { AudioPlayerRef } from '@/components/audio-player';
-
-// Interface for individual words from Deepgram
-interface DeepgramWord {
-  word: string;
-  start: number;
-  end: number;
-  confidence: number;
-  speaker?: number; 
-  speaker_confidence?: number;
-  punctuated_word: string;
-}
-
-// Interface for the Deepgram transcription structure
-interface DeepgramTranscription {
-  metadata: {
-    transaction_key: string;
-    request_id: string;
-    sha256: string;
-    created: string;
-    duration: number;
-    channels: number;
-    models: string[];
-    model_info: Record<string, { name: string; version: string; arch: string }>;
-  };
-  results: {
-    channels: Array<{
-      alternatives: Array<{
-        transcript: string;
-        confidence: number;
-        words: DeepgramWord[];
-      }>;
-    }>;
-    utterances?: Array<unknown>; // Changed from any to unknown
-  };
-}
-
-interface MeetingDetails {
-  id: string;
-  user_id: string;
-  audio_file_path: string;
-  original_file_name: string;
-  title: string | null;
-  transcription: DeepgramTranscription | null; 
-  formatted_transcript: FormattedTranscriptGroup[] | null;
-  summary: string | null;
-  summary_jsonb: Record<string, string> | null;
-  created_at: string;
-  updated_at: string;
-  meeting_at: string;
-  openai_response: string | null;
-  audioUrl: string | null;
-  speaker_names: Record<number, string> | null;
-}
-
-interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  primaryEmail: string;
-  company: string;
-  notes?: string;
-}
+import AudioPlayer from '@/components/audio-player';
+import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
 
 export default function MeetingDetailPage() {
   const params = useParams();
@@ -581,7 +519,6 @@ export default function MeetingDetailPage() {
                     speaker: word.speaker === undefined ? -1 : word.speaker,
                     start: word.start,
                     text: word.punctuated_word,
-                    company: ""
                 });
             }
             return acc;
@@ -673,7 +610,6 @@ export default function MeetingDetailPage() {
                     speaker: word.speaker === undefined ? -1 : word.speaker, // Handle undefined speaker gracefully
                     start: word.start,
                     text: word.punctuated_word,
-                    company: ""
                 });
             }
             return acc;

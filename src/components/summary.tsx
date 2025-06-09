@@ -19,13 +19,13 @@ const formatTitle = (key: string): string => {
 
 const Summary: React.FC<SummaryProps> = ({ summary }) => {
   const sectionOrder = [
+    'participants',
     'executive_summary',
     'discussion_outline',
     'decisions',
     'questions_asked',
     'action_items',
     'next_meeting_open_items',
-    'participants',
   ];
 
   const sections = Object.entries(summary).filter(
@@ -49,7 +49,7 @@ const Summary: React.FC<SummaryProps> = ({ summary }) => {
 
   return (
     <div className="h-full">
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-2xl mx-auto">
         {sections.map(([key, value]) => (
           <div key={key}>
             <h3 className="text-lg font-semibold mb-2 pb-1 border-b">{formatTitle(key)}</h3>

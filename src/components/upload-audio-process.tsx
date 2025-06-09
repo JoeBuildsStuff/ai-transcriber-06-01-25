@@ -17,53 +17,9 @@ import {
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DeepgramWord, FileProcessingState, FormattedTranscriptGroup, TranscriptionData } from '@/types'
 
 const supabase = createClient()
-
-// --- Interfaces from useTranscription ---
-interface WordDetail {
-  word: string;
-  start: number;
-  end: number;
-  confidence: number;
-  speaker?: number;
-  speaker_confidence?: number;
-  punctuated_word: string;
-}
-
-export interface TranscriptionData {
-  results?: {
-    channels?: {
-      alternatives?: {
-        words: WordDetail[];
-        transcript: string;
-        confidence: number;
-      }[];
-    }[];
-  };
-  meetingId?: string;
-}
-
-export interface FormattedTranscriptGroup {
-  speaker: number;
-  start: number;
-  text: string;
-}
-
-interface FileWithPreview extends File {
-  preview?: string
-}
-
-// --- New State Management ---
-interface FileProcessingState {
-  id: string
-  file: FileWithPreview
-  status: 'queued' | 'uploading' | 'transcribing' | 'summarizing' | 'complete' | 'error'
-  summaryStatus: string
-  meetingId?: string | null
-  errorMessage?: string
-  meetingAt: Date
-}
 
 export default function UploadAudioProcess({ children }: { children: ReactNode }) {
   const [files, setFiles] = useState<FileProcessingState[]>([])
@@ -210,7 +166,7 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
       let formattedTranscript: FormattedTranscriptGroup[] = []
 
       if (words && words.length > 0) {
-        formattedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: WordDetail) => {
+        formattedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: DeepgramWord) => {
             const lastGroup = acc[acc.length - 1]
             if (lastGroup && word.speaker !== undefined && lastGroup.speaker === word.speaker) {
                 lastGroup.text += ` ${word.punctuated_word}`

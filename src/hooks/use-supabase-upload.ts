@@ -1,59 +1,9 @@
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type FileError, type FileRejection, useDropzone } from 'react-dropzone'
+import { type FileRejection, useDropzone } from 'react-dropzone'
+import { FileWithPreview, UseSupabaseUploadOptions } from '@/types'
 
 const supabase = createClient()
-
-interface FileWithPreview extends File {
-  preview?: string
-  errors: readonly FileError[]
-}
-
-type UseSupabaseUploadOptions = {
-  /**
-   * Name of bucket to upload files to in your Supabase project
-   */
-  bucketName: string
-  /**
-   * Folder to upload files to in the specified bucket within your Supabase project.
-   *
-   * Defaults to uploading files to the root of the bucket
-   *
-   * e.g If specified path is `test`, your file will be uploaded as `test/file_name`
-   */
-  path?: string
-  /**
-   * Allowed MIME types for each file upload (e.g `image/png`, `text/html`, etc). Wildcards are also supported (e.g `image/*`).
-   *
-   * Defaults to allowing uploading of all MIME types.
-   */
-  allowedMimeTypes?: string[]
-  /**
-   * Maximum upload size of each file allowed in bytes. (e.g 1000 bytes = 1 KB)
-   */
-  maxFileSize?: number
-  /**
-   * Maximum number of files allowed per upload.
-   */
-  maxFiles?: number
-  /**
-   * The number of seconds the asset is cached in the browser and in the Supabase CDN.
-   *
-   * This is set in the Cache-Control: max-age=<seconds> header. Defaults to 3600 seconds.
-   */
-  cacheControl?: number
-  /**
-   * When set to true, the file is overwritten if it exists.
-   *
-   * When set to false, an error is thrown if the object already exists. Defaults to `false`
-   */
-  upsert?: boolean
-  /**
-   * Callback function triggered after a file is successfully uploaded.
-   * It receives the full path of the uploaded file in Supabase storage.
-   */
-  onUploadSuccess?: (filePath: string, originalFileName: string) => void
-}
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>
 
@@ -172,7 +122,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     if (files.length <= maxFiles) {
       let changed = false
       const newFiles = files.map((file) => {
-        if (file.errors.some((e) => e.code === 'too-many-files')) {
+        if (file.errors && file.errors.some((e) => e.code === 'too-many-files')) {
           file.errors = file.errors.filter((e) => e.code !== 'too-many-files')
           changed = true
         }

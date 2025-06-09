@@ -117,11 +117,31 @@ export async function POST(req: NextRequest) {
 
           console.log('Deepgram result for meetingId', meetingId, JSON.stringify(deepgramResult).substring(0, 100) + '...');
 
+          // Extract unique speakers and create initial speaker_names object
+          const uniqueSpeakers = new Set<number>();
+          const utterances = deepgramResult.results?.utterances;
+          if (utterances) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            utterances.forEach((utterance: any) => {
+              if (utterance.speaker !== undefined) {
+                uniqueSpeakers.add(utterance.speaker);
+              }
+            });
+          }
+
+          const initialSpeakerNames: Record<string, null> = {};
+          Array.from(uniqueSpeakers).sort((a, b) => a - b).forEach(speakerNum => {
+            initialSpeakerNames[speakerNum.toString()] = null;
+          });
+
           // Update meeting record with transcription
           const { error: meetingUpdateError } = await supabase
-                  .schema('ai_transcriber')
-      .from('meetings')
-            .update({ transcription: deepgramResult })
+            .schema('ai_transcriber')
+            .from('meetings')
+            .update({ 
+              transcription: deepgramResult,
+              speaker_names: Object.keys(initialSpeakerNames).length > 0 ? initialSpeakerNames : null,
+            })
             .eq('id', meetingId);
 
           if (meetingUpdateError) {

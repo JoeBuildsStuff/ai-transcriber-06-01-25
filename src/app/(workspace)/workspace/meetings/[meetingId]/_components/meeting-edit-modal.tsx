@@ -23,24 +23,7 @@ import {
   AccordionContent,
   AccordionItem,
 } from "@/components/ui/accordion"
-
-// This should probably be in a shared types file
-interface MeetingDetails {
-  id: string;
-  audio_file_path: string;
-  original_file_name: string;
-  title: string | null;
-  created_at: string;
-  updated_at: string;
-  meeting_at: string;
-}
-
-interface MeetingEditModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    meeting: MeetingDetails | null;
-    onSave: (details: { title: string; meeting_at: string }) => void;
-}
+import { MeetingEditModalProps } from "@/types"
 
 export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: MeetingEditModalProps) {
   const [title, setTitle] = useState("")

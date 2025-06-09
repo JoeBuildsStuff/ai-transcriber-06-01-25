@@ -22,34 +22,10 @@ import { Check, X, PlusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createContact, updateSpeakerContacts } from "@/actions/contacts"
-import { FormattedTranscriptGroup } from "@/components/transcript"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-
-// From speakers-management.tsx
-interface Contact {
-  id: string
-  firstName: string
-  lastName: string
-  displayName: string
-  primaryEmail: string
-  company: string
-  notes?: string
-}
-
-interface SpeakerAssociationModalProps {
-  isOpen: boolean
-  onClose: () => void
-  meetingId: string
-  speakerNumber: number | null
-  currentContactId: string | null
-  contacts: Contact[]
-  speakerContacts: Record<number, string> | null
-  onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void
-  formattedTranscript: FormattedTranscriptGroup[]
-  onSeekAndPlay: (time: number) => void
-  onContactsUpdate: () => void
-}
+import { Textarea } from "@/components/ui/textarea"
+import { Contact, SpeakerAssociationModalProps } from "@/types"
 
 export default function SpeakerAssociationModal({
   isOpen,
@@ -68,6 +44,7 @@ export default function SpeakerAssociationModal({
   const [showNewContactForm, setShowNewContactForm] = useState(false)
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
+  const [notes, setNotes] = useState("")
 
   if (speakerNumber === null) return null
 
@@ -82,6 +59,9 @@ export default function SpeakerAssociationModal({
         const formData = new FormData()
         formData.append("first_name", firstName)
         formData.append("last_name", lastName)
+        if (notes) {
+          formData.append("notes", notes)
+        }
         
         const result = await createContact(formData)
         
@@ -101,7 +81,12 @@ export default function SpeakerAssociationModal({
         toast.success('Speaker association updated successfully')
         
         onContactsUpdate()
-        onClose()
+        
+        // Reset form and return to contact list
+        setFirstName("")
+        setLastName("")
+        setNotes("")
+        setShowNewContactForm(false)
 
       } catch (error) {
         console.error('Error creating or associating contact:', error)
@@ -231,6 +216,13 @@ export default function SpeakerAssociationModal({
                 disabled={isPending}
               />
             </div>
+            <Textarea
+              placeholder="Notes (e.g., role in meeting, key points to remember)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={isPending}
+              className="min-h-[80px]"
+            />
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setShowNewContactForm(false)} disabled={isPending}>Cancel</Button>
               <Button onClick={handleCreateAndAssociateContact} disabled={isPending}>
