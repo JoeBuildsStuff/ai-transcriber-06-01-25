@@ -13,8 +13,16 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { AudioLines, Calendar, History, Loader2, Plus, Users } from "lucide-react"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { AudioLines, Calendar, ChevronRight, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -25,20 +33,24 @@ import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
 import { toast } from "sonner"
+import { format, parseISO, formatDistanceToNow } from "date-fns"
 import {
   useInfiniteQuery,
   SupabaseQueryHandler,
 } from "@/hooks/use-infinite-query"
+import { Badge } from "./ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
 interface Meeting {
   id: string;
   original_file_name: string;
   created_at: string;
   title: string | null;
+  meeting_at: string | null;
 }
 
-const orderByCreatedAt: SupabaseQueryHandler<'meetings'> = (query) => {
-  return query.order('created_at', { ascending: false });
+const orderByMeetingAt: SupabaseQueryHandler<'meetings'> = (query) => {
+  return query.order('meeting_at', { ascending: false });
 };
 
 export function AppSidebar() {
@@ -49,24 +61,42 @@ export function AppSidebar() {
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
   const loadMoreRef = useRef(null);
 
-  // Use infinite query for meetings
   const {
     data,
     isFetching,
     hasMore,
     fetchNextPage,
     isLoading,
-
   } = useInfiniteQuery({
     tableName: 'meetings',
-    columns: 'id, original_file_name, created_at, title',
+    columns: 'id, original_file_name, created_at, title, meeting_at',
     pageSize: 15,
-    trailingQuery: orderByCreatedAt,
+    trailingQuery: orderByMeetingAt,
   });
 
   useEffect(() => {
     setMeetings(data as Meeting[]);
   }, [data]);
+
+  // Function to group meetings by date
+  const groupMeetingsByDate = (meetings: Meeting[]) => {
+    return meetings.reduce((groups: { [key: string]: Meeting[] }, meeting) => {
+      if (meeting.meeting_at) {
+        const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(meeting);
+      } else {
+        const date = format(parseISO(meeting.created_at), 'yyyy-MM-dd');
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(meeting);
+      }
+      return groups;
+    }, {});
+  };
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -80,7 +110,7 @@ export function AppSidebar() {
       },
       { 
         threshold: 0,
-        rootMargin: '50px' // Smaller margin for sidebar
+        rootMargin: '50px'
       }
     );
 
@@ -134,6 +164,26 @@ export function AppSidebar() {
       actionAriaLabel: "Create new contact",
     },
   ]
+
+  // Group meetings by date and convert to collapsible format
+  const groupedMeetings = groupMeetingsByDate(meetings);
+  const meetingsByDate = Object.entries(groupedMeetings).map(([date, dateMeetings]) => {
+    // Check if any meeting from this date is currently active
+    const isActive = dateMeetings.some(meeting => pathname === `/workspace/meetings/${meeting.id}`);
+    
+    return {
+      title: format(parseISO(date), 'EEE, MMM d'),
+      subtitle: formatDistanceToNow(new Date(date), { addSuffix: true }),
+      isActive,
+      items: dateMeetings.map(meeting => ({
+        id: meeting.id,
+        title: meeting.title || meeting.original_file_name || 'Untitled Meeting',
+        url: `/workspace/meetings/${meeting.id}`,
+        time: meeting.meeting_at ? format(parseISO(meeting.meeting_at), 'p') : null,
+        isActive: pathname === `/workspace/meetings/${meeting.id}`,
+      }))
+    };
+  });
 
   return (
     <Sidebar>
@@ -212,7 +262,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Meetings with Infinite Scroll */}
+        {/* Meetings with Collapsible Groups */}
         {user && (
           <SidebarGroup className="overflow-y-auto flex-grow">
             <SidebarGroupLabel className="flex items-center justify-between">
@@ -220,26 +270,62 @@ export function AppSidebar() {
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              {meetings.length > 0 ? (
+              {meetingsByDate.length > 0 ? (
                 <SidebarMenu>
-                  {meetings.map((meeting) => (
-                    <SidebarMenuItem key={meeting.id}>
-                      <SidebarMenuButton
-                        asChild
-                        title={`${meeting.title || meeting.original_file_name} (Uploaded: ${new Date(meeting.created_at).toLocaleDateString()})`}
-                        className={cn(
-                          "w-full justify-start text-sm",
-                          pathname === `/workspace/meetings/${meeting.id}`
-                            ? "bg-muted/50 hover:bg-muted font-semibold"
-                            : "hover:bg-muted"
-                        )}
-                      >
-                        <Link href={`/workspace/meetings/${meeting.id}`}>
-                          <Calendar className="w-3.5 h-3.5 mr-2 flex-none" />
-                          <span className="truncate">{meeting.title || meeting.original_file_name || 'Untitled Meeting'}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                  {meetingsByDate.map((dateGroup) => (
+                    <Collapsible
+                      key={dateGroup.title}
+                      asChild
+                      defaultOpen={dateGroup.isActive}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton>
+                            <Calendar className="w-4 h-4 flex-shrink-0" />
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>
+                            </div>
+                            <ChevronRight className="ml-auto flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                          {dateGroup.items.map((meeting) => (
+                            <SidebarMenuSubItem key={meeting.id}>
+                              <SidebarMenuSubButton 
+                                asChild
+                                className={cn(
+                                  meeting.isActive && "bg-muted font-semibold"
+                                )}
+                              >
+                                <Link href={meeting.url}>
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    {meeting.time && (
+                                      <Badge variant="outline" className="">{meeting.time}</Badge>
+                                    )}
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="truncate text-sm flex-1">
+                                            {meeting.title}
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" showArrow={true} className="ml-2">
+                                          <p>{meeting.title}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
                   ))}
                   
                   {/* Load more trigger */}
