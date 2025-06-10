@@ -203,12 +203,12 @@ export function AppSidebar() {
         
         {/* Contacts */}
         <SidebarGroup>
-          <SidebarGroupLabel><span>Recent Contacts</span></SidebarGroupLabel>
+          <SidebarGroupLabel><span>Contacts</span></SidebarGroupLabel>
           <SidebarGroupAction title="Add Contact">
             <Plus /> <span className="sr-only">Add Contact</span>
           </SidebarGroupAction>
           <SidebarGroupContent>
-            <p className="text-xs text-muted-foreground px-3">No recent contacts found.</p>
+            <p className="text-xs text-muted-foreground px-3">No contacts found.</p>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -216,7 +216,7 @@ export function AppSidebar() {
         {user && (
           <SidebarGroup className="overflow-y-auto flex-grow">
             <SidebarGroupLabel className="flex items-center justify-between">
-              <span>Recent Meetings</span>
+              <span>Meetings</span>
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -235,7 +235,7 @@ export function AppSidebar() {
                         )}
                       >
                         <Link href={`/workspace/meetings/${meeting.id}`}>
-                          <History className="w-3.5 h-3.5 mr-2 flex-none" />
+                          <Calendar className="w-3.5 h-3.5 mr-2 flex-none" />
                           <span className="truncate">{meeting.title || meeting.original_file_name || 'Untitled Meeting'}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -255,7 +255,7 @@ export function AppSidebar() {
                   )}
                 </SidebarMenu>
               ) : (
-                !isLoading && <p className="text-xs text-muted-foreground px-3">No recent meetings found.</p>
+                !isLoading && <p className="text-xs text-muted-foreground px-3">No meetings found.</p>
               )}
             </SidebarGroupContent>
           </SidebarGroup>
