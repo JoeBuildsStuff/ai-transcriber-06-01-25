@@ -13,19 +13,22 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar" // Ensure these paths are correct
+} from "@/components/ui/sidebar"
 import { AudioLines, Calendar, History, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
-import { cn } from "@/lib/utils" // Ensure this path is correct
+import { cn } from "@/lib/utils"
 import { AuthButton } from "./auth-button"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
 import { toast } from "sonner"
-
+import {
+  useInfiniteQuery,
+  SupabaseQueryHandler,
+} from "@/hooks/use-infinite-query"
 
 interface Meeting {
   id: string;
@@ -34,43 +37,64 @@ interface Meeting {
   title: string | null;
 }
 
+const orderByCreatedAt: SupabaseQueryHandler<'meetings'> = (query) => {
+  return query.order('created_at', { ascending: false });
+};
+
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [isLoadingMeetings, setIsLoadingMeetings] = useState(false);
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
+  const loadMoreRef = useRef(null);
 
-  const fetchMeetings = useCallback(async () => {
-    if (user) {
-      setIsLoadingMeetings(true);
-      try {
-        const res = await fetch('/api/meetings');
-        if (!res.ok) {
-          throw new Error('Failed to fetch meetings');
-        }
-        const data = await res.json();
-        setMeetings(data as Meeting[]);
-      } catch (error) {
-        console.error("Error fetching meetings for sidebar:", error);
-        // Potentially set an error state here to display in the UI
-      } finally {
-        setIsLoadingMeetings(false);
+  // Use infinite query for meetings
+  const {
+    data,
+    isFetching,
+    hasMore,
+    fetchNextPage,
+    isLoading,
+
+  } = useInfiniteQuery({
+    tableName: 'meetings',
+    columns: 'id, original_file_name, created_at, title',
+    pageSize: 15,
+    trailingQuery: orderByCreatedAt,
+  });
+
+  useEffect(() => {
+    setMeetings(data as Meeting[]);
+  }, [data]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMore && !isFetching) {
+            fetchNextPage();
+          }
+        });
+      },
+      { 
+        threshold: 0,
+        rootMargin: '50px' // Smaller margin for sidebar
       }
-    }
-  }, [user]);
+    );
 
-  useEffect(() => {
-    fetchMeetings();
-  }, [user, fetchMeetings]); // fetchMeetings is stable due to useCallback, user is the primary trigger
+    const timeoutId = setTimeout(() => {
+      if (loadMoreRef.current) {
+        observer.observe(loadMoreRef.current);
+      }
+    }, 100);
 
-  // Re-fetch meetings if user navigates to the main workspace page, to ensure list is fresh after potential deletions
-  useEffect(() => {
-    if (pathname === '/workspace') {
-      fetchMeetings();
-    }
-  }, [pathname, fetchMeetings]);
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [hasMore, isFetching, fetchNextPage]);
 
   const handleCreateMeeting = async () => {
     if (isCreatingMeeting) return
@@ -83,13 +107,11 @@ export function AppSidebar() {
     } else if (result.meeting) {
       toast.success("New meeting created.")
       router.push(`/workspace/meetings/${result.meeting.id}`)
-      fetchMeetings()
     }
     setIsCreatingMeeting(false)
   }
 
   const handleCreateContact = () => {
-    // Placeholder for when you want to add a contact from the sidebar
     console.log("Create contact clicked")
     toast.info("This feature is not yet implemented.")
   }
@@ -108,7 +130,7 @@ export function AppSidebar() {
       href: "/workspace/contacts",
       icon: Users,
       action: handleCreateContact,
-      isActionLoading: false, // Placeholder
+      isActionLoading: false,
       actionAriaLabel: "Create new contact",
     },
   ]
@@ -125,10 +147,8 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                {/* opens the upload audio process modal */}
                 <UploadAudioProcess> 
-                  <SidebarMenuButton
-                    className="w-full justify-start">
+                  <SidebarMenuButton className="w-full justify-start">
                     <AudioLines className="w-4 h-4 mr-2 flex-none" />
                     <span>New Transcription</span>
                   </SidebarMenuButton>
@@ -137,7 +157,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
 
         {/* Navigation */}
         <SidebarGroup>
@@ -182,7 +201,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
-
         {/* Contacts */}
         <SidebarGroup>
           <SidebarGroupLabel><span>Recent Contacts</span></SidebarGroupLabel>
@@ -194,12 +212,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Meetings */}
+        {/* Meetings with Infinite Scroll */}
         {user && (
           <SidebarGroup className="overflow-y-auto flex-grow">
             <SidebarGroupLabel className="flex items-center justify-between">
               <span>Recent Meetings</span>
-              {isLoadingMeetings && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               {meetings.length > 0 ? (
@@ -223,9 +241,21 @@ export function AppSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                  
+                  {/* Load more trigger */}
+                  <div ref={loadMoreRef} className="h-2" />
+                  
+                  {/* Loading indicator */}
+                  {isFetching && (
+                    <SidebarMenuItem>
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      </div>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               ) : (
-                !isLoadingMeetings && <p className="text-xs text-muted-foreground px-3">No recent meetings found.</p>
+                !isLoading && <p className="text-xs text-muted-foreground px-3">No recent meetings found.</p>
               )}
             </SidebarGroupContent>
           </SidebarGroup>
