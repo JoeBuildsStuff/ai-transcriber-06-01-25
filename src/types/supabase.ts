@@ -118,7 +118,7 @@ export type Database = {
         Row: {
           birthday: string | null
           company: string | null
-          created_at: string | null
+          created_at: string
           display_name: string | null
           first_name: string | null
           id: string
@@ -130,7 +130,7 @@ export type Database = {
           primary_email: string | null
           primary_phone: string | null
           tags: string[] | null
-          updated_at: string | null
+          updated_at: string
           user_id: string | null
         }
         Insert: {

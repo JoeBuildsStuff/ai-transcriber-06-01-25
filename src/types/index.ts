@@ -3,8 +3,8 @@ import { type FileError } from 'react-dropzone';
 // ===== CONTACT TYPES =====
 export type Contact = {
   id: string
-  created_at: string | null
-  updated_at: string | null
+  created_at: string
+  updated_at: string
   user_id: string | null
   first_name?: string | null
   last_name?: string | null

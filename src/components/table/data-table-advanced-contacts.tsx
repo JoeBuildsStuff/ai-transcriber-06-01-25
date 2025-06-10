@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import DataTablePagination from './components/data-table-pagination'
 import { DataTable } from './components/data-table'
 import { columns } from './components/columns'
+import { Contact } from '@/types'
 
 export default async function DataTableAdvancedContacts({
   searchParams,
@@ -151,7 +152,7 @@ export default async function DataTableAdvancedContacts({
   return (
     <div className="space-y-4">
       <DataTable 
-        data={data} 
+        data={data as unknown as Contact[]} 
         columns={columns} 
         pageCount={totalPages}
       />
