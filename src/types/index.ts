@@ -1,14 +1,23 @@
 import { type FileError } from 'react-dropzone';
 
 // ===== CONTACT TYPES =====
-export interface Contact {
-  id: string;
-  firstName: string;
-  lastName:string;
-  displayName: string;
-  primaryEmail?: string;
-  company?: string;
-  notes?: string;
+export type Contact = {
+  id: string
+  created_at: string | null
+  updated_at: string | null
+  user_id: string | null
+  first_name?: string | null
+  last_name?: string | null
+  display_name?: string | null
+  primary_email?: string | null
+  primary_phone?: string | null
+  company?: string | null
+  job_title?: string | null
+  birthday?: string | null
+  notes?: string | null
+  is_favorite?: boolean | null
+  nickname?: string | null
+  tags?: string[] | null
 }
 
 // ===== MEETING TYPES =====
@@ -23,14 +32,14 @@ export interface Meeting {
 }
 
 export interface MeetingCardSummary {
-  id: string;
-  title: string;
-  meeting_at: string;
-  speaker_names: { [key: string]: string } | null;
-  summary: string;
-  transcription: DeepgramTranscription | null;
-  formatted_transcript: FormattedTranscriptGroup[] | null;
-  original_file_name?: string;
+  id: string
+  title: string | null
+  meeting_at: string | null
+  speaker_names: { [key: string]: string } | null
+  summary: string | null
+  transcription: DeepgramTranscription | null
+  formatted_transcript: FormattedTranscriptGroup[] | null
+  original_file_name?: string
 }
 
 export interface MeetingDetails extends Meeting {

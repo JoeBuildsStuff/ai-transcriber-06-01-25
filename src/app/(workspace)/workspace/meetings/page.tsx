@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { redirect } from "next/navigation";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,10 @@ import { Contact, MeetingCardSummary } from "@/types";
 import EditMeetingButtons from "./_components/edit-meeting-buttons";
 import { Skeleton } from "@/components/ui/skeleton";
 import SpeakerAssociationModal from "./[meetingId]/_components/speaker-association-modal";
+import {
+  useInfiniteQuery,
+  SupabaseQueryHandler,
+} from "@/hooks/use-infinite-query";
 
 const getSpeakerColor = (speakerIndex: number) => {
   const colors = [
@@ -31,44 +35,46 @@ const getSpeakerColor = (speakerIndex: number) => {
   return colors[speakerIndex % colors.length];
 };
 
+const orderByMeetingAt: SupabaseQueryHandler<'meetings'> = (query) => {
+  return query.order('meeting_at', { ascending: false });
+};
+
 export default function CalendarPage() {
   const [meetings, setMeetings] = useState<MeetingCardSummary[] | null>(null);
   const [contacts, setContacts] = useState<Contact[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
-  const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false)
-  const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null)
-  const [selectedMeeting, setSelectedMeeting] = useState<MeetingCardSummary | null>(
-    null,
-  )
+  const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false);
+  const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingCardSummary | null>(null);
 
-  const fetchMeetingsAndContacts = async () => {
-    setIsLoading(true);
+  const {
+    data,
+    isFetching,
+    hasMore,
+    fetchNextPage,
+    isSuccess,
+    isLoading,
+  } = useInfiniteQuery({
+    tableName: 'meetings',
+    columns: 'id, title, meeting_at, speaker_names, summary, transcription, formatted_transcript, original_file_name',
+    pageSize: 5,
+    trailingQuery: orderByMeetingAt,
+  });
+
+  useEffect(() => {
+    setMeetings(data as MeetingCardSummary[]);
+  }, [data]);
+
+  const fetchContacts = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      redirect("/signin");
-    }
-
-    const { data: meetingsData, error } = await supabase
-      .schema("ai_transcriber")
-      .from("meetings")
-      .select("id, title, meeting_at, speaker_names, summary, transcription, formatted_transcript, original_file_name")
-      .order("meeting_at", { ascending: false });
-
-
-      
-    if (error) {
-      console.error(error);
-      setMeetings([]);
-    } else {
-      setMeetings(meetingsData);
+      redirect('/signin');
     }
 
     const { data: contactsData, error: contactsError } = await supabase
-      .schema("ai_transcriber")
-      .from("contacts")
-      .select("id, displayName:display_name, firstName:first_name, lastName:last_name, notes, primaryEmail:primary_email, company")
-      .order("created_at", { ascending: false });
+      .from('contacts')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (contactsError) {
       console.error(contactsError);
@@ -76,18 +82,16 @@ export default function CalendarPage() {
     } else {
       setContacts(contactsData);
     }
-
-    setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchMeetingsAndContacts();
+    fetchContacts();
   }, []);
 
   const handleMeetingUpdate = (updatedMeetingData: Partial<MeetingCardSummary>) => {
-    setMeetings(currentMeetings => {
+    setMeetings((currentMeetings) => {
       if (!currentMeetings) return null;
-      return currentMeetings.map(m => {
+      return currentMeetings.map((m) => {
         if (m.id === updatedMeetingData.id) {
           return { ...m, ...updatedMeetingData };
         }
@@ -97,34 +101,24 @@ export default function CalendarPage() {
   };
 
   const handleContactsUpdate = async () => {
-    const { data: contactsData, error: contactsError } = await supabase
-      .schema("ai_transcriber")
-      .from("contacts")
-      .select("id, displayName:display_name, firstName:first_name, lastName:last_name, notes, primaryEmail:primary_email, company")
-      .order("created_at", { ascending: false });
-
-    if (contactsError) {
-      console.error(contactsError);
-    } else {
-      setContacts(contactsData);
-    }
+    await fetchContacts();
   };
 
   const handleOpenSpeakerModal = (
     meeting: MeetingCardSummary,
     speakerNumber: number,
   ) => {
-    setSelectedMeeting(meeting)
-    setSelectedSpeaker(speakerNumber)
-    setIsSpeakerModalOpen(true)
-  }
+    setSelectedMeeting(meeting);
+    setSelectedSpeaker(speakerNumber);
+    setIsSpeakerModalOpen(true);
+  };
 
   const handleCloseSpeakerModal = () => {
-    setIsSpeakerModalOpen(false)
-    setSelectedSpeaker(null)
-    setSelectedMeeting(null)
-  }
-  
+    setIsSpeakerModalOpen(false);
+    setSelectedSpeaker(null);
+    setSelectedMeeting(null);
+  };
+
   const getSpeakerDisplayData = (meeting: MeetingCardSummary, contacts: Contact[] | null) => {
     const words = meeting.transcription?.results?.channels[0]?.alternatives[0]?.words ?? [];
     const uniqueSpeakers = [...new Set(words.map(w => w.speaker).filter(s => s !== undefined))] as number[];
@@ -133,7 +127,7 @@ export default function CalendarPage() {
         const contactId = meeting.speaker_names?.[speakerNum];
         const contact = contacts?.find((c: Contact) => c.id === contactId);
         const name = contact 
-            ? (contact.displayName || `${contact.firstName} ${contact.lastName}`.trim()) 
+            ? (contact.display_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim()) 
             : `Speaker ${speakerNum}`;
         return { speakerNumber: speakerNum, name };
     });
@@ -143,14 +137,45 @@ export default function CalendarPage() {
     if (!meetings) return {};
     
     return meetings.reduce((groups: { [key: string]: MeetingCardSummary[] }, meeting) => {
-      const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
-      if (!groups[date]) {
-        groups[date] = [];
+      if (meeting.meeting_at) {
+        const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(meeting);
       }
-      groups[date].push(meeting);
       return groups;
     }, {});
   };
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+          fetchNextPage();
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.1,
+        rootMargin: '0px 0px 200px 0px',
+      },
+    );
+
+    if (loadMoreSentinelRef.current) {
+      observer.current.observe(loadMoreSentinelRef.current);
+    }
+
+    return () => {
+      if (observer.current) observer.current.disconnect();
+    };
+  }, [isFetching, hasMore, fetchNextPage]);
 
   const groupedMeetings = groupMeetingsByDate(meetings);
 
@@ -164,9 +189,9 @@ export default function CalendarPage() {
               <Skeleton className="h-4 w-24" />
             </div>
             <div className="flex flex-col gap-4 ml-8">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-53 w-full max-w-3xl rounded-xl" />
-            ))}
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-53 w-full max-w-3xl rounded-xl" />
+              ))}
             </div>
           </div>
         ))}
@@ -175,7 +200,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div ref={scrollContainerRef} className="flex flex-col gap-6 h-full overflow-auto">
       {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
         <div key={date} className="flex flex-col gap-4">
           <div className="flex items-end gap-2">
@@ -196,11 +221,20 @@ export default function CalendarPage() {
                     />
                   </div>
                   <CardHeader>
-                    <CardTitle><Link href={`/workspace/meetings/${meeting.id}`} className="">{meeting.title}</Link></CardTitle>
-                    <span className="flex items-center gap-2">
+                    <CardTitle>
+                      <Link
+                        href={`/workspace/meetings/${meeting.id}`}
+                        className=""
+                      >
+                        {meeting.title || 'Untitled Meeting'}
+                      </Link>
+                    </CardTitle>
+                    {meeting.meeting_at && (
+                      <span className="flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">{format(new Date(meeting.meeting_at), "p")}</span>
-                    </span>
+                      </span>
+                    )}
     
                     {speakers.length > 0 && (
                       <div className="flex flex-wrap gap-2 items-center">
@@ -233,7 +267,21 @@ export default function CalendarPage() {
         </div>
       ))}
       
-      {Object.keys(groupedMeetings).length === 0 && (
+      <div ref={loadMoreSentinelRef} style={{ height: '1px' }} />
+
+      {isFetching && (
+         <div className="flex flex-col gap-4 ml-8">
+            {[...Array(2)].map((_, i) => (
+              <Skeleton key={i} className="h-53 w-full max-w-3xl rounded-xl" />
+            ))}
+          </div>
+      )}
+
+      {!hasMore && data.length > 0 && (
+         <div className="text-center text-muted-foreground py-4 text-sm">You&apos;ve reached the end.</div>
+      )}
+      
+      {isSuccess && data.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
           No meetings found.
         </div>
@@ -250,7 +298,7 @@ export default function CalendarPage() {
           }
           contacts={contacts || []}
           speakerContacts={selectedMeeting.speaker_names}
-          onSpeakerContactsUpdate={updatedSpeakerContacts => {
+          onSpeakerContactsUpdate={(updatedSpeakerContacts) => {
             handleMeetingUpdate({
               id: selectedMeeting.id,
               speaker_names: updatedSpeakerContacts,

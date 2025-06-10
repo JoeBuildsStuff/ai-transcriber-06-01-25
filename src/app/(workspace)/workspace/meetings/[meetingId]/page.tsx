@@ -65,7 +65,7 @@ export default function MeetingDetailPage() {
     try {
       const { getAllContacts } = await import('@/actions/contacts')
       const contactsData = await getAllContacts()
-      setContacts(contactsData)
+      setContacts(contactsData as Contact[])
     } catch (error) {
       console.error('Error fetching contacts for transcript:', error)
       // Don't show error to user since this is just for display enhancement
@@ -136,9 +136,9 @@ export default function MeetingDetailPage() {
     }
   
     // Return the best available display name
-    return contact.displayName || 
-           `${contact.firstName} ${contact.lastName}`.trim() || 
-           contact.primaryEmail || 
+    return contact.display_name || 
+           `${contact.first_name} ${contact.last_name}`.trim() || 
+           contact.primary_email || 
            `Speaker ${speakerNumber}`;
   };
   
@@ -397,8 +397,8 @@ export default function MeetingDetailPage() {
             const contact = contacts.find(c => c.id === contactId);
             if (contact) {
                 speakerDetails[speakerNum] = {
-                    displayName: contact.displayName || `${contact.firstName} ${contact.lastName}`.trim(),
-                    notes: contact.notes
+                    displayName: contact.display_name || `${contact.first_name} ${contact.last_name}`.trim(),
+                    notes: contact.notes || ''
                 };
             }
         }
@@ -812,7 +812,7 @@ export default function MeetingDetailPage() {
               <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
             </CardHeader>
             <CardContent>
-            <ScrollArea className="h-[530px]">
+            <ScrollArea className="h-[calc(100vh-445px)]">
               <div className="pr-2">
               {displayableTranscript.length > 0 ? (
                 <Transcript 

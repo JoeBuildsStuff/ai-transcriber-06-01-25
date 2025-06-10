@@ -77,7 +77,7 @@ export default function SpeakerAssociationModal({
         updatedSpeakerContacts[speakerNumber] = newContactId
         const associationResult = await updateSpeakerContacts(meetingId, updatedSpeakerContacts)
         
-        onSpeakerContactsUpdate(associationResult)
+        onSpeakerContactsUpdate(associationResult as Record<number, string>)
         toast.success('Speaker association updated successfully')
         
         onContactsUpdate()
@@ -109,7 +109,7 @@ export default function SpeakerAssociationModal({
 
         const result = await updateSpeakerContacts(meetingId, updatedSpeakerContacts)
         
-        onSpeakerContactsUpdate(result)
+        onSpeakerContactsUpdate(result as Record<number, string>)
         toast.success('Speaker association updated successfully')
         onClose()
       } catch (error) {
@@ -121,7 +121,7 @@ export default function SpeakerAssociationModal({
   }
 
   const getContactDisplayName = (contact: Contact) => {
-    return contact.displayName || `${contact.firstName} ${contact.lastName}`.trim() || contact.primaryEmail
+    return contact.display_name || `${contact.first_name} ${contact.last_name}`.trim() || contact.primary_email
   }
 
   const handleSegmentClick = (start: number) => {
@@ -162,9 +162,9 @@ export default function SpeakerAssociationModal({
                         {currentContact.company}
                       </div>
                     )}
-                    {currentContact.primaryEmail && (
+                    {currentContact.primary_email && (
                       <div className="text-xs text-muted-foreground">
-                        {currentContact.primaryEmail}
+                        {currentContact.primary_email}
                       </div>
                     )}
                   </div>
@@ -258,7 +258,7 @@ export default function SpeakerAssociationModal({
               {contacts.map(contact => (
                 <CommandItem
                   key={contact.id}
-                  value={getContactDisplayName(contact)}
+                  value={getContactDisplayName(contact) || ''}
                   onSelect={() => handleAssociateContact(contact.id)}
                   disabled={isPending}
                 >
@@ -277,9 +277,9 @@ export default function SpeakerAssociationModal({
                         {contact.company}
                       </div>
                     )}
-                    {contact.primaryEmail && (
+                    {contact.primary_email && (
                       <div className="text-xs text-muted-foreground">
-                        {contact.primaryEmail}
+                        {contact.primary_email}
                       </div>
                     )}
                   </div>

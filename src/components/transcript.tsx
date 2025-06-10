@@ -97,9 +97,9 @@ const Transcript: React.FC<TranscriptProps> = ({
     }
 
     // Return the best available display name
-    return contact.displayName || 
-           `${contact.firstName} ${contact.lastName}`.trim() || 
-           contact.primaryEmail || 
+    return contact.display_name || 
+           `${contact.first_name} ${contact.last_name}`.trim() || 
+           contact.primary_email || 
            `Speaker ${speakerNumber}`;
   };
 

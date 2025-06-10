@@ -340,13 +340,12 @@ export async function getAllContacts() {
     throw new Error(`Failed to fetch contacts: ${error.message}`)
   }
 
-  // Transform snake_case to camelCase for frontend
   return contacts.map(contact => ({
     id: contact.id,
-    firstName: contact.first_name || '',
-    lastName: contact.last_name || '',
-    displayName: contact.display_name || '',
-    primaryEmail: contact.primary_email || '',
+    first_name: contact.first_name || '',
+    last_name: contact.last_name || '',
+    display_name: contact.display_name || '',
+    primary_email: contact.primary_email || '',
     company: contact.company || '',
     notes: contact.notes || '',
   }))
