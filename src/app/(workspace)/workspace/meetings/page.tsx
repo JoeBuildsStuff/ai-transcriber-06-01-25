@@ -57,7 +57,7 @@ export default function MeetingsPage() {
     isLoading,
   } = useInfiniteQuery({
     tableName: 'meetings',
-    columns: 'id, title, meeting_at, speaker_names, summary, transcription, formatted_transcript, original_file_name',
+    columns: 'id, title, meeting_at, speaker_names, summary, speaker_names, original_file_name',
     pageSize: 5,
     trailingQuery: orderByMeetingAt,
   });
@@ -73,15 +73,15 @@ export default function MeetingsPage() {
     }
 
     const { data: contactsData, error: contactsError } = await supabase
-      .from('contacts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    .from('contacts')
+    .select('id, display_name, first_name, last_name, company, primary_email')
+    .order('created_at', { ascending: false });
 
     if (contactsError) {
       console.error(contactsError);
       setContacts([]);
     } else {
-      setContacts(contactsData);
+      setContacts(contactsData as Contact[]);
     }
   };
 
@@ -121,16 +121,18 @@ export default function MeetingsPage() {
   };
 
   const getSpeakerDisplayData = (meeting: MeetingCardSummary, contacts: Contact[] | null) => {
-    const words = meeting.transcription?.results?.channels[0]?.alternatives[0]?.words ?? [];
-    const uniqueSpeakers = [...new Set(words.map(w => w.speaker).filter(s => s !== undefined))] as number[];
-    
-    return uniqueSpeakers.sort((a, b) => a - b).map(speakerNum => {
-        const contactId = meeting.speaker_names?.[speakerNum];
-        const contact = contacts?.find((c: Contact) => c.id === contactId);
-        const name = contact 
-            ? (contact.display_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim()) 
-            : `Speaker ${speakerNum}`;
-        return { speakerNumber: speakerNum, name };
+    // Extract speaker numbers from the speaker_names keys
+    const speakerNumbers = meeting.speaker_names 
+      ? Object.keys(meeting.speaker_names).map(key => parseInt(key, 10))
+      : [];
+      
+    return speakerNumbers.sort((a, b) => a - b).map(speakerNum => {
+      const contactId = meeting.speaker_names?.[speakerNum];
+      const contact = contacts?.find((c: Contact) => c.id === contactId);
+      const name = contact 
+        ? (contact.display_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim()) 
+        : `Speaker ${speakerNum}`;
+      return { speakerNumber: speakerNum, name };
     });
   };
 
