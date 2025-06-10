@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
             .schema('ai_transcriber')
             .from('meetings')
             .update({ 
-              transcription: deepgramResult,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              transcription: deepgramResult as any,
               speaker_names: Object.keys(initialSpeakerNames).length > 0 ? initialSpeakerNames : null,
             })
             .eq('id', meetingId);
