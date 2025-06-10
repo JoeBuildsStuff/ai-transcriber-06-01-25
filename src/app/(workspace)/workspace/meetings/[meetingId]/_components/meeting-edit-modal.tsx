@@ -35,7 +35,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
   useEffect(() => {
     if (meeting) {
       setTitle(meeting.title || meeting.original_file_name || "");
-      const meetingDate = new Date(meeting.meeting_at);
+      const meetingDate = new Date(meeting.meeting_at || "");
       setSelectedDate(meetingDate);
       setSelectedTime(format(meetingDate, "HH:mm:ss"));
     }
