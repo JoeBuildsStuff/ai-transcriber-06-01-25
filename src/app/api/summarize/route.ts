@@ -128,12 +128,35 @@ export async function POST(req: NextRequest) {
           const rawContent = response.output_parsed;
 
           if (rawContent && (rawContent.executive_summary || rawContent.title)) {
+            const { data: meeting, error: meetingError } = await supabase
+              .schema("ai_transcriber")
+              .from("meetings")
+              .select("title")
+              .eq("id", meetingId)
+              .single();
+
+            if (meetingError) {
+              console.error("Error fetching meeting:", meetingError);
+              controller.enqueue(
+                encoder.encode(
+                  "data: " +
+                    JSON.stringify({
+                      error: "Failed to fetch meeting details",
+                      meetingId,
+                      details: meetingError.message,
+                    }) +
+                    "\n\n"
+                )
+              );
+              controller.close();
+              return;
+            }
             const updatePayload = {
               openai_response: JSON.stringify(response), // Store the full stringified OpenAI response object
               formatted_transcript: transcript, // Make sure transcript is included
               summary_jsonb: rawContent,
               summary: rawContent.executive_summary,
-              title: rawContent.title,
+              ...(meeting && meeting.title === null && { title: rawContent.title }),
             };
 
             const { error: updateError } = await supabase

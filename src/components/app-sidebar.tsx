@@ -10,18 +10,21 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar" // Ensure these paths are correct
 import { AudioLines, Calendar, History, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils" // Ensure this path is correct
 import { AuthButton } from "./auth-button"
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
+import { createMeeting } from "@/actions/meetings"
+import { toast } from "sonner"
 
 
 interface Meeting {
@@ -31,24 +34,13 @@ interface Meeting {
   title: string | null;
 }
 
-const navigationItems = [
-  {
-    label: "Meetings",
-    href: "/workspace/meetings",
-    icon: Calendar,
-  },
-  {
-    label: "Contacts",
-    href: "/workspace/contacts",
-    icon: Users,
-  },
-]
-
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false);
+  const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
 
   const fetchMeetings = useCallback(async () => {
     if (user) {
@@ -79,6 +71,47 @@ export function AppSidebar() {
       fetchMeetings();
     }
   }, [pathname, fetchMeetings]);
+
+  const handleCreateMeeting = async () => {
+    if (isCreatingMeeting) return
+    setIsCreatingMeeting(true)
+
+    const result = await createMeeting()
+
+    if (result.error) {
+      toast.error("Failed to create meeting", { description: result.error })
+    } else if (result.meeting) {
+      toast.success("New meeting created.")
+      router.push(`/workspace/meetings/${result.meeting.id}`)
+      fetchMeetings()
+    }
+    setIsCreatingMeeting(false)
+  }
+
+  const handleCreateContact = () => {
+    // Placeholder for when you want to add a contact from the sidebar
+    console.log("Create contact clicked")
+    toast.info("This feature is not yet implemented.")
+  }
+
+  const navigationItems = [
+    {
+      label: "Meetings",
+      href: "/workspace/meetings",
+      icon: Calendar,
+      action: handleCreateMeeting,
+      isActionLoading: isCreatingMeeting,
+      actionAriaLabel: "Create new meeting",
+    },
+    {
+      label: "Contacts",
+      href: "/workspace/contacts",
+      icon: Users,
+      action: handleCreateContact,
+      isActionLoading: false, // Placeholder
+      actionAriaLabel: "Create new contact",
+    },
+  ]
 
   return (
     <Sidebar>
@@ -127,6 +160,22 @@ export function AppSidebar() {
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
+                  {item.action && (
+                    <SidebarMenuAction asChild>
+                      <button
+                        onClick={item.action}
+                        disabled={item.isActionLoading}
+                        className="disabled:cursor-not-allowed text-muted-foreground hover:text-foreground"
+                        aria-label={item.actionAriaLabel}
+                      >
+                        {item.isActionLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                      </button>
+                    </SidebarMenuAction>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
