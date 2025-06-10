@@ -39,10 +39,11 @@ const orderByMeetingAt: SupabaseQueryHandler<'meetings'> = (query) => {
   return query.order('meeting_at', { ascending: false });
 };
 
-export default function CalendarPage() {
+export default function MeetingsPage() {
+  const supabase = createClient();
+
   const [meetings, setMeetings] = useState<MeetingCardSummary[] | null>(null);
   const [contacts, setContacts] = useState<Contact[] | null>(null);
-  const supabase = createClient();
   const [isSpeakerModalOpen, setIsSpeakerModalOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingCardSummary | null>(null);
@@ -154,25 +155,30 @@ export default function CalendarPage() {
 
   useEffect(() => {
     if (observer.current) observer.current.disconnect();
-
+  
     observer.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isFetching) {
-          fetchNextPage();
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMore && !isFetching) {
+            fetchNextPage();
+          }
+        });
       },
       {
         root: scrollContainerRef.current,
-        threshold: 0.1,
+        threshold: 0,
         rootMargin: '0px 0px 200px 0px',
       },
     );
-
-    if (loadMoreSentinelRef.current) {
-      observer.current.observe(loadMoreSentinelRef.current);
-    }
-
+  
+    const timeoutId = setTimeout(() => {
+      if (loadMoreSentinelRef.current) {
+        observer.current?.observe(loadMoreSentinelRef.current);
+      }
+    }, 100);
+  
     return () => {
+      clearTimeout(timeoutId);
       if (observer.current) observer.current.disconnect();
     };
   }, [isFetching, hasMore, fetchNextPage]);
