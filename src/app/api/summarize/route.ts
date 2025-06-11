@@ -151,12 +151,19 @@ export async function POST(req: NextRequest) {
               controller.close();
               return;
             }
+
+            const shouldUpdateTitle = meeting && (
+              meeting.title === null || 
+              meeting.title === "Untitled Meeting" ||
+              meeting.title?.trim() === ""
+            );
+            
             const updatePayload = {
-              openai_response: JSON.stringify(response), // Store the full stringified OpenAI response object
-              formatted_transcript: transcript, // Make sure transcript is included
+              openai_response: JSON.stringify(response),
+              formatted_transcript: transcript,
               summary_jsonb: rawContent,
               summary: rawContent.executive_summary,
-              ...(meeting && meeting.title === null && { title: rawContent.title }),
+              ...(shouldUpdateTitle && { title: rawContent.title }),
             };
 
             const { error: updateError } = await supabase

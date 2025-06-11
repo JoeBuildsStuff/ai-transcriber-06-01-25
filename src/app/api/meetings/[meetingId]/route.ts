@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
     const { data: meeting, error: meetingError } = await supabase
       .schema('ai_transcriber')
       .from('meetings')
-      .select('*, title') // Ensure title is selected
+      .select('*') 
       .eq('id', meetingId)
       .eq('user_id', user.id) // Ensure the user owns this meeting
       .single();

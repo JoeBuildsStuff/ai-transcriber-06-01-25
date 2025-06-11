@@ -38,11 +38,12 @@ import MeetingEditModal from './_components/meeting-edit-modal';
 import AudioPlayer from '@/components/audio-player';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
 import UploadAudio from './_components/upload-audio';
+import UserNotes from './_components/user-notes';
 
 export default function MeetingDetailPage() {
   const params = useParams();
   const meetingId = params.meetingId as string;
-  const router = useRouter(); // Add useRouter
+  const router = useRouter();
 
   const [meeting, setMeeting] = useState<MeetingDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,13 +179,15 @@ export default function MeetingDetailPage() {
       } else if (activeTab === 'summary') {
           if (meeting?.summary_jsonb) {
             const sectionOrder = [
+              'title',
+              'date',
+              'participants',
               'executive_summary',
               'discussion_outline',
               'decisions',
               'questions_asked',
               'action_items',
               'next_meeting_open_items',
-              'participants',
             ];
 
             const formatTitle = (key: string): string => {
@@ -793,6 +796,7 @@ export default function MeetingDetailPage() {
           <TabsList>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleCopyToClipboard}>
@@ -855,6 +859,10 @@ export default function MeetingDetailPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="notes">
+          <UserNotes userNotes={meeting.user_notes} meetingId={meetingId} />
         </TabsContent>
       </Tabs>
 

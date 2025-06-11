@@ -29,6 +29,7 @@ export interface Meeting {
     meeting_at: string;
     speaker_names: { [key: string]: string } | null;
     summary: string;
+    user_notes?: string | null;
 }
 
 export interface MeetingCardSummary {
@@ -51,6 +52,7 @@ export interface MeetingDetails extends Meeting {
   summary_jsonb: Record<string, string> | null;
   openai_response: string | null;
   audioUrl: string | null;
+  user_notes?: string | null;
 }
 
 // ===== TRANSCRIPTION TYPES =====

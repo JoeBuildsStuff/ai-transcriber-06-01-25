@@ -5,10 +5,8 @@ import { Upload, FileAudio, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-
-
 import { createClient } from '@/lib/supabase/client'
-
+import { DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup } from '@/types'
 
 interface UploadAudioProps {
   meetingId: string
@@ -17,7 +15,7 @@ interface UploadAudioProps {
 
 export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioProps) {
 
-    const supabase = createClient()
+  const supabase = createClient()
 
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -170,7 +168,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
      const decoder = new TextDecoder()
      let accumulatedData = ''
      let transcriptionMeetingId: string | null = null
-     let fullTranscriptionResponse: any = null
+     let fullTranscriptionResponse: DeepgramTranscription | null = null
  
      while (true) {
        const { value, done } = await reader.read()
@@ -221,12 +219,12 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
      if (fullTranscriptionResponse && fullTranscriptionResponse.results) {
        console.log('Formatting transcript and starting summarization...')
        
-       // Format the transcript (same logic as in upload-audio-process.tsx)
+              // Format the transcript (same logic as in upload-audio-process.tsx)
        const words = fullTranscriptionResponse.results?.channels?.[0]?.alternatives?.[0]?.words
-       let formattedTranscript: any[] = []
- 
+       let formattedTranscript: FormattedTranscriptGroup[] = []
+
        if (words && words.length > 0) {
-         formattedTranscript = words.reduce((acc: any[], word: any) => {
+         formattedTranscript = words.reduce((acc: FormattedTranscriptGroup[], word: DeepgramWord) => {
            const lastGroup = acc[acc.length - 1]
            if (lastGroup && word.speaker !== undefined && lastGroup.speaker === word.speaker) {
              lastGroup.text += ` ${word.punctuated_word}`
@@ -311,7 +309,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
          meetingId: transcriptionMeetingId || meetingId
        })
      }
-     
+
      setSelectedFile(null)
      
    } catch (error) {
@@ -423,12 +421,6 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
             </Button>
           </div>
         </Card>
-      )}
-
-      {meetingId && (
-        <p className="text-xs text-muted-foreground text-center">
-          Meeting ID: {meetingId}
-        </p>
       )}
     </div>
   )

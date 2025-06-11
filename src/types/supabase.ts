@@ -118,7 +118,7 @@ export type Database = {
         Row: {
           birthday: string | null
           company: string | null
-          created_at: string
+          created_at: string | null
           display_name: string | null
           first_name: string | null
           id: string
@@ -130,7 +130,7 @@ export type Database = {
           primary_email: string | null
           primary_phone: string | null
           tags: string[] | null
-          updated_at: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -188,6 +188,7 @@ export type Database = {
           transcription: Json | null
           updated_at: string | null
           user_id: string | null
+          user_notes: string | null
         }
         Insert: {
           audio_file_path: string
@@ -205,6 +206,7 @@ export type Database = {
           transcription?: Json | null
           updated_at?: string | null
           user_id?: string | null
+          user_notes?: string | null
         }
         Update: {
           audio_file_path?: string
@@ -222,6 +224,7 @@ export type Database = {
           transcription?: Json | null
           updated_at?: string | null
           user_id?: string | null
+          user_notes?: string | null
         }
         Relationships: []
       }
