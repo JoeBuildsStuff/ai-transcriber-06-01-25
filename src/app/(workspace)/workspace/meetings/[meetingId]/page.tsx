@@ -37,6 +37,7 @@ import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
 import AudioPlayer from '@/components/audio-player';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
+import UploadAudio from './_components/upload-audio';
 
 export default function MeetingDetailPage() {
   const params = useParams();
@@ -812,26 +813,30 @@ export default function MeetingDetailPage() {
               <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
             </CardHeader>
             <CardContent>
-            <ScrollArea className="h-[calc(100vh-445px)]">
-              <div className="pr-2">
-              {displayableTranscript.length > 0 ? (
-                <Transcript 
-                  meetingId={meetingId}
-                  formattedTranscript={displayableTranscript}
-                  speakerContacts={meeting?.speaker_names}
-                  contacts={contacts}
-                  onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
-                  onSeekAndPlay={handleSeekAndPlay}
-                  onContactsUpdate={fetchContacts}
-                  currentTime={currentAudioTime}
-                />
-              ) : (
-                <p className="text-center text-muted-foreground p-4">
-                    {meeting.transcription ? "Transcript data exists but could not be formatted, or is empty." : "No transcript available for this meeting."}
-                </p>
-              )}
-              </div>
-                    </ScrollArea>
+            {meeting.transcription ? (
+              <ScrollArea className="h-[calc(100vh-445px)]">
+                <div className="pr-2">
+                {displayableTranscript.length > 0 ? (
+                  <Transcript 
+                    meetingId={meetingId}
+                    formattedTranscript={displayableTranscript}
+                    speakerContacts={meeting?.speaker_names}
+                    contacts={contacts}
+                    onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
+                    onSeekAndPlay={handleSeekAndPlay}
+                    onContactsUpdate={fetchContacts}
+                    currentTime={currentAudioTime}
+                  />
+                ) : (
+                  <p className="text-center text-muted-foreground p-4">
+                      Transcript data exists but could not be formatted, or is empty.
+                  </p>
+                )}
+                </div>
+              </ScrollArea>
+            ) : (
+              <UploadAudio meetingId={meetingId} />
+            )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id;
 
-    const { filePath, originalFileName, meetingAt } = await req.json();
+    const { filePath, originalFileName, meetingAt, meetingId } = await req.json();
     console.log('Meeting at:', meetingAt);
+    console.log('Meeting ID provided:', meetingId);
     
     console.log('Attempting to download filePath:', filePath);
     console.log('Original file name:', originalFileName);
@@ -37,25 +38,45 @@ export async function POST(req: NextRequest) {
       throw new Error('No original file name provided');
     }
 
-    // Create initial meeting record
-    const { data: meetingData, error: meetingInsertError } = await supabase
-      .schema('ai_transcriber')
-      .from('meetings')
-      .insert({
-        user_id: userId,
-        audio_file_path: filePath,
-        original_file_name: originalFileName,
-        meeting_at: meetingAt,
-      })
-      .select('id')
-      .single();
+    let finalMeetingId = meetingId;
 
-    if (meetingInsertError || !meetingData) {
-      console.error('Error creating meeting record:', meetingInsertError);
-      throw new Error(`Failed to create meeting record: ${meetingInsertError?.message}`);
+    // Only create meeting record if meetingId is not provided
+    if (!meetingId) {
+      const { data: meetingData, error: meetingInsertError } = await supabase
+        .schema('ai_transcriber')
+        .from('meetings')
+        .insert({
+          user_id: userId,
+          audio_file_path: filePath,
+          original_file_name: originalFileName,
+          meeting_at: meetingAt,
+        })
+        .select('id')
+        .single();
+
+      if (meetingInsertError || !meetingData) {
+        console.error('Error creating meeting record:', meetingInsertError);
+        throw new Error(`Failed to create meeting record: ${meetingInsertError?.message}`);
+      }
+      finalMeetingId = meetingData.id;
+      console.log('Created meeting record with ID:', finalMeetingId);
+    } else {
+      console.log('Using existing meeting ID:', meetingId);
+      
+      // Verify the meeting exists and belongs to the user
+      const { data: existingMeeting, error: meetingCheckError } = await supabase
+        .schema('ai_transcriber')
+        .from('meetings')
+        .select('id')
+        .eq('id', meetingId)
+        .eq('user_id', userId)
+        .single();
+
+      if (meetingCheckError || !existingMeeting) {
+        console.error('Meeting not found or access denied:', meetingCheckError);
+        throw new Error('Meeting not found or access denied');
+      }
     }
-    const meetingId = meetingData.id;
-    console.log('Created meeting record with ID:', meetingId);
 
     const { data: downloadData, error: downloadError } = await supabase.storage
       .from('ai-transcriber-audio')
@@ -98,7 +119,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           // Send initial processing message with meetingId
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing started", meetingId })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing started", meetingId: finalMeetingId })}\n\n`));
 
           // Call Deepgram API
           const { result: deepgramResult, error: deepgramError } = await deepgram.listen.prerecorded.transcribeFile(
@@ -115,7 +136,7 @@ export async function POST(req: NextRequest) {
             throw deepgramError;
           }
 
-          console.log('Deepgram result for meetingId', meetingId, JSON.stringify(deepgramResult).substring(0, 100) + '...');
+          console.log('Deepgram result for meetingId', finalMeetingId, JSON.stringify(deepgramResult).substring(0, 100) + '...');
 
           // Extract unique speakers and create initial speaker_names object
           const uniqueSpeakers = new Set<number>();
@@ -143,39 +164,28 @@ export async function POST(req: NextRequest) {
               transcription: deepgramResult as any,
               speaker_names: Object.keys(initialSpeakerNames).length > 0 ? initialSpeakerNames : null,
             })
-            .eq('id', meetingId);
+            .eq('id', finalMeetingId);
 
           if (meetingUpdateError) {
             console.error('Error updating meeting with transcription:', meetingUpdateError);
             // We might still want to send the transcription to the client even if DB update fails
             // Or handle this more gracefully depending on requirements
           } else {
-            console.log('Meeting record updated with transcription for ID:', meetingId);
+            console.log('Meeting record updated with transcription for ID:', finalMeetingId);
           }
 
           // Send the complete result
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ ...deepgramResult, meetingId })}\n\n`));
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing completed", meetingId })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ ...deepgramResult, meetingId: finalMeetingId })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing completed", meetingId: finalMeetingId })}\n\n`));
           controller.close();
 
         } catch (error) {
           console.error('Error in stream processing:', error);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Error during transcription processing", details: error instanceof Error ? error.message : String(error), meetingId })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Error during transcription processing", details: error instanceof Error ? error.message : String(error), meetingId: finalMeetingId })}\n\n`));
           controller.error(error);
         }
       }
     });
-
-    // DO NOT Delete the file after processing, we want to retain it
-    // const { data: deletedData, error: deleteError } = await supabase.storage
-    //   .from('ai-transcriber-audio')
-    //   .remove([filePath]);
-
-    // console.log('File deleted successfully:', deletedData);
-
-    // if (deleteError) {
-    //   console.error('Supabase delete error:', deleteError);
-    // }
 
     return new Response(customReadable, {
       headers: {
