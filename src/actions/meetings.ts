@@ -43,60 +43,37 @@ export async function createMeeting() {
   }
 }
 
-export async function updateMeetingNotes(meetingId: string, user_notes: string) {
+// src/actions/meetings.ts
+export async function updateMeetingNotes(meetingId: string, notes: string) {
   'use server'
   
   const supabase = await createClient()
-
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   
   if (userError || !user) {
-    return {
-      error: "You must be logged in to update meeting notes.",
-    }
-  }
-
-  // Validate inputs
-  if (!meetingId) {
-    return {
-      error: "Meeting ID is required.",
-    }
-  }
-
-  if (user_notes !== undefined && typeof user_notes !== 'string') {
-    return {
-      error: "User notes must be a string.",
-    }
+    return { error: "You must be logged in to update notes." }
   }
 
   try {
-    const { error: updateError } = await supabase
+    const { error } = await supabase
       .schema("ai_transcriber")
       .from("meetings")
-      .update({
-        user_notes: user_notes,
+      .update({ 
+        user_notes: notes,
         updated_at: new Date().toISOString()
       })
       .eq("id", meetingId)
       .eq("user_id", user.id)
 
-    if (updateError) {
-      console.error("Error updating meeting:", updateError)
-      return {
-        error: updateError.message,
-      }
+    if (error) {
+      return { error: error.message }
     }
 
     revalidatePath(`/workspace/meetings/${meetingId}`)
-
-    return {
-      data: "Meeting updated successfully",
-    }
+    return { data: "Notes updated successfully" }
   } catch (error) {
-    console.error("Unexpected error updating meeting:", error)
-    return {
-      error: "An unexpected error occurred while updating the meeting.",
-    }
+    console.error('Error updating meeting notes:', error)
+    return { error: "An unexpected error occurred" }
   }
 }
 

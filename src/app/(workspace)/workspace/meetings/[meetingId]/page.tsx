@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 import {
   AlertDialog,
@@ -412,7 +414,7 @@ export default function MeetingDetailPage() {
     const summarizeResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, meetingId: meeting!.id, speakerDetails }),
+        body: JSON.stringify({ transcript, meetingId: meeting!.id, speakerDetails, user_notes: meeting?.user_notes }),
     });
 
     if (!summarizeResponse.ok || !summarizeResponse.body) {
@@ -653,7 +655,11 @@ export default function MeetingDetailPage() {
                     </span>
                 </div>
             </div>
-            <div className="flex items-center gap-2"> {/* Container for buttons */}            
+            <div className="flex items-center gap-2"> {/* Container for buttons */} 
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="meeting-reviewed">Meeting Reviewed</Label>
+                <Switch id="meeting-reviewed" />
+              </div>  
               <DropdownMenu>  
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>

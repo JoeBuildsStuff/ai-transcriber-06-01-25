@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           const body = await req.json();
-          const { transcript, meetingId, speakerDetails } = body;
+          const { transcript, meetingId, speakerDetails, user_notes } = body;
 
           if (!meetingId) {
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "meetingId is required" }) + "\n\n"));
@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
           const promptData = {
             transcript,
             participants: speakerDetails,
+            user_notes: user_notes,
           };
+
+          console.log('promptData', promptData)
 
           const response = await openai.responses.parse({
             model: "gpt-4o-2024-08-06",
@@ -75,6 +78,7 @@ export async function POST(req: NextRequest) {
 
                   - The \`transcript\` is an array of objects, each with a \`speaker\` (numeric ID) and \`text\`.
                   - The \`participants\` object maps the numeric speaker ID to their details, including \`displayName\` and \`notes\`. The \`notes\` field contains contextual information about the person (e.g., their role, company, or relationship to the project). Use this information to add depth and accuracy to your summary, especially when describing participant contributions and roles.
+                  - The \`user_notes\` is a string of notes from the user. The user may have started taking notes so use this to add context to the summary.  The user may also have provided additional details or topics to focus on.
 
                   ## Output Format
 

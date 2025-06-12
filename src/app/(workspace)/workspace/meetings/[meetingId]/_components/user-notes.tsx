@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 import { updateMeetingNotes } from "@/actions/meetings"
 import { toast } from "sonner"
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { Loader2, Save, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface UserNotesProps {
@@ -20,120 +21,167 @@ export default function UserNotes({ userNotes, meetingId }: UserNotesProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [lastSavedNotes, setLastSavedNotes] = useState(userNotes || '')
 
-  // Debounced save function
-  const debouncedSave = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout
-      
-      return (notesToSave: string) => {
-        clearTimeout(timeoutId)
-        setSaveStatus('saving')
-        
-        timeoutId = setTimeout(async () => {
-          try {
-            const result = await updateMeetingNotes(meetingId, notesToSave)
-            
-            if (result.error) {
-              console.error('Error saving notes:', result.error)
-              setSaveStatus('error')
-              toast.error('Failed to save notes', {
-                description: result.error
-              })
-            } else {
-              setSaveStatus('saved')
-              setLastSavedNotes(notesToSave)
-              // Auto-hide the saved status after 2 seconds
-              setTimeout(() => {
-                setSaveStatus('idle')
-              }, 2000)
-            }
-          } catch (error) {
-            console.error('Unexpected error saving notes:', error)
-            setSaveStatus('error')
-            toast.error('Failed to save notes', {
-              description: 'An unexpected error occurred'
-            })
-          }
-        }, 2000) // 2 second delay
-      }
-    })(),
-    [meetingId]
-  )
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = notes !== lastSavedNotes
 
   // Handle text changes
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newNotes = e.target.value
-    setNotes(newNotes)
-    
-    // Only trigger save if notes actually changed from last saved version
-    if (newNotes !== lastSavedNotes) {
-      debouncedSave(newNotes)
-    } else {
+    setNotes(e.target.value)
+    // Reset save status when user starts typing
+    if (saveStatus === 'saved' || saveStatus === 'error') {
       setSaveStatus('idle')
     }
   }
 
-  // Update local state when prop changes (e.g., from external updates)
+  // Handle save button click
+  const handleSave = async () => {
+    if (!hasUnsavedChanges) {
+      toast.info('No changes to save')
+      return
+    }
+
+    setSaveStatus('saving')
+    
+    try {
+      const result = await updateMeetingNotes(meetingId, notes)
+      
+      if (result.error) {
+        console.error('Error saving notes:', result.error)
+        setSaveStatus('error')
+        toast.error('Failed to save notes', {
+          description: result.error
+        })
+      } else {
+        setSaveStatus('saved')
+        setLastSavedNotes(notes)
+        toast.success('Notes saved successfully')
+        
+        // Auto-hide the saved status after 3 seconds
+        setTimeout(() => {
+          setSaveStatus('idle')
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('Unexpected error saving notes:', error)
+      setSaveStatus('error')
+      toast.error('Failed to save notes', {
+        description: 'An unexpected error occurred'
+      })
+    }
+  }
+
+  // Handle reset/discard changes
+  const handleReset = () => {
+    setNotes(lastSavedNotes)
+    setSaveStatus('idle')
+    toast.info('Changes discarded')
+  }
+
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Ctrl+S or Cmd+S to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault()
+      handleSave()
+    }
+    // Escape to discard changes
+    if (e.key === 'Escape' && hasUnsavedChanges) {
+      handleReset()
+    }
+  }
+
+  // Only update local state when prop changes and we're not actively editing
   useEffect(() => {
-    if (userNotes !== notes && saveStatus === 'idle') {
+    if (userNotes !== lastSavedNotes) {
       setNotes(userNotes || '')
       setLastSavedNotes(userNotes || '')
+      setSaveStatus('idle')
     }
-  }, [userNotes, notes, saveStatus])
+  }, [userNotes]) // Remove notes and saveStatus from dependencies
 
-  const getSaveStatusIcon = () => {
-    switch (saveStatus) {
-      case 'saving':
-        return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      case 'saved':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-destructive" />
-      default:
-        return null
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
     }
-  }
 
-  const getSaveStatusText = () => {
-    switch (saveStatus) {
-      case 'saving':
-        return 'Saving...'
-      case 'saved':
-        return 'Saved'
-      case 'error':
-        return 'Error saving'
-      default:
-        return notes !== lastSavedNotes ? 'Unsaved changes' : ''
-    }
-  }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>User Notes</CardTitle>
-          <div className="flex items-center gap-2 text-sm">
-            {getSaveStatusIcon()}
-            <span className={cn(
-              "text-muted-foreground",
-              saveStatus === 'error' && "text-destructive",
-              saveStatus === 'saved' && "text-green-600"
-            )}>
-              {getSaveStatusText()}
-            </span>
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                Unsaved changes
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="text-xs text-green-600 dark:text-green-400">
+                Saved
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-xs text-destructive">
+                Error saving
+              </span>
+            )}
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Textarea
           value={notes}
           onChange={handleNotesChange}
+          onKeyDown={handleKeyDown}
           placeholder="Add your notes about this meeting..."
           className="min-h-[120px] resize-y"
         />
-        <p className="text-xs text-muted-foreground mt-2">
-          Changes are automatically saved as you type.
-        </p>
+        
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Press <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Ctrl+S</kbd> to save or{' '}
+            <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Esc</kbd> to discard changes
+          </p>
+          
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                disabled={saveStatus === 'saving'}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Discard
+              </Button>
+            )}
+            
+            <Button
+              onClick={handleSave}
+              disabled={saveStatus === 'saving' || !hasUnsavedChanges}
+              size="sm"
+              className={cn(
+                hasUnsavedChanges && "bg-primary",
+                saveStatus === 'saved' && "bg-green-600 hover:bg-green-700"
+              )}
+            >
+              {saveStatus === 'saving' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saveStatus === 'saving' ? 'Saving...' : 'Save Notes'}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
