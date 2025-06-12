@@ -164,8 +164,13 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const { title, meeting_at } = await req.json();
-    const updatePayload: { title?: string; meeting_at?: string; updated_at: string } = {
+    const { title, meeting_at, meeting_reviewed } = await req.json();
+    const updatePayload: { 
+      title?: string; 
+      meeting_at?: string; 
+      meeting_reviewed?: boolean;
+      updated_at: string 
+    } = {
       updated_at: new Date().toISOString()
     };
 
@@ -183,6 +188,13 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       updatePayload.meeting_at = meeting_at;
     }
 
+    if (meeting_reviewed !== undefined) {
+      if (typeof meeting_reviewed !== 'boolean') {
+        return NextResponse.json({ error: 'Meeting reviewed must be a boolean value' }, { status: 400 });
+      }
+      updatePayload.meeting_reviewed = meeting_reviewed;
+    }
+
     if (Object.keys(updatePayload).length === 1) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
@@ -193,7 +205,7 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       .update(updatePayload)
       .eq('id', meetingId)
       .eq('user_id', user.id)
-      .select('id, title, updated_at, meeting_at')
+      .select('id, title, updated_at, meeting_at, meeting_reviewed')
       .single();
 
     if (updateError) {

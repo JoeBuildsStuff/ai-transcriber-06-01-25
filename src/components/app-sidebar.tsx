@@ -47,6 +47,7 @@ interface Meeting {
   created_at: string;
   title: string | null;
   meeting_at: string | null;
+  meeting_reviewed: boolean | null;
 }
 
 const orderByMeetingAt: SupabaseQueryHandler<'meetings'> = (query) => {
@@ -69,7 +70,7 @@ export function AppSidebar() {
     isLoading,
   } = useInfiniteQuery({
     tableName: 'meetings',
-    columns: 'id, original_file_name, created_at, title, meeting_at',
+    columns: 'id, original_file_name, created_at, title, meeting_at, meeting_reviewed',
     pageSize: 15,
     trailingQuery: orderByMeetingAt,
   });
@@ -181,6 +182,7 @@ export function AppSidebar() {
         url: `/workspace/meetings/${meeting.id}`,
         time: meeting.meeting_at ? format(parseISO(meeting.meeting_at), 'p') : null,
         isActive: pathname === `/workspace/meetings/${meeting.id}`,
+        isReviewed: meeting.meeting_reviewed || false, // Add this line
       }))
     };
   });
@@ -301,9 +303,16 @@ export function AppSidebar() {
                               >
                                 <Link href={meeting.url}>
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    {meeting.time && (
-                                      <Badge variant="outline" className="">{meeting.time}</Badge>
-                                    )}
+                                  {meeting.time && (
+                                    <div className="relative">
+                                      <Badge variant="outline" className="">
+                                        {meeting.time}
+                                      </Badge>
+                                      {!meeting.isReviewed && (
+                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
+                                      )}
+                                    </div>
+                                  )}
                                     <TooltipProvider>
                                       <Tooltip>
                                         <TooltipTrigger asChild>

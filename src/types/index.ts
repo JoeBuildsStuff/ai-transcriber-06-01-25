@@ -30,6 +30,7 @@ export interface Meeting {
     speaker_names: { [key: string]: string } | null;
     summary: string;
     user_notes?: string | null;
+    meeting_reviewed?: boolean | null;
 }
 
 export interface MeetingCardSummary {
@@ -41,6 +42,7 @@ export interface MeetingCardSummary {
   transcription: DeepgramTranscription | null
   formatted_transcript: FormattedTranscriptGroup[] | null
   original_file_name?: string
+  meeting_reviewed?: boolean | null;
 }
 
 export interface MeetingDetails extends Meeting {
@@ -53,6 +55,7 @@ export interface MeetingDetails extends Meeting {
   openai_response: string | null;
   audioUrl: string | null;
   user_notes?: string | null;
+  meeting_reviewed?: boolean | null;
 }
 
 // ===== TRANSCRIPTION TYPES =====

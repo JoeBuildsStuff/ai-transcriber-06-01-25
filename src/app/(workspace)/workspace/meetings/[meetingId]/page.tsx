@@ -64,6 +64,7 @@ export default function MeetingDetailPage() {
   const audioPlayerRef = useRef<AudioPlayerRef>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [currentAudioTime, setCurrentAudioTime] = useState(0);
+  const [isUpdatingReviewed, setIsUpdatingReviewed] = useState(false);
 
   const fetchContacts = async () => {
     try {
@@ -536,6 +537,49 @@ export default function MeetingDetailPage() {
     toast.success("Transcript reprocessed and re-summarized successfully!", { id: toastId });
   }
 
+  const handleMeetingReviewedChange = async (checked: boolean) => {
+    if (!meeting || isUpdatingReviewed) return;
+    
+    // Store the previous value for potential rollback
+    const previousValue = meeting.meeting_reviewed;
+    
+    // Optimistically update the UI immediately
+    setMeeting(prev => prev ? { ...prev, meeting_reviewed: checked } : null);
+    setIsUpdatingReviewed(true);
+    
+    try {
+      const response = await fetch(`/api/meetings/${meetingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meeting_reviewed: checked }),
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to update meeting reviewed status');
+      }
+      
+      // Success - the optimistic update was correct, show subtle confirmation
+      toast.success(`Meeting marked as ${checked ? 'reviewed' : 'not reviewed'}`, {
+        duration: 2000, // Shorter duration since it's just confirmation
+      });
+    } catch (err) {
+      console.error("Error updating meeting reviewed status:", err);
+      
+      // Rollback the optimistic update
+      setMeeting(prev => prev ? { ...prev, meeting_reviewed: previousValue } : null);
+      
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      toast.error('Failed to update meeting status', { 
+        description: errorMessage,
+        duration: 4000, // Longer duration for errors
+      });
+    } finally {
+      setIsUpdatingReviewed(false);
+    }
+  };
+
   if (isLoading) {
     return (
     <div className="flex flex-col space-y-4 pt-2 h-full">
@@ -656,10 +700,15 @@ export default function MeetingDetailPage() {
                 </div>
             </div>
             <div className="flex items-center gap-2"> {/* Container for buttons */} 
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="meeting-reviewed">Meeting Reviewed</Label>
-                <Switch id="meeting-reviewed" />
-              </div>  
+            <div className="flex items-center space-x-2">
+  <Label htmlFor="meeting-reviewed">Meeting Reviewed</Label>
+  <Switch 
+    id="meeting-reviewed" 
+    checked={meeting?.meeting_reviewed || false}
+    onCheckedChange={handleMeetingReviewedChange}
+    disabled={isUpdatingReviewed}
+  />
+</div>
               <DropdownMenu>  
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
