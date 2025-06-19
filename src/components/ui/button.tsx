@@ -20,10 +20,15 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        green:
+          "bg-green-50 text-green-700 shadow-xs hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30 focus-visible:ring-green-600/20 dark:focus-visible:ring-green-600/40 ring-1 ring-inset ring-green-600/20 dark:ring-green-600/30",
+        blue:
+          "bg-blue-50 text-blue-700 shadow-xs hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 focus-visible:ring-blue-600/20 dark:focus-visible:ring-blue-600/40 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-600/30",
+        red:
+          "bg-red-50 text-red-700 shadow-xs hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 focus-visible:ring-red-600/20 dark:focus-visible:ring-red-600/40 ring-1 ring-inset ring-red-600/10 dark:ring-red-600/30",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xs: "h-6 rounded-md gap-1 px-1 has-[>svg]:px-1.5",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",

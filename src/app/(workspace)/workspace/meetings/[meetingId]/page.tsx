@@ -711,7 +711,7 @@ export default function MeetingDetailPage() {
 </div>
               <DropdownMenu>  
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" side="bottom">
                   <DropdownMenuItem onSelect={() => setShowDeepgramDialog(true)} className="cursor-pointer">
@@ -867,10 +867,6 @@ export default function MeetingDetailPage() {
         
         <TabsContent value="transcript">
           <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Meeting Transcript</CardTitle>
-              <CardDescription>Formatted transcript of the meeting audio, with speaker labels if available.</CardDescription>
-            </CardHeader>
             <CardContent>
             {meeting.transcription ? (
               <ScrollArea className="h-[calc(100vh-445px)]">
@@ -902,10 +898,6 @@ export default function MeetingDetailPage() {
         
         <TabsContent value="summary">
           <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="text-lg">Meeting Summary</CardTitle>
-              <CardDescription>AI-generated summary of the meeting transcript.</CardDescription>
-            </CardHeader>
             <CardContent>
               {meeting.summary_jsonb ? (
                 <Summary summary={meeting.summary_jsonb} />

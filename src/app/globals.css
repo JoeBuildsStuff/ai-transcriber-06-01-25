@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import 'shadcn-prose';
 
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,4 +121,132 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Code block */
+.prose .code-block {
+  position: relative;
+}
+
+.prose .code-block select {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.prose .code-block pre {
+  padding-top: 4rem;
+}
+
+.prose pre {
+  @apply bg-muted;
+  font-family: 'JetBrainsMono', monospace;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+pre code {
+  color: inherit;
+  padding: 0;
+  background: none;
+  font-size: 0.8rem;
+}
+
+pre .hljs-comment,
+pre .hljs-quote {
+  @apply dark:text-neutral-500 text-neutral-800;
+  font-style: italic;
+}
+
+pre .hljs-variable,
+pre .hljs-template-variable,
+pre .hljs-strong,
+pre .hljs-emphasis,
+pre .hljs-quote,
+pre .hljs-tag,
+pre .hljs-name,
+pre .hljs-link,
+pre .hljs-regexp,
+pre .hljs-deletion,
+pre .hljs-selector-id,
+pre .hljs-selector-class,
+pre .hljs-selector-attr,
+pre .re .hljs-selector-pseudo {
+  @apply dark:text-rose-300 text-rose-700;
+}
+
+pre .hljs-literal,
+pre .hljs-number,
+pre .hljs-bullet,
+pre .hljs-type,
+pre .hljs-symbol,
+pre .hljs-meta,
+pre .hljs-link {
+  @apply dark:text-emerald-300 text-emerald-700;
+}
+
+pre .hljs-built_in,
+pre .hljs-class .hljs-title {
+  @apply dark:text-orange-200 text-orange-700;
+}
+
+pre .hljs-string,
+pre .hljs-char,
+pre .hljs-addition,
+pre .hljs-subst {
+  @apply dark:text-blue-300 text-blue-700;
+}
+
+pre .hljs-attr,
+pre .hljs-attribute {
+  @apply dark:text-blue-300 text-blue-700;
+}
+
+pre .hljs-section,
+pre .hljs-title {
+  @apply dark:text-purple-300 text-purple-700;
+}
+
+pre .hljs-keyword,
+pre .hljs-selector-tag {
+  @apply dark:text-blue-300 text-blue-700 ;
+}
+
+pre .hljs-emphasis {
+  font-style: italic;
+}
+
+pre .hljs-strong {
+  font-weight: bold;
+}
+
+/* Custom prose styles for Tiptap */
+.prose code:not(pre > code) {
+  @apply rounded bg-background px-1.5 py-1 font-mono text-sm font-semibold text-muted-foreground;
+}
+
+.prose pre {
+  @apply whitespace-pre overflow-x-auto;
+}
+
+.prose pre code {
+  @apply text-muted-foreground;
+  white-space: pre !important;
+}
+
+.prose code::before,
+.prose code::after {
+  content: '';
 }

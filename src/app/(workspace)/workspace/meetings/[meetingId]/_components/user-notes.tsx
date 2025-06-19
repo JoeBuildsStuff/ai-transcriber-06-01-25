@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { updateMeetingNotes } from "@/actions/meetings"
 import { toast } from "sonner"
-import { Loader2, Save, RotateCcw } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Loader2, Save, RotateCcw, Check } from "lucide-react"
+import Tiptap from "@/components/tiptap"
+import { Badge } from "@/components/ui/badge"
 
 interface UserNotesProps {
   userNotes: string | null | undefined
@@ -25,8 +24,8 @@ export default function UserNotes({ userNotes, meetingId }: UserNotesProps) {
   const hasUnsavedChanges = notes !== lastSavedNotes
 
   // Handle text changes
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value)
+  const handleNotesChange = (content: string) => {
+    setNotes(content)
     // Reset save status when user starts typing
     if (saveStatus === 'saved' || saveStatus === 'error') {
       setSaveStatus('idle')
@@ -78,7 +77,7 @@ export default function UserNotes({ userNotes, meetingId }: UserNotesProps) {
   }
 
   // Handle keyboard shortcuts
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     // Ctrl+S or Cmd+S to save
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
@@ -113,48 +112,21 @@ export default function UserNotes({ userNotes, meetingId }: UserNotesProps) {
   }, [hasUnsavedChanges])
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>User Notes</CardTitle>
-          <div className="flex items-center gap-2">
-            {hasUnsavedChanges && (
-              <span className="text-xs text-amber-600 dark:text-amber-400">
-                Unsaved changes
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="text-xs text-green-600 dark:text-green-400">
-                Saved
-              </span>
-            )}
-            {saveStatus === 'error' && (
-              <span className="text-xs text-destructive">
-                Error saving
-              </span>
-            )}
-          </div>
+    <div className="relative h-full bg-card rounded-md border border-border">
+        <div onKeyDown={handleKeyDown}>
+          <Tiptap
+            content={notes}
+            onChange={handleNotesChange}
+          />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Textarea
-          value={notes}
-          onChange={handleNotesChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Add your notes about this meeting..."
-          className="min-h-[120px] resize-y"
-        />
         
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Ctrl+S</kbd> to save or{' '}
-            <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Esc</kbd> to discard changes
-          </p>
+        <div className="flex items-center justify-end">
+
           
-          <div className="flex items-center gap-2">
+          <div className="absolute bottom-2 right-2 flex items-center gap-2">
             {hasUnsavedChanges && (
               <Button
-                variant="outline"
+                variant="red"
                 size="sm"
                 onClick={handleReset}
                 disabled={saveStatus === 'saving'}
@@ -168,21 +140,36 @@ export default function UserNotes({ userNotes, meetingId }: UserNotesProps) {
               onClick={handleSave}
               disabled={saveStatus === 'saving' || !hasUnsavedChanges}
               size="sm"
-              className={cn(
-                hasUnsavedChanges && "bg-primary",
-                saveStatus === 'saved' && "bg-green-600 hover:bg-green-700"
-              )}
+              variant={saveStatus === 'saved' ? 'blue' : 'green'}
             >
               {saveStatus === 'saving' ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : saveStatus === 'saved' ? (
+                <Check className="h-4 w-4 mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {saveStatus === 'saving' ? 'Saving...' : 'Save Notes'}
+              {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Notes'}
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="absolute top-14 right-2 z-10 flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Badge variant="orange">
+                Unsaved changes
+              </Badge>
+            )}
+            {saveStatus === 'saved' && (
+              <Badge variant="blue">
+                Saved
+              </Badge>
+            )}
+            {saveStatus === 'error' && (
+              <Badge variant="red">
+                Error saving
+              </Badge>
+            )}
+          </div>
+    </div>
   )
 }

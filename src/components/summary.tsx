@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
+import { marked } from "marked";
+import Tiptap from "./tiptap";
 
 interface SummaryProps {
   summary: Record<string, string>;
@@ -50,14 +50,20 @@ const Summary: React.FC<SummaryProps> = ({ summary }) => {
   return (
     <div className="h-full">
       <div className="space-y-6 max-w-2xl mx-auto">
-        {sections.map(([key, value]) => (
-          <div key={key}>
-            <h3 className="text-lg font-semibold mb-2 pb-1 border-b">{formatTitle(key)}</h3>
-            <div className="prose prose-md max-w-none dark:prose-invert">
-              <ReactMarkdown rehypePlugins={[rehypeRaw]}>{value}</ReactMarkdown>
+        {sections.map(([key, value]) => {
+          const htmlContent = marked(value) as string;
+          return (
+            <div key={key}>
+              <h3 className="text-lg font-semibold mb-2 pb-1 border-b">{formatTitle(key)}</h3>
+              <div className="prose prose-md max-w-none dark:prose-invert">
+                <Tiptap
+                  content={htmlContent}
+                  showFixedMenu={false}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
