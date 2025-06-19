@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import SpeakerAssociationModal from "../app/(workspace)/workspace/meetings/[meetingId]/_components/speaker-association-modal";
-import { TranscriptProps } from "@/types";
+import { TranscriptProps, Contact } from "@/types";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
+import { ContactSheet, ContactFormValues } from "./table/components/contact-sheet";
 
 const Transcript: React.FC<TranscriptProps> = ({ 
   meetingId,
@@ -18,6 +20,8 @@ const Transcript: React.FC<TranscriptProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<number | null>(null);
+  const [isContactSheetOpen, setIsContactSheetOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -57,6 +61,21 @@ const Transcript: React.FC<TranscriptProps> = ({
     setSelectedSpeaker(null);
     setIsModalOpen(false);
   }
+
+  const handleEditContact = (speakerNumber: number) => {
+    if (!speakerContacts || !contacts) {
+      return;
+    }
+    const contactId = speakerContacts[speakerNumber];
+    if (!contactId) {
+      return;
+    }
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      setEditingContact(contact);
+      setIsContactSheetOpen(true);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -114,6 +133,8 @@ const Transcript: React.FC<TranscriptProps> = ({
       <div className="text-sm font-medium mb-2">Speakers:</div>
         <div className="flex flex-wrap gap-2">
           {uniqueSpeakers.map((speakerNumber) => (
+            <ContextMenu key={speakerNumber}>
+  <ContextMenuTrigger>
             <button
               key={speakerNumber}
               onClick={() => handleOpenModal(speakerNumber)}
@@ -121,6 +142,16 @@ const Transcript: React.FC<TranscriptProps> = ({
             >
               {getSpeakerDisplayName(speakerNumber)}
             </button>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem 
+                onSelect={() => handleEditContact(speakerNumber)}
+                disabled={!speakerContacts?.[speakerNumber]}
+              >
+                Edit Contact
+              </ContextMenuItem>
+            </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
         </div>
@@ -175,6 +206,16 @@ const Transcript: React.FC<TranscriptProps> = ({
         formattedTranscript={formattedTranscript}
         onSeekAndPlay={onSeekAndPlay}
         onContactsUpdate={onContactsUpdate}
+      />
+      <ContactSheet
+        open={isContactSheetOpen}
+        onOpenChange={(open) => {
+          setIsContactSheetOpen(open);
+          if (!open) {
+            setEditingContact(null);
+          }
+        }}
+        contact={editingContact as unknown as ContactFormValues}
       />
     </div>
   );
