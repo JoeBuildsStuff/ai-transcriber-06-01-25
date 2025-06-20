@@ -3,11 +3,13 @@ import DataTableAdvancedContacts from "@/components/table/data-table-advanced-co
 export default async function ContactsPage({
     searchParams,
   }: {
-    searchParams: { [key:string]: string | string[] | undefined };
+    searchParams: Promise<{ [key:string]: string | string[] | undefined }>;
   }) {
+    const resolvedSearchParams = await searchParams;
+    
     return (
         <div className="w-full mt-5">
-            <DataTableAdvancedContacts searchParams={searchParams} />
+            <DataTableAdvancedContacts searchParams={resolvedSearchParams} />
         </div>
     )
 }
