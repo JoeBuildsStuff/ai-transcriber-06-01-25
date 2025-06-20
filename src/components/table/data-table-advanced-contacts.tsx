@@ -7,14 +7,14 @@ import { Contact } from '@/types'
 export default async function DataTableAdvancedContacts({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const { 
     currentPage = '1', 
     resultsPerPage = '10', 
     sort = '',
     filter = ''
-  } = await searchParams
+  } = searchParams
 
   const supabase = await createClient()
 

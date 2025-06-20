@@ -1,9 +1,11 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Mail, Phone, Calendar, Building, Briefcase, FileText, Star } from "lucide-react"
+import { Mail, Phone, Calendar, Building, Briefcase } from "lucide-react"
 import { getContactById } from "@/actions/contacts"
 import { format, parseISO } from "date-fns"
+import ContactNotes from "./_components/contact-notes"
+import ContactFavorite from "./_components/contect-favorite"
 
 function formatDate(dateString: string): string {
   if (!dateString) return ''
@@ -46,7 +48,7 @@ export default async function ContactDetailPage({
 
     return (
         <div>
-<Card className="mb-6 relative">
+        <Card className="mb-6 relative">
         <CardHeader>
           <div className="flex items-start gap-4">
             <Avatar className="h-16 w-16">
@@ -72,11 +74,7 @@ export default async function ContactDetailPage({
             </div>
           </div>
           <div className="absolute top-4 right-4">
-          {currentContact.isFavorite ? (
-            <Star className="h-5 w-5 fill-yellow-400 text-yellow-700 dark:text-yellow-400 dark:fill-yellow-900/30" strokeWidth={1} />
-          ) : (
-            <Star className="h-5 w-5 fill-gray-200 text-gray-400 dark:text-gray-400 dark:fill-gray-900/30" strokeWidth={1} />
-          )}
+          <ContactFavorite contactId={contactId} isFavorite={currentContact.isFavorite} />
           </div>
         </CardHeader>
         <CardContent>
@@ -142,19 +140,8 @@ export default async function ContactDetailPage({
         </CardContent>
       </Card>
 
-      {currentContact.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-start gap-2">
-              <FileText className="h-4 w-4" />
-              Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{currentContact.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+          <ContactNotes contactId={contactId} contactNotes={currentContact.notes} />
+
         </div>
     )
   }

@@ -144,6 +144,37 @@ export async function updateContact(formData: FormData) {
   }
 }
 
+export async function updateContactNotes(contactId: string, notes: string) {
+  "use server"
+  const supabase = await createClient()
+
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError || !userData.user) {
+      return { error: "User not authenticated" }
+    }
+
+    const { error } = await supabase
+      .schema("ai_transcriber")
+      .from("contacts")
+      .update({ notes })
+      .eq("id", contactId)
+      .eq("user_id", userData.user.id)
+
+    if (error) {
+      console.error("Error updating contact notes:", error)
+      return { error: "Failed to update contact notes." }
+    }
+
+    revalidatePath(`/workspace/contacts/${contactId}`)
+    return {}
+  } catch (e) {
+    const error = e as Error
+    console.error("Unexpected error updating contact notes:", error)
+    return { error: `An unexpected error occurred: ${error.message}` }
+  }
+}
+
 export async function deleteContact(contactId: string) {
   const supabase = await createClient()
 
@@ -404,5 +435,54 @@ export async function updateSpeakerContacts(meetingId: string, speakerContacts: 
   revalidatePath(`/workspace/meetings/${meetingId}`)
   
   return data.speaker_names
+}
+
+export async function toggleContactFavorite(contactId: string, currentIsFavorite: boolean) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to update a contact.",
+      errorType: "auth"
+    }
+  }
+
+  if (!contactId) {
+      return {
+          error: "Contact ID is missing.",
+          errorType: "validation"
+      }
+  }
+
+  const { error } = await supabase
+    .schema("ai_transcriber")
+    .from("contacts")
+    .update({ is_favorite: !currentIsFavorite })
+    .eq("id", contactId)
+    .eq("user_id", userData.user.id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating favorite status:', error)
+    if (error.code === 'PGRST116') {
+        return {
+            error: "Contact not found or you don't have permission to modify it.",
+            errorType: 'permission'
+        }
+    }
+    return {
+      error: "Failed to update favorite status. Please try again.",
+      errorType: "database"
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+  revalidatePath(`/workspace/contacts/${contactId}`)
+
+  return {
+    data: "Favorite status updated",
+  }
 }
 
