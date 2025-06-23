@@ -60,6 +60,12 @@ export default function MeetingsList({
     });
   };
 
+  const handleMeetingDelete = (deletedMeetingId: string) => {
+    setMeetings((currentMeetings) => {
+      return currentMeetings.filter((m) => m.id !== deletedMeetingId);
+    });
+  };
+
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
     
@@ -139,14 +145,14 @@ export default function MeetingsList({
   return (
     <div className="flex flex-col gap-6 h-full overflow-auto">
       {/* Pagination info */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
           Showing {meetings.length} of {totalMeetings} meetings
         </span>
         {meetings.length > 10 && (
           <span>Loaded {Math.ceil(meetings.length / 10)} page{Math.ceil(meetings.length / 10) > 1 ? 's' : ''}</span>
         )}
-      </div>
+      </div> */}
 
       {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
         <div key={date} className="flex flex-col gap-4">
@@ -165,6 +171,7 @@ export default function MeetingsList({
                     <EditMeetingButtons
                       meeting={meeting}
                       onMeetingUpdate={handleMeetingUpdate}
+                      onMeetingDelete={handleMeetingDelete}
                     />
                   </div>
                   <CardHeader className="flex flex-col gap-2.5">
@@ -235,6 +242,15 @@ export default function MeetingsList({
         </div>
       )}
       
+      <div className="flex items-center justify-center text-sm text-muted-foreground ml-8 max-w-3xl">
+        <span>
+          Showing {meetings.length} of {totalMeetings} meetings
+        </span>
+        {meetings.length > 10 && (
+          <span>Loaded {Math.ceil(meetings.length / 10)} page{Math.ceil(meetings.length / 10) > 1 ? 's' : ''}</span>
+        )}
+      </div>
+
       {meetings.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
           No meetings found.

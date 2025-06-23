@@ -2,24 +2,37 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { PencilRuler } from "lucide-react"
-
+import { PencilRuler, SquareArrowOutUpRight, Trash2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 
 import { MeetingCardSummary } from "@/types"
 import MeetingEditModal from "../[meetingId]/_components/meeting-edit-modal"
+import Link from "next/link"
 
 interface EditMeetingButtonsProps {
   meeting: MeetingCardSummary
   onMeetingUpdate: (meeting: Partial<MeetingCardSummary>) => void
+  onMeetingDelete?: (meetingId: string) => void
 }
 
 export default function EditMeetingButtons({
   meeting,
   onMeetingUpdate,
+  onMeetingDelete,
 }: EditMeetingButtonsProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleSaveMeeting = async (details: {
     title: string
@@ -42,14 +55,49 @@ export default function EditMeetingButtons({
     }
   }
 
+  const handleDeleteMeeting = async () => {
+    if (!meeting.id) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/meetings/${meeting.id}`, {
+        method: 'DELETE',
+      });
+      const responseData = await response.json(); 
+
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to delete meeting');
+      }
+
+      toast.success('Meeting deleted successfully!');
+      onMeetingDelete?.(meeting.id);
+      setIsDeleteDialogOpen(false);
+    } catch (err) {
+      console.error("Error deleting meeting:", err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      toast.error('Failed to delete meeting', { description: errorMessage });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <>
+    <div className="flex flex-col gap-2 ">
+      <Button
+        variant="ghost"
+        size="sm"
+        asChild
+      >
+        <Link href={`/workspace/meetings/${meeting.id}`}>
+          <SquareArrowOutUpRight className="w-4 h-4 shrink-0" />
+        </Link>
+      </Button>
+
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsEditModalOpen(true)}
         >
-          <PencilRuler className="w-4 h-4" />
+          <PencilRuler className="w-4 h-4 shrink-0" />
         </Button>
 
       {isEditModalOpen && (
@@ -60,6 +108,32 @@ export default function EditMeetingButtons({
           onSave={handleSaveMeeting}
         />
       )}
-    </>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the meeting transcript, summary, and the original audio file.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting ? 'Deleting...' : 'Yes, delete meeting'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsDeleteDialogOpen(true)}
+      >
+        <Trash2 className="w-4 h-4 shrink-0" />
+      </Button>
+    </div>
   )
 }
