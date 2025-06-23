@@ -144,16 +144,6 @@ export default function MeetingsList({
 
   return (
     <div className="flex flex-col gap-6 h-full overflow-auto">
-      {/* Pagination info */}
-      {/* <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          Showing {meetings.length} of {totalMeetings} meetings
-        </span>
-        {meetings.length > 10 && (
-          <span>Loaded {Math.ceil(meetings.length / 10)} page{Math.ceil(meetings.length / 10) > 1 ? 's' : ''}</span>
-        )}
-      </div> */}
-
       {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
         <div key={date} className="flex flex-col gap-4">
           <div className="flex items-end gap-2">

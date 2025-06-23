@@ -120,7 +120,7 @@ export default function EditMeetingButtons({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDeleteMeeting} disabled={isDeleting} className="bg-red-50 text-red-700 shadow-xs hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 focus-visible:ring-red-600/20 dark:focus-visible:ring-red-600/40 ring-1 ring-inset ring-red-600/10 dark:ring-red-600/30">
               {isDeleting ? 'Deleting...' : 'Yes, delete meeting'}
             </AlertDialogAction>
           </AlertDialogFooter>
