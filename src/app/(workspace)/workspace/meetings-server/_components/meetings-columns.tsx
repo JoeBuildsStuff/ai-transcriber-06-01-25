@@ -1,0 +1,190 @@
+"use client"
+
+import { format, formatDistanceToNow } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, Circle, SquareArrowOutUpRight } from "lucide-react"
+import { ColumnDef } from "@tanstack/react-table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
+import { MeetingsList } from "../_lib/validations"
+import Link from "next/link"
+import { MeetingsDetailSheet } from "./meetings-detail-sheet"
+
+export const columns: ColumnDef<MeetingsList>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex justify-start items-start w-1">
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="flex justify-start items-start w-1">
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const meeting = row.original
+      return (
+        <div className="flex justify-start items-start w-[2rem]">
+          <MeetingsDetailSheet meeting={meeting} />
+          <Button variant="ghost" size="sm" asChild>
+            <Link
+              href={`/workspace/meetings-server/${meeting.id}`}
+              className="flex items-center"
+            >
+              <SquareArrowOutUpRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+          </Button>
+        </div>
+      )
+    },
+    enableHiding: false,
+  },
+  {
+    accessorKey: "title",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+    cell: ({ row }) => {
+      const title = row.getValue("title") as string
+      return (
+
+          <div className="flex items-center gap-1">
+            <span className="font-medium">
+              {title || "Untitled Meeting"}
+            </span>
+          </div>
+      )
+    },
+    meta: {
+      label: "Title",
+      variant: "text",
+      placeholder: "Search titles...",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "meeting_at",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Meeting Date" />,
+    cell: ({ row }) => {
+      const meetingAt = row.getValue("meeting_at") as string
+      if (!meetingAt) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(meetingAt)
+      const formatted = format(date, 'E, MMM d')
+      
+      return <div className="text-sm">{formatted}</div>
+    },
+    meta: {
+      label: "Meeting Date",
+      variant: "date",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    id: "meeting_time",
+    header: "Time",
+    cell: ({ row }) => {
+      const meetingAt = row.original.meeting_at
+      if (!meetingAt) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(meetingAt)
+      const formatted = format(date, 'h:mm a')
+      
+      return <div className="text-sm">{formatted}</div>
+    },
+  },
+  {
+    id: "meeting_age",
+    header: "Age",
+    cell: ({ row }) => {
+      const meetingAt = row.original.meeting_at
+      if (!meetingAt) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(meetingAt)
+      const formatted = formatDistanceToNow(date, { addSuffix: true })
+      
+      return <div className="text-sm text-muted-foreground">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "meeting_reviewed",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Reviewed" />,
+    cell: ({ row }) => {
+      const isReviewed = row.getValue("meeting_reviewed") as boolean
+      return (
+        <div className="flex justify-start items-start">
+          {isReviewed ? (
+            <CheckCircle className="size-5 border-transparent bg-green-50 text-green-700 dark:text-green-400 dark:bg-green-900/20 " />
+          ) : (
+            <Circle className="size-5 border-transparent bg-gray-50 text-gray-600 dark:text-gray-400 dark:bg-gray-900/20 " />
+          )}
+        </div>
+      )
+    },
+    meta: {
+      label: "Reviewed",
+      variant: "boolean",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    cell: ({ row }) => {
+      const createdAt = row.getValue("created_at") as string
+      if (!createdAt) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(createdAt)
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(date)
+      
+      return <div className="text-sm text-muted-foreground">{formatted}</div>
+    },
+    meta: {
+      label: "Created",
+      variant: "date",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "updated_at",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    cell: ({ row }) => {
+      const updatedAt = row.getValue("updated_at") as string
+      if (!updatedAt) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(updatedAt)
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(date)
+      
+      return <div className="text-sm text-muted-foreground">{formatted}</div>
+    },
+    meta: {
+      label: "Updated",
+      variant: "date",
+    },
+    enableColumnFilter: true,
+  },
+]

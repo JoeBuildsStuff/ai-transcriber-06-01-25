@@ -1,6 +1,6 @@
-import DataTableExampleContacts from "@/app/(workspace)/workspace/contacts/_components/contacts-table";
+import DataTableContacts from "@/app/(workspace)/workspace/contacts/_components/contacts-table";
 
-export default async function DataTableExampleContactsPage({
+export default async function DataTableContactsPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -9,7 +9,7 @@ export default async function DataTableExampleContactsPage({
     
     return (
         <div className="w-full mt-5">
-             <DataTableExampleContacts searchParams={params} />     
+             <DataTableContacts searchParams={params} />     
         </div>
     )
 }
