@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import SpeakerAssociationModal from "../app/(workspace)/workspace/meetings/[meetingId]/_components/speaker-association-modal";
 import { TranscriptProps, Contact } from "@/types";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
-import { ContactSheet, ContactFormValues } from "./table/components/contact-sheet";
+import { ContactSheet, ContactFormValues } from "./contact-sheet";
 
 const Transcript: React.FC<TranscriptProps> = ({ 
   meetingId,

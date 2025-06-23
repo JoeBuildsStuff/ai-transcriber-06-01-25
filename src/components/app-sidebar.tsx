@@ -27,17 +27,14 @@ import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { AuthButton } from "./auth-button"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
 import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
-import {
-  useInfiniteQuery,
-  SupabaseQueryHandler,
-} from "@/hooks/use-infinite-query"
+import { createClient } from "@/lib/supabase/client"
 import { Badge } from "./ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
@@ -50,34 +47,43 @@ interface Meeting {
   meeting_reviewed: boolean | null;
 }
 
-const orderByMeetingAt: SupabaseQueryHandler<'meetings'> = (query) => {
-  return query.order('meeting_at', { ascending: false });
-};
-
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user } = useAuth();
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const { user } = useAuth()
+  const [meetings, setMeetings] = useState<Meeting[]>([])
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
-  const loadMoreRef = useRef(null);
-
-  const {
-    data,
-    isFetching,
-    hasMore,
-    fetchNextPage,
-    isLoading,
-  } = useInfiniteQuery({
-    tableName: 'meetings',
-    columns: 'id, original_file_name, created_at, title, meeting_at, meeting_reviewed',
-    pageSize: 15,
-    trailingQuery: orderByMeetingAt,
-  });
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    setMeetings(data as Meeting[]);
-  }, [data]);
+    const fetchMeetings = async () => {
+      setIsLoading(true)
+      const supabase = createClient()
+      const { data: fetchedMeetings, error } = await supabase
+        .from("meetings")
+        .select(
+          "id, original_file_name, created_at, title, meeting_at, meeting_reviewed"
+        )
+        .order("meeting_at", { ascending: false })
+
+      if (error) {
+        toast.error("Failed to fetch meetings")
+        console.error(error)
+        setMeetings([])
+      } else {
+        setMeetings((fetchedMeetings as Meeting[]) || [])
+      }
+      setIsLoading(false)
+    }
+
+    if (user) {
+      fetchMeetings()
+    } else {
+      // Clear meetings when user logs out
+      setMeetings([])
+      setIsLoading(false)
+    }
+  }, [user])
 
   // Function to group meetings by date
   const groupMeetingsByDate = (meetings: Meeting[]) => {
@@ -98,34 +104,6 @@ export function AppSidebar() {
       return groups;
     }, {});
   };
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && hasMore && !isFetching) {
-            fetchNextPage();
-          }
-        });
-      },
-      { 
-        threshold: 0,
-        rootMargin: '50px'
-      }
-    );
-
-    const timeoutId = setTimeout(() => {
-      if (loadMoreRef.current) {
-        observer.observe(loadMoreRef.current);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      observer.disconnect();
-    };
-  }, [hasMore, isFetching, fetchNextPage]);
 
   const handleCreateMeeting = async () => {
     if (isCreatingMeeting) return
@@ -335,21 +313,13 @@ export function AppSidebar() {
                       </SidebarMenuItem>
                     </Collapsible>
                   ))}
-                  
-                  {/* Load more trigger */}
-                  <div ref={loadMoreRef} className="h-2" />
-                  
-                  {/* Loading indicator */}
-                  {isFetching && (
-                    <SidebarMenuItem>
-                      <div className="flex items-center justify-center py-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                      </div>
-                    </SidebarMenuItem>
-                  )}
                 </SidebarMenu>
               ) : (
-                !isLoading && <p className="text-xs text-muted-foreground px-3">No meetings found.</p>
+                !isLoading && (
+                  <p className="text-xs text-muted-foreground px-3">
+                    No meetings found.
+                  </p>
+                )
               )}
             </SidebarGroupContent>
           </SidebarGroup>
