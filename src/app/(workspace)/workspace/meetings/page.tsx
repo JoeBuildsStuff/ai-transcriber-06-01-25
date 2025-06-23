@@ -3,7 +3,18 @@ import { redirect } from "next/navigation";
 import MeetingsList from "./_components/meetings-list";
 import { Contact, MeetingCardSummary } from "@/types";
 
-export default async function MeetingsPage() {
+export default async function MeetingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const params = await searchParams;
+  
+  // Parse pagination parameters
+  const page = parseInt((params.page as string) || '1', 10);
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
   const supabase = await createClient();
 
   const {
@@ -13,12 +24,18 @@ export default async function MeetingsPage() {
     redirect("/signin");
   }
 
+  // Get total count for pagination
+  const { count: totalMeetings } = await supabase
+    .from("meetings")
+    .select("*", { count: "exact", head: true });
+
   const meetingsPromise = supabase
     .from("meetings")
     .select(
       "id, title, meeting_at, speaker_names, summary, original_file_name, formatted_transcript",
     )
-    .order("meeting_at", { ascending: false });
+    .order("meeting_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   const contactsPromise = supabase
     .from("contacts")
@@ -38,8 +55,22 @@ export default async function MeetingsPage() {
     console.error("Error fetching contacts:", contactsResponse.error);
   }
 
-  const meetings = (meetingsResponse.data as MeetingCardSummary[]) || [];
+  // Add the missing transcription field to match MeetingCardSummary type
+  const meetings = (meetingsResponse.data?.map(meeting => ({
+    ...meeting,
+    transcription: null
+  })) as MeetingCardSummary[]) || [];
   const contacts = (contactsResponse.data as Contact[]) || [];
+  
+  const hasMore = totalMeetings ? (page * limit) < totalMeetings : false;
 
-  return <MeetingsList initialMeetings={meetings} initialContacts={contacts} />;
+  return (
+    <MeetingsList 
+      initialMeetings={meetings} 
+      initialContacts={contacts}
+      currentPage={page}
+      hasMore={hasMore}
+      totalMeetings={totalMeetings || 0}
+    />
+  );
 }

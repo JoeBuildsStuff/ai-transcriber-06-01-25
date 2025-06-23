@@ -5,11 +5,13 @@ import { useState } from "react";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileText, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, FileText, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { Contact, MeetingCardSummary } from "@/types";
+import { createClient } from "@/lib/supabase/client";
 
 import EditMeetingButtons from "./edit-meeting-buttons";
 
@@ -30,14 +32,25 @@ const getSpeakerColor = (speakerIndex: number) => {
 interface MeetingsListProps {
     initialMeetings: MeetingCardSummary[];
     initialContacts: Contact[];
+    currentPage: number;
+    hasMore: boolean;
+    totalMeetings: number;
 }
 
-export default function MeetingsList({ initialMeetings, initialContacts }: MeetingsListProps) {
-  const [meetings, setMeetings] = useState<MeetingCardSummary[] | null>(initialMeetings);
+export default function MeetingsList({ 
+  initialMeetings, 
+  initialContacts, 
+  currentPage, 
+  hasMore, 
+  totalMeetings 
+}: MeetingsListProps) {
+  const [meetings, setMeetings] = useState<MeetingCardSummary[]>(initialMeetings);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPageState, setCurrentPageState] = useState(currentPage);
+  const [hasMoreState, setHasMoreState] = useState(hasMore);
 
   const handleMeetingUpdate = (updatedMeetingData: Partial<MeetingCardSummary>) => {
     setMeetings((currentMeetings) => {
-      if (!currentMeetings) return null;
       return currentMeetings.map((m) => {
         if (m.id === updatedMeetingData.id) {
           return { ...m, ...updatedMeetingData };
@@ -45,6 +58,51 @@ export default function MeetingsList({ initialMeetings, initialContacts }: Meeti
         return m;
       });
     });
+  };
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    
+    try {
+      const supabase = createClient();
+      const nextPage = currentPageState + 1;
+      const limit = 10;
+      const offset = (nextPage - 1) * limit;
+
+      const { data: newMeetings, error } = await supabase
+        .from("meetings")
+        .select(
+          "id, title, meeting_at, speaker_names, summary, original_file_name, formatted_transcript",
+        )
+        .order("meeting_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error("Error loading more meetings:", error);
+        return;
+      }
+
+      if (newMeetings && newMeetings.length > 0) {
+        // Add the missing transcription field to match MeetingCardSummary type
+        const meetingsWithTranscription = newMeetings.map(meeting => ({
+          ...meeting,
+          transcription: null
+        })) as MeetingCardSummary[];
+        
+        setMeetings(prevMeetings => [...prevMeetings, ...meetingsWithTranscription]);
+        setCurrentPageState(nextPage);
+        
+        // Check if there are more meetings to load
+        const newHasMore = (nextPage * limit) < totalMeetings;
+        setHasMoreState(newHasMore);
+      } else {
+        setHasMoreState(false);
+      }
+    } catch (error) {
+      console.error("Error loading more meetings:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const getSpeakerDisplayData = (meeting: MeetingCardSummary, contacts: Contact[] | null) => {
@@ -63,9 +121,7 @@ export default function MeetingsList({ initialMeetings, initialContacts }: Meeti
     });
   };
 
-  const groupMeetingsByDate = (meetings: MeetingCardSummary[] | null) => {
-    if (!meetings) return {};
-    
+  const groupMeetingsByDate = (meetings: MeetingCardSummary[]) => {
     return meetings.reduce((groups: { [key: string]: MeetingCardSummary[] }, meeting) => {
       if (meeting.meeting_at) {
         const date = format(parseISO(meeting.meeting_at), 'yyyy-MM-dd');
@@ -82,6 +138,16 @@ export default function MeetingsList({ initialMeetings, initialContacts }: Meeti
 
   return (
     <div className="flex flex-col gap-6 h-full overflow-auto">
+      {/* Pagination info */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>
+          Showing {meetings.length} of {totalMeetings} meetings
+        </span>
+        {meetings.length > 10 && (
+          <span>Loaded {Math.ceil(meetings.length / 10)} page{Math.ceil(meetings.length / 10) > 1 ? 's' : ''}</span>
+        )}
+      </div>
+
       {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
         <div key={date} className="flex flex-col gap-4">
           <div className="flex items-end gap-2">
@@ -147,7 +213,29 @@ export default function MeetingsList({ initialMeetings, initialContacts }: Meeti
         </div>
       ))}
       
-      {meetings && meetings.length === 0 && (
+      {/* Load More Button */}
+      {hasMoreState && (
+        <div className="flex justify-start  ml-8 max-w-3xl">
+          <Button 
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            variant="outline"
+            size="lg"
+            className="w-full h-12"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <span className="text-base">Load More Meetings</span>
+            )}
+          </Button>
+        </div>
+      )}
+      
+      {meetings.length === 0 && (
         <div className="text-center text-muted-foreground py-8">
           No meetings found.
         </div>
