@@ -156,7 +156,7 @@ const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({ audioUrl, du
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-2 -my-5">
+            <div className="flex items-center justify-center sm:gap-2 -my-5">
               <Button variant="ghost" onClick={handleRewind}>
                 <RotateCcw className="w-4 h-4" />
               </Button>
