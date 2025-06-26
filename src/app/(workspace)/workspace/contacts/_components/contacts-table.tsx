@@ -2,6 +2,7 @@ import { columns } from "./contacts-columns"
 import { DataTable } from "@/components/data-table/data-table"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
 import { getContacts } from "../_lib/queries"
+import { deleteContacts, createContact, updateContact } from "../_lib/actions"
 
 interface DataTableContactsProps {
   searchParams?: SearchParams
@@ -28,7 +29,11 @@ export default async function DataTableContacts({
         data={data} 
         pageCount={pageCount}
         initialState={initialState}
+        deleteAction={deleteContacts}
+        createAction={createContact}
+        updateAction={updateContact}
       />
     </div>
   )
+  
 }

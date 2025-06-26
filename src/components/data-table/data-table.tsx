@@ -38,6 +38,9 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   initialState?: Partial<DataTableState>
   pageCount?: number
+  deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
+  createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
 }
 
 export function DataTable<TData, TValue>({
@@ -45,6 +48,9 @@ export function DataTable<TData, TValue>({
   data,
   initialState,
   pageCount,
+  deleteAction,
+  createAction,
+  updateAction,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter()
   const pathname = usePathname()
@@ -120,7 +126,12 @@ export function DataTable<TData, TValue>({
   return (
     <div>
         <div className="pb-2">
-            <DataTableToolbar table={table} />
+            <DataTableToolbar 
+              table={table} 
+              deleteAction={deleteAction} 
+              createAction={createAction}
+              updateAction={updateAction}
+            />
         </div>
 
         <div className="rounded-md border">

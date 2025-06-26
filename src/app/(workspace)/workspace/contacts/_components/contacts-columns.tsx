@@ -48,6 +48,50 @@ export const columns: ColumnDef<Contacts>[] = [
       label: "Name",
       variant: "text",
       placeholder: "Search names...",
+      readOnly: true,
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "first_name",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="First Name" />,
+    cell: ({ row }) => {
+      const firstName = row.getValue("first_name") as string
+      return <div className="">{firstName}</div>
+    },
+    meta: {
+      label: "First Name",
+      variant: "text",
+      placeholder: "Search first names...",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "last_name",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Last Name" />,
+    cell: ({ row }) => {
+      const lastName = row.getValue("last_name") as string
+      return <div className="">{lastName}</div>
+    },
+    meta: {
+      label: "Last Name",
+      variant: "text",
+      placeholder: "Search last names...",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "nickname",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Nickname" />,
+    cell: ({ row }) => {
+      const nickname = row.getValue("nickname") as string
+      if (!nickname) return <div className="text-muted-foreground">—</div>
+      return <div className="text-sm">{nickname}</div>
+    },
+    meta: {
+      label: "Nickname",
+      variant: "text",
+      placeholder: "Search nicknames...",
     },
     enableColumnFilter: true,
   },
@@ -113,6 +157,46 @@ export const columns: ColumnDef<Contacts>[] = [
     enableColumnFilter: true,
   },
   {
+    accessorKey: "birthday",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Birthday" />,
+    cell: ({ row }) => {
+      const birthday = row.getValue("birthday") as string
+      if (!birthday) return <div className="text-muted-foreground">—</div>
+      
+      const date = new Date(birthday)
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+      }).format(date)
+      
+      return <div className="text-sm">{formatted}</div>
+    },
+    meta: {
+      label: "Birthday",
+      variant: "date",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "notes",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
+    cell: ({ row }) => {
+      const notes = row.getValue("notes") as string
+      if (!notes) return <div className="text-muted-foreground">—</div>
+      
+      // Truncate notes if too long
+      const truncated = notes.length > 50 ? notes.substring(0, 47) + "..." : notes
+      
+      return <div className="text-sm max-w-[200px] truncate" title={notes}>{truncated}</div>
+    },
+    meta: {
+      label: "Notes",
+      variant: "text",
+      placeholder: "Search notes...",
+    },
+    enableColumnFilter: true,
+  },
+  {
     accessorKey: "tags",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
     cell: ({ row }) => {
@@ -160,6 +244,27 @@ export const columns: ColumnDef<Contacts>[] = [
     enableColumnFilter: true,
   },
   {
+    accessorKey: "is_favorite",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Favorite" />,
+    cell: ({ row }) => {
+      const isFavorite = row.getValue("is_favorite") as boolean
+      return (
+        <div className="flex justify-center">
+          {isFavorite ? (
+                <Star className="size-5 fill-yellow-400 text-yellow-700 dark:text-yellow-400 dark:fill-yellow-900/30" strokeWidth={1} />
+            ) : (
+                <Star className="size-5 fill-gray-200 text-gray-400 dark:text-gray-400 dark:fill-gray-900/30" strokeWidth={1} />
+            )}
+        </div>
+      )
+    },
+    meta: {
+      label: "Favorite",
+      variant: "boolean",
+    },
+    enableColumnFilter: true,
+  },
+  {
     accessorKey: "created_at",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
     cell: ({ row }) => {
@@ -178,6 +283,7 @@ export const columns: ColumnDef<Contacts>[] = [
     meta: {
       label: "Created",
       variant: "date",
+      readOnly: true,
     },
     enableColumnFilter: true,
   },
@@ -200,27 +306,7 @@ export const columns: ColumnDef<Contacts>[] = [
     meta: {
       label: "Updated",
       variant: "date",
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "is_favorite",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Favorite" />,
-    cell: ({ row }) => {
-      const isFavorite = row.getValue("is_favorite") as boolean
-      return (
-        <div className="flex justify-center">
-          {isFavorite ? (
-                <Star className="size-5 fill-yellow-400 text-yellow-700 dark:text-yellow-400 dark:fill-yellow-900/30" strokeWidth={1} />
-            ) : (
-                <Star className="size-5 fill-gray-200 text-gray-400 dark:text-gray-400 dark:fill-gray-900/30" strokeWidth={1} />
-            )}
-        </div>
-      )
-    },
-    meta: {
-      label: "Favorite",
-      variant: "boolean",
+      readOnly: true,
     },
     enableColumnFilter: true,
   },
@@ -266,4 +352,5 @@ export const columns: ColumnDef<Contacts>[] = [
       )
     },
   },
+  
 ]
