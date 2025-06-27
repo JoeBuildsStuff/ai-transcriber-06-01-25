@@ -47,7 +47,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
           <MeetingsDetailSheet meeting={meeting} />
           <Button variant="ghost" size="sm" asChild>
             <Link
-              href={`/workspace/meetings-server/${meeting.id}`}
+              href={`/workspace/meetings/${meeting.id}`}
               className="flex items-center"
             >
               <SquareArrowOutUpRight className="size-4 shrink-0 text-muted-foreground" />

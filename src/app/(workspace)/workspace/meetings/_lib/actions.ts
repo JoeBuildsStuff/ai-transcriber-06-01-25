@@ -44,7 +44,7 @@ export async function createMeeting(data: Omit<Meetings, "id" | "created_at" | "
       return { success: false, error: error.message }
     }
     
-    revalidatePath("/workspace/meetings-server")
+    revalidatePath("/workspace/meetings")
     return { success: true, data: newMeeting }
   } catch (error) {
     console.error("Unexpected error creating meeting:", error)
@@ -76,8 +76,8 @@ export async function updateMeeting(id: string, data: Partial<Omit<Meetings, "id
       return { success: false, error: error.message }
     }
     
-    revalidatePath("/workspace/meetings-server")
-    revalidatePath(`/workspace/meetings-server/${id}`)
+    revalidatePath("/workspace/meetings")
+    revalidatePath(`/workspace/meetings/${id}`)
     return { success: true, data: updatedMeeting }
   } catch (error) {
     console.error("Unexpected error updating meeting:", error)
@@ -107,7 +107,7 @@ export async function deleteMeetings(meetingIds: string[]) {
       return { success: false, error: error.message }
     }
     
-    revalidatePath("/workspace/meetings-server")
+    revalidatePath("/workspace/meetings")
     return { success: true, deletedCount: meetingIds.length }
   } catch (error) {
     console.error("Unexpected error deleting meetings:", error)
