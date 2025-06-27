@@ -9,6 +9,7 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { MeetingsList } from "../_lib/validations"
 import Link from "next/link"
 import { MeetingsDetailSheet } from "./meetings-detail-sheet"
+import { Badge } from "@/components/ui/badge"
 
 export const columns: ColumnDef<MeetingsList>[] = [
   {
@@ -42,7 +43,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     cell: ({ row }) => {
       const meeting = row.original
       return (
-        <div className="flex justify-start items-start w-[2rem]">
+        <div className="w-fit">
           <MeetingsDetailSheet meeting={meeting} />
           <Button variant="ghost" size="sm" asChild>
             <Link
@@ -64,7 +65,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
       const title = row.getValue("title") as string
       return (
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 justify-start">
             <span className="font-medium">
               {title || "Untitled Meeting"}
             </span>
@@ -74,7 +75,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     meta: {
       label: "Title",
       variant: "text",
-      placeholder: "Search titles...",
+      placeholder: "New Meeting",
     },
     enableColumnFilter: true,
   },
@@ -108,6 +109,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
       
       return <div className="text-sm">{formatted}</div>
     },
+    meta: {
+      label: "Time",
+      readOnly: true,
+      variant: "text",
+    },
+    enableColumnFilter: true,
   },
   {
     id: "meeting_age",
@@ -120,6 +127,11 @@ export const columns: ColumnDef<MeetingsList>[] = [
       const formatted = formatDistanceToNow(date, { addSuffix: true })
       
       return <div className="text-sm text-muted-foreground">{formatted}</div>
+    },
+    meta: {
+      label: "Age",
+      readOnly: true,
+      variant: "text",
     },
   },
   {
@@ -144,6 +156,96 @@ export const columns: ColumnDef<MeetingsList>[] = [
     enableColumnFilter: true,
   },
   {
+    accessorKey: "speaker_names",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Speakers" />,
+    cell: ({ row }) => {
+      const speakerNames = row.getValue(
+        "speaker_names"
+      ) as { [key: string]: string } | null
+
+      if (!speakerNames || Object.keys(speakerNames).length === 0) {
+        return <div className="text-muted-foreground">—</div>
+      }
+
+      const names = Object.values(speakerNames).filter(
+        (name) => name && name.trim() !== ""
+      )
+
+      if (names.length === 0) {
+        return <div className="text-muted-foreground">—</div>
+      }
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {names.map((name, index) => (
+            <Badge key={index} variant="outline" className="text-xs">
+              {name}
+            </Badge>
+          ))}
+        </div>
+      )
+    },
+    meta: {
+      label: "Speakers",
+      variant: "text",
+      readOnly: true,
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "user_notes",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
+    cell: ({ row }) => {
+      const notes = row.getValue("user_notes") as string | null
+      if (!notes) return <div className="text-muted-foreground">—</div>
+      
+      const truncated = notes.length > 50 ? notes.substring(0, 47) + "..." : notes
+      
+      return <div className="max-w-[200px] truncate text-sm" title={notes}>{truncated}</div>
+    },
+    meta: {
+      label: "Notes",
+      variant: "text",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "summary",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Summary" />,
+    cell: ({ row }) => {
+      const summary = row.getValue("summary") as string | null
+      if (!summary) return <div className="text-muted-foreground">—</div>
+      
+      const truncated = summary.length > 50 ? summary.substring(0, 47) + "..." : summary
+      
+      return <div className="max-w-[200px] truncate text-sm" title={summary}>{truncated}</div>
+    },
+    meta: {
+      label: "Summary",
+      variant: "text",
+      readOnly: true,
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "original_file_name",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Original File" />,
+    cell: ({ row }) => {
+      const fileName = row.getValue("original_file_name") as string | null
+      if (!fileName) return <div className="text-muted-foreground">—</div>
+      
+      const truncated = fileName.length > 30 ? fileName.substring(0, 27) + "..." : fileName
+      
+      return <div className="text-sm" title={fileName}>{truncated}</div>
+    },
+    meta: {
+      label: "Original File",
+      variant: "text",
+      readOnly: true,
+    },
+    enableColumnFilter: true,
+  },
+  {
     accessorKey: "created_at",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
     cell: ({ row }) => {
@@ -162,6 +264,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     meta: {
       label: "Created",
       variant: "date",
+      readOnly: true,
     },
     enableColumnFilter: true,
   },
@@ -184,6 +287,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     meta: {
       label: "Updated",
       variant: "date",
+      readOnly: true,
     },
     enableColumnFilter: true,
   },

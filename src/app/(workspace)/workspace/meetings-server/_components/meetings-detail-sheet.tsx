@@ -300,7 +300,7 @@ export function MeetingsDetailSheet({ meeting }: { meeting: MeetingsList }) {
   // Use the stored formatted_transcript if available, otherwise try to generate from raw transcription
   let displayableTranscript: FormattedTranscriptGroup[] = [];
   if (fullMeetingData?.formatted_transcript && Array.isArray(fullMeetingData.formatted_transcript)) {
-    displayableTranscript = fullMeetingData.formatted_transcript as FormattedTranscriptGroup[];
+    displayableTranscript = fullMeetingData.formatted_transcript as unknown as FormattedTranscriptGroup[];
   } else if (fullMeetingData?.transcription && typeof fullMeetingData.transcription === 'object') {
     // Attempt to format if raw data exists but formatted_transcript is missing/empty
     try {

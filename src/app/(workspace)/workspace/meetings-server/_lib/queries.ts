@@ -22,7 +22,7 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
   let query = supabase
     .schema("ai_transcriber")
     .from("meetings")
-    .select("id, meeting_reviewed, title, meeting_at, speaker_names, created_at, updated_at", { count: "exact" })
+    .select("id, meeting_reviewed, title, meeting_at, speaker_names, created_at, updated_at, original_file_name, summary, user_notes", { count: "exact" })
 
   // Sorting
   if (sort.length > 0) {
