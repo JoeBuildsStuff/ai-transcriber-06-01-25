@@ -7,11 +7,9 @@ import Summary from '@/components/summary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertCircle, Trash2, Pencil, CalendarDays, Clock, Ellipsis, FileJson2, Copy, SquareCheckBig, RefreshCw, Loader2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 import {
   AlertDialog,
@@ -700,15 +698,27 @@ export default function MeetingDetailPage() {
                 </div>
             </div>
             <div className="flex items-center gap-2"> {/* Container for buttons */} 
-            <div className="flex items-center space-x-2">
-  <Label htmlFor="meeting-reviewed">Meeting Reviewed</Label>
-  <Switch 
-    id="meeting-reviewed" 
-    checked={meeting?.meeting_reviewed || false}
-    onCheckedChange={handleMeetingReviewedChange}
-    disabled={isUpdatingReviewed}
-  />
-</div>
+            <Button 
+              variant={meeting?.meeting_reviewed ? "green" : "gray"} 
+              size="sm" 
+              className="items-center gap-2"
+              onClick={() => handleMeetingReviewedChange(!meeting?.meeting_reviewed)}
+              disabled={isUpdatingReviewed}
+            >
+              {meeting?.meeting_reviewed ? (
+                <>
+                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm">Reviewed</span>
+                </>
+              ) : (
+                <>
+                  <Circle className="size-4" />
+                  <span className="text-sm">Not Reviewed</span>
+                </>
+              )}
+            </Button>
               <DropdownMenu>  
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
