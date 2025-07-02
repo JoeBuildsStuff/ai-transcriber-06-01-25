@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import {  X, Copy, Check, ChevronDownIcon, PlusIcon, Users } from "lucide-react"
+import {  X, Copy, Check, PlusIcon, Users, CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,11 +29,32 @@ import { getAllContacts } from "@/actions/contacts"
 import { getMeetingAttendees, addMeetingAttendees, removeMeetingAttendees } from "@/actions/meetings"
 import { toast } from "sonner"
 
+function formatDate(date: Date | undefined) {
+  if (!date) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  })
+}
+
+function isValidDate(date: Date | undefined) {
+  if (!date) {
+    return false
+  }
+  return !isNaN(date.getTime())
+}
+
 export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onRefresh }: MeetingEditModalProps) {
   const [title, setTitle] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedTime, setSelectedTime] = useState("")
   const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [month, setMonth] = useState<Date | undefined>()
+  const [dateValue, setDateValue] = useState("")
   const [copiedField, setCopiedField] = useState<string | null>(null)
   
   // Attendee management state
@@ -49,6 +70,8 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
       setTitle(meeting.title || meeting.original_file_name || "");
       const meetingDate = new Date(meeting.meeting_at || "");
       setSelectedDate(meetingDate);
+      setMonth(meetingDate);
+      setDateValue(formatDate(meetingDate));
       setSelectedTime(format(meetingDate, "HH:mm:ss"));
     }
   }, [meeting]);
@@ -230,36 +253,58 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
                   <Label htmlFor="date" className="text-sm font-medium">
                     Meeting Date
                   </Label>
-                  <Popover
-                    open={datePickerOpen}
-                    onOpenChange={setDatePickerOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        id="date"
-                        className="w-full justify-between font-normal"
-                      >
-                        {selectedDate
-                          ? selectedDate.toLocaleDateString()
-                          : "Select date"}
-                        <ChevronDownIcon className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto overflow-hidden p-0"
-                      align="start"
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => {
+                  <div className="relative flex">
+                    <Input
+                      id="date"
+                      value={dateValue}
+                      placeholder="today"
+                      className="bg-background pr-10"
+                      onChange={(e) => {
+                        const date = new Date(e.target.value)
+                        setDateValue(e.target.value)
+                        if (isValidDate(date)) {
                           setSelectedDate(date)
-                          setDatePickerOpen(false)
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                          setMonth(date)
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault()
+                          setDatePickerOpen(true)
+                        }
+                      }}
+                    />
+                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                        >
+                          <CalendarIcon className="size-3.5" />
+                          <span className="sr-only">Select date</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="end"
+                        alignOffset={-8}
+                        sideOffset={10}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          captionLayout="dropdown"
+                          month={month}
+                          onMonthChange={setMonth}
+                          onSelect={(date) => {
+                            setSelectedDate(date)
+                            setDateValue(formatDate(date))
+                            setDatePickerOpen(false)
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
