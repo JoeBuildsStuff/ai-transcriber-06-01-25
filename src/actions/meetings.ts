@@ -77,5 +77,215 @@ export async function updateMeetingNotes(meetingId: string, notes: string) {
   }
 }
 
+// Meeting Attendees Management Functions
+export async function getMeetingAttendees(meetingId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to view attendees." }
+  }
+
+  try {
+    const { data: attendees, error } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_attendees")
+      .select(`
+        id,
+        contact_id,
+        invitation_status,
+        attendance_status,
+        role,
+        invited_at,
+        responded_at,
+        notes,
+        contacts (
+          id,
+          first_name,
+          last_name,
+          display_name,
+          primary_email,
+          company,
+          job_title
+        )
+      `)
+      .eq("meeting_id", meetingId)
+      .eq("user_id", user.id)
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { data: attendees }
+  } catch (error) {
+    console.error('Error fetching meeting attendees:', error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function addMeetingAttendees(meetingId: string, contactIds: string[]) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to add attendees." }
+  }
+
+  try {
+    // First verify the meeting belongs to the user
+    const { data: meeting, error: meetingError } = await supabase
+      .schema("ai_transcriber")
+      .from("meetings")
+      .select("id")
+      .eq("id", meetingId)
+      .eq("user_id", user.id)
+      .single()
+
+    if (meetingError || !meeting) {
+      return { error: "Meeting not found or access denied." }
+    }
+
+    // Verify all contacts belong to the user
+    const { data: contacts, error: contactsError } = await supabase
+      .schema("ai_transcriber")
+      .from("contacts")
+      .select("id")
+      .in("id", contactIds)
+      .eq("user_id", user.id)
+
+    if (contactsError) {
+      return { error: "Error validating contacts." }
+    }
+
+    const validContactIds = contacts.map(c => c.id)
+    const invalidContactIds = contactIds.filter(id => !validContactIds.includes(id))
+    
+    if (invalidContactIds.length > 0) {
+      return { error: "Some contacts do not exist or do not belong to you." }
+    }
+
+    // Check for existing attendees to avoid duplicates
+    const { data: existingAttendees, error: existingError } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_attendees")
+      .select("contact_id")
+      .eq("meeting_id", meetingId)
+      .eq("user_id", user.id)
+      .in("contact_id", contactIds)
+
+    if (existingError) {
+      return { error: "Error checking existing attendees." }
+    }
+
+    const existingContactIds = existingAttendees.map(a => a.contact_id)
+    const newContactIds = contactIds.filter(id => !existingContactIds.includes(id))
+
+    if (newContactIds.length === 0) {
+      return { error: "All selected contacts are already attendees." }
+    }
+
+    // Insert new attendees
+    const attendeesToInsert = newContactIds.map(contactId => ({
+      meeting_id: meetingId,
+      contact_id: contactId,
+      user_id: user.id,
+      invitation_status: 'invited' as const,
+      attendance_status: 'unknown' as const,
+      role: 'attendee' as const,
+    }))
+
+    const { data: newAttendees, error: insertError } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_attendees")
+      .insert(attendeesToInsert)
+      .select()
+
+    if (insertError) {
+      return { error: insertError.message }
+    }
+
+    revalidatePath(`/workspace/meetings/${meetingId}`)
+    return { 
+      data: newAttendees,
+      message: `${newContactIds.length} attendee(s) added successfully.`
+    }
+  } catch (error) {
+    console.error('Error adding meeting attendees:', error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function removeMeetingAttendees(meetingId: string, attendeeIds: string[]) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to remove attendees." }
+  }
+
+  try {
+    const { error } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_attendees")
+      .delete()
+      .in("id", attendeeIds)
+      .eq("meeting_id", meetingId)
+      .eq("user_id", user.id)
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    revalidatePath(`/workspace/meetings/${meetingId}`)
+    return { 
+      data: "Attendees removed successfully",
+      message: `${attendeeIds.length} attendee(s) removed.`
+    }
+  } catch (error) {
+    console.error('Error removing meeting attendees:', error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function updateAttendeeStatus(
+  attendeeId: string, 
+  updates: {
+    invitation_status?: 'invited' | 'accepted' | 'declined' | 'tentative' | 'no_response'
+    attendance_status?: 'present' | 'absent' | 'unknown'
+    role?: 'organizer' | 'required' | 'optional' | 'attendee'
+    notes?: string
+  }
+) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to update attendee status." }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_attendees")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", attendeeId)
+      .eq("user_id", user.id)
+      .select()
+      .single()
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { data }
+  } catch (error) {
+    console.error('Error updating attendee status:', error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
 
 

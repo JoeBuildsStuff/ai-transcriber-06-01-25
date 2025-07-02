@@ -60,10 +60,21 @@ export async function createContact(formData: FormData) {
     }
   }
 
+  // Generate display_name from first_name and last_name
+  const displayName = [contactData.first_name, contactData.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim() || contactData.nickname || "Unnamed Contact"
+
   const { data: newContact, error } = await supabase
     .schema("ai_transcriber")
     .from("contacts")
-    .insert({ ...contactData, tags: tagsArray, user_id: userData.user.id })
+    .insert({ 
+      ...contactData, 
+      tags: tagsArray, 
+      user_id: userData.user.id,
+      display_name: displayName
+    })
     .select()
     .single()
 
@@ -120,10 +131,22 @@ export async function updateContact(formData: FormData) {
     }
   }
 
+  // Generate display_name from first_name and last_name if either is being updated
+  const baseUpdateData = { ...contactData, tags: tagsArray }
+  const updateData = (contactData.first_name !== undefined || contactData.last_name !== undefined) 
+    ? {
+        ...baseUpdateData,
+        display_name: [contactData.first_name, contactData.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim() || contactData.nickname || "Unnamed Contact"
+      }
+    : baseUpdateData
+
   const { data: updatedContact, error } = await supabase
     .schema("ai_transcriber")
     .from("contacts")
-    .update({ ...contactData, tags: tagsArray })
+    .update(updateData)
     .eq("id", id)
     .eq("user_id", userData.user.id)
     .select()
@@ -276,10 +299,16 @@ export async function duplicateContact(contactId: string) {
   }
 
   // Modify the data to indicate it's a copy
+  const displayName = [contactData.first_name, contactData.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim() || contactData.nickname || "Unnamed Contact"
+
   const duplicatedData = {
     ...contactData,
     // Set user_id to current user
-    user_id: userData.user.id
+    user_id: userData.user.id,
+    display_name: displayName
   }
 
   const { data: newContact, error: createError } = await supabase

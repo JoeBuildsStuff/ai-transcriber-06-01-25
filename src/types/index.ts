@@ -56,6 +56,28 @@ export interface MeetingDetails extends Meeting {
   audioUrl: string | null;
   user_notes?: string | null;
   meeting_reviewed?: boolean | null;
+  attendees?: MeetingAttendeeWithContact[];
+}
+
+// ===== MEETING ATTENDEE TYPES =====
+export interface MeetingAttendee {
+  id: string;
+  meeting_id: string;
+  contact_id: string;
+  user_id: string;
+  invitation_status: 'invited' | 'accepted' | 'declined' | 'tentative' | 'no_response';
+  attendance_status: 'present' | 'absent' | 'unknown';
+  role: 'organizer' | 'required' | 'optional' | 'attendee';
+  invited_at: string;
+  responded_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  notes?: string | null;
+  contacts?: Contact;
+}
+
+export interface MeetingAttendeeWithContact extends MeetingAttendee {
+  contacts: Contact;
 }
 
 // ===== TRANSCRIPTION TYPES =====
@@ -187,6 +209,7 @@ export interface MeetingEditModalProps {
     onClose: () => void;
     meeting: MeetingDetails | MeetingCardSummary | null;
     onSave: (details: { title: string; meeting_at: string }) => void;
+    onRefresh?: () => Promise<void>;
 }
 
 export interface AudioPlayerRef {

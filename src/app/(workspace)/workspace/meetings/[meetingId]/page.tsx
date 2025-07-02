@@ -39,6 +39,7 @@ import AudioPlayer from '@/components/audio-player';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
 import UploadAudio from './_components/upload-audio';
 import UserNotes from './_components/user-notes';
+import { Badge } from '@/components/ui/badge';
 
 export default function MeetingDetailPage() {
   const params = useParams();
@@ -276,6 +277,18 @@ export default function MeetingDetailPage() {
     }
   };
 
+  const refreshMeetingData = async () => {
+    try {
+      const response = await fetch(`/api/meetings/${meetingId}`);
+      if (response.ok) {
+        const updatedMeeting = await response.json();
+        setMeeting(updatedMeeting);
+      }
+    } catch (error) {
+      console.error("Error refreshing meeting data:", error);
+    }
+  };
+
   const handleUpdateMeetingDetails = async (details: { title: string; meeting_at: string }) => {
     if (!meetingId || !meeting) return;
 
@@ -311,7 +324,8 @@ export default function MeetingDetailPage() {
             throw new Error(responseData.error || 'Failed to update meeting details');
         }
 
-        setMeeting(prev => prev ? { ...prev, ...responseData.meeting } : null);
+        // Refresh the entire meeting data to get updated attendees
+        await refreshMeetingData();
         toast.success('Meeting details updated!');
         setIsEditDetailsDialogOpen(false);
     } catch (err) {
@@ -672,7 +686,7 @@ export default function MeetingDetailPage() {
     <div className="flex flex-col h-full space-y-2 ">
       {/* Meeting Header */}
         <div className="flex flex-row items-start justify-between">
-            <div className="flex-grow min-w-0">
+            <div className="flex-grow min-w-0 space-y-2">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl md:text-2xl font-semibold flex items-center min-w-0">
                         <span className="truncate">
@@ -683,7 +697,7 @@ export default function MeetingDetailPage() {
                         <Pencil className="w-4 h-4" />
                     </Button>
                   </div>
-                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 pt-1 flex items-center flex-wrap">
+                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 flex items-center flex-wrap">
                     <span className="flex items-center">
                         <CalendarDays className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
                         {format(new Date(meeting.meeting_at), "MMMM do, yyyy")}
@@ -696,6 +710,22 @@ export default function MeetingDetailPage() {
                         ({formatDistanceToNow(new Date(meeting.meeting_at), { addSuffix: true })})
                     </span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs md:text-sm text-muted-foreground">Attendees: </span>
+                  {meeting.attendees && meeting.attendees.length > 0 ? (
+                    meeting.attendees.map((attendee) => (
+                      <Badge key={attendee.id} variant="outline">
+                        {attendee.contacts?.display_name || 
+                         `${attendee.contacts?.first_name || ''} ${attendee.contacts?.last_name || ''}`.trim() ||
+                         attendee.contacts?.primary_email ||
+                         'Unknown'}
+                        {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No attendees added</span>
+                  )}
+              </div>
             </div>
             <div className="flex items-center gap-2"> {/* Container for buttons */} 
             <Button 
@@ -768,6 +798,7 @@ export default function MeetingDetailPage() {
         onClose={() => setIsEditDetailsDialogOpen(false)}
         meeting={meeting}
         onSave={handleUpdateMeetingDetails}
+        onRefresh={refreshMeetingData}
       />
 
       {/* Deepgram Response Dialog */}
@@ -856,7 +887,7 @@ export default function MeetingDetailPage() {
       ) : null}
 
       {/* Meeting Tabs */}
-      <Tabs defaultValue="transcript" className="w-full grow mt-3" onValueChange={setActiveTab}>
+      <Tabs defaultValue="transcript" className="w-full grow" onValueChange={setActiveTab}>
         <div className='flex justify-between items-center mb-2'>
           <TabsList>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>

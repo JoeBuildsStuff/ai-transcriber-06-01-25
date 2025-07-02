@@ -45,6 +45,37 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
       return NextResponse.json({ error: 'Meeting not found or access denied' }, { status: 404 });
     }
 
+    // Fetch meeting attendees with contact information
+    const { data: attendees, error: attendeesError } = await supabase
+      .schema('ai_transcriber')
+      .from('meeting_attendees')
+      .select(`
+        id,
+        contact_id,
+        invitation_status,
+        attendance_status,
+        role,
+        invited_at,
+        responded_at,
+        notes,
+        contacts (
+          id,
+          first_name,
+          last_name,
+          display_name,
+          primary_email,
+          company,
+          job_title
+        )
+      `)
+      .eq('meeting_id', meetingId)
+      .eq('user_id', user.id);
+
+    if (attendeesError) {
+      console.error(`Error fetching attendees for meeting ${meetingId}:`, attendeesError);
+      // Don't fail the entire request if attendees can't be fetched
+    }
+
     let audioUrl = null;
     if (meeting.audio_file_path) {
         const { data, error: signedUrlError } = await supabase.storage
@@ -59,7 +90,11 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
         }
     }
 
-    const meetingWithUrl = { ...meeting, audioUrl };
+    const meetingWithUrl = { 
+      ...meeting, 
+      audioUrl,
+      attendees: attendees || []
+    };
 
     return NextResponse.json(meetingWithUrl);
 

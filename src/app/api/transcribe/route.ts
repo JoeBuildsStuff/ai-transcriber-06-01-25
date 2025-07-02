@@ -25,11 +25,6 @@ export async function POST(req: NextRequest) {
     const userId = user.id;
 
     const { filePath, originalFileName, meetingAt, meetingId } = await req.json();
-    console.log('Meeting at:', meetingAt);
-    console.log('Meeting ID provided:', meetingId);
-    
-    console.log('Attempting to download filePath:', filePath);
-    console.log('Original file name:', originalFileName);
 
     if (!filePath) {
       throw new Error('No file path provided');
@@ -135,8 +130,6 @@ export async function POST(req: NextRequest) {
           if (deepgramError) {
             throw deepgramError;
           }
-
-          console.log('Deepgram result for meetingId', finalMeetingId, JSON.stringify(deepgramResult).substring(0, 100) + '...');
 
           // Extract unique speakers and create initial speaker_names object
           const uniqueSpeakers = new Set<number>();

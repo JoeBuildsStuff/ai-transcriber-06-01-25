@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import {  X, Copy, Check, ChevronDownIcon, PlusIcon } from "lucide-react"
+import { useEffect, useState, useCallback } from "react"
+import {  X, Copy, Check, ChevronDownIcon, PlusIcon, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,14 +23,26 @@ import {
   AccordionContent,
   AccordionItem,
 } from "@/components/ui/accordion"
-import { MeetingEditModalProps } from "@/types"
+import { MeetingEditModalProps, Contact, MeetingAttendeeWithContact } from "@/types"
+import MultipleSelector, { Option } from "@/components/ui/multiselect"
+import { getAllContacts } from "@/actions/contacts"
+import { getMeetingAttendees, addMeetingAttendees, removeMeetingAttendees } from "@/actions/meetings"
+import { toast } from "sonner"
 
-export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: MeetingEditModalProps) {
+export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onRefresh }: MeetingEditModalProps) {
   const [title, setTitle] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedTime, setSelectedTime] = useState("")
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  
+  // Attendee management state
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [currentAttendees, setCurrentAttendees] = useState<MeetingAttendeeWithContact[]>([])
+  const [selectedAttendees, setSelectedAttendees] = useState<Option[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  const [, setIsLoadingAttendees] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (meeting) {
@@ -40,6 +52,70 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
       setSelectedTime(format(meetingDate, "HH:mm:ss"));
     }
   }, [meeting]);
+
+  const loadContacts = async () => {
+    setIsLoadingContacts(true)
+    try {
+      const contactsData = await getAllContacts()
+      setContacts(contactsData as Contact[])
+    } catch (error) {
+      console.error('Error loading contacts:', error)
+      toast.error('Failed to load contacts')
+    } finally {
+      setIsLoadingContacts(false)
+    }
+  }
+
+  const loadCurrentAttendees = useCallback(async () => {
+    if (!meeting) return
+    
+    setIsLoadingAttendees(true)
+    try {
+      const result = await getMeetingAttendees(meeting.id)
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      
+      const attendees = result.data as MeetingAttendeeWithContact[]
+      setCurrentAttendees(attendees)
+      
+      // Convert current attendees to selected options
+      const attendeeOptions = attendees.map(attendee => ({
+        value: attendee.contact_id,
+        label: getContactDisplayName(attendee.contacts),
+        fixed: false
+      }))
+      setSelectedAttendees(attendeeOptions)
+    } catch (error) {
+      console.error('Error loading attendees:', error)
+      toast.error('Failed to load current attendees')
+    } finally {
+      setIsLoadingAttendees(false)
+    }
+  }, [meeting])
+
+  // Load contacts and current attendees when modal opens
+  useEffect(() => {
+    if (isOpen && meeting) {
+      loadContacts()
+      loadCurrentAttendees()
+    }
+  }, [isOpen, meeting, loadCurrentAttendees])
+
+  const getContactDisplayName = (contact: Contact): string => {
+    return contact.display_name || 
+           `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 
+           contact.primary_email || 
+           'Unknown Contact'
+  }
+
+  const getContactOptions = (): Option[] => {
+    return contacts.map(contact => ({
+      value: contact.id,
+      label: getContactDisplayName(contact),
+      company: contact.company || undefined,
+    }))
+  }
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -51,15 +127,62 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
     }
   }
 
-  const handleSave = () => {
-    if (selectedDate && selectedTime) {
+  const handleSave = async () => {
+    if (!selectedDate || !selectedTime) {
+      toast.error('Please select both date and time')
+      return
+    }
+
+    setIsSaving(true)
+    try {
       const [hours, minutes, seconds] = selectedTime.split(':').map(Number);
       const meetingAt = new Date(selectedDate);
       meetingAt.setHours(hours, minutes, seconds);
+
+      // Determine which attendees to add/remove
+      const currentAttendeeContactIds = currentAttendees.map(a => a.contact_id)
+      const selectedAttendeeIds = selectedAttendees.map(a => a.value)
+      
+      const attendeesToAdd = selectedAttendeeIds.filter(id => !currentAttendeeContactIds.includes(id))
+      const attendeesToRemove = currentAttendees
+        .filter(attendee => !selectedAttendeeIds.includes(attendee.contact_id))
+        .map(attendee => attendee.id)
+
+      // Add new attendees
+      if (attendeesToAdd.length > 0) {
+        const addResult = await addMeetingAttendees(meeting!.id, attendeesToAdd)
+        if (addResult.error) {
+          throw new Error(addResult.error)
+        }
+      }
+
+      // Remove attendees
+      if (attendeesToRemove.length > 0) {
+        const removeResult = await removeMeetingAttendees(meeting!.id, attendeesToRemove)
+        if (removeResult.error) {
+          throw new Error(removeResult.error)
+        }
+      }
+
+      // Refresh attendees and parent meeting data after attendee changes
+      await loadCurrentAttendees();
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      // Save meeting details (attendees are handled separately above)
       onSave({
         title,
-        meeting_at: meetingAt.toISOString(),
+        meeting_at: meetingAt.toISOString()
       });
+       
+       toast.success('Meeting updated successfully')
+    } catch (error) {
+      console.error('Error saving meeting:', error)
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+      toast.error(`Failed to save meeting: ${errorMessage}`)
+    } finally {
+      setIsSaving(false)
     }
   }
   
@@ -153,6 +276,59 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
                   />
                 </div>
               </div>
+
+              {/* Attendees Section */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Meeting Attendees
+                </Label>
+                <MultipleSelector
+                  value={selectedAttendees}
+                  onChange={setSelectedAttendees}
+                  options={getContactOptions()}
+                  placeholder="Select attendees..."
+                  badgeClassName="pe-6"
+                  className="[&_[data-state=open]]:z-[60]"
+                  emptyIndicator={
+                    isLoadingContacts ? (
+                      <p className="text-center text-gray-600">Loading contacts...</p>
+                    ) : (
+                      <p className="text-center text-gray-600">No contacts found.</p>
+                    )
+                  }
+                  maxSelected={50}
+                  onMaxSelected={(maxLimit) => {
+                    toast.error(`You can only select up to ${maxLimit} attendees.`)
+                  }}
+                  groupBy="company"
+                  commandProps={{
+                    filter: (value, search) => {
+                      // Find the option by value (contact ID)
+                      const option = getContactOptions().find(opt => opt.value === value)
+                      if (!option) return 0
+                      
+                      // Search in the label (contact name) instead of value (contact ID)
+                      const searchTerm = search.toLowerCase()
+                      const label = option.label.toLowerCase()
+                      
+                      // Also search in company name if available
+                      const company = (typeof option.company === 'string' ? option.company : '').toLowerCase()
+                      
+                      if (label.includes(searchTerm) || company.includes(searchTerm)) {
+                        return 1
+                      }
+                      
+                      return 0
+                    }
+                  }}
+                />
+                {selectedAttendees.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedAttendees.length} attendee(s) selected
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Meeting Details */}
@@ -208,49 +384,28 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
                       </div>
                     </div>
 
-                    {/* <div className="space-y-1">
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        Audio File Path
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <code className="max-w-md truncate rounded bg-muted px-2 py-1 font-mono text-xs">
-                          {meeting.audio_file_path}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(meeting.audio_file_path, "path")
-                          }
-                          className="h-6 w-6 flex-shrink-0 p-0"
-                        >
-                          {copiedField === "path" ? (
-                            <Check className="h-3 w-3 text-green-600" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Current Attendees Display */}
+                    {currentAttendees.length > 0 && (
                       <div className="space-y-1">
                         <Label className="text-sm font-medium text-muted-foreground">
-                          Created
+                          Current Attendees ({currentAttendees.length})
                         </Label>
-                        <p className="text-sm">
-                          {format(new Date(meeting.created_at), "PPP p")}
-                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {currentAttendees.map((attendee) => (
+                            <Badge 
+                              key={attendee.id} 
+                              variant="outline" 
+                              className="text-xs"
+                            >
+                              {getContactDisplayName(attendee.contacts)}
+                              {attendee.role === 'organizer' && (
+                                <span className="ml-1 text-blue-600">👑</span>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium text-muted-foreground">
-                          Last Updated
-                        </Label>
-                        <p className="text-sm">
-                          {format(new Date(meeting.updated_at), "PPP p")}
-                        </p>
-                      </div>
-                    </div> */}
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -258,10 +413,12 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave }: M
           </CardContent>
         </div>
         <CardFooter className="flex justify-end gap-3 border-t h-10">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </CardFooter>
       </Card>
     </div>

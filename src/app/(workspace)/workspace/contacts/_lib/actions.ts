@@ -8,9 +8,23 @@ export async function createContact(data: Omit<Contacts, "id" | "created_at" | "
   const supabase = await createClient()
   
   try {
+    // Get the current user to set user_id for RLS policy
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      return { success: false, error: "User not authenticated" }
+    }
+
+    // Include user_id in the contact data
+    const contactData = {
+      ...data,
+      user_id: user.id
+    }
+
     const { data: newContact, error } = await supabase
       .from("contacts")
-      .insert([data])
+      .insert([contactData])
       .select()
       .single()
     
@@ -31,6 +45,14 @@ export async function updateContact(id: string, data: Partial<Omit<Contacts, "id
   const supabase = await createClient()
   
   try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      return { success: false, error: "User not authenticated" }
+    }
+
     const { data: updatedContact, error } = await supabase
       .from("contacts")
       .update(data)
@@ -55,6 +77,14 @@ export async function deleteContacts(contactIds: string[]) {
   const supabase = await createClient()
   
   try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      return { success: false, error: "User not authenticated" }
+    }
+
     const { error } = await supabase
       .from("contacts")
       .delete()
