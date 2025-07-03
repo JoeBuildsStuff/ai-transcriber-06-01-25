@@ -189,6 +189,7 @@ export default function SpeakerAssociationModal({
                             onClick={() => handleSegmentClick(segment.start)} 
                             variant="ghost" 
                             className="w-full justify-start text-left h-auto p-2 text-sm text-muted-foreground hover:text-foreground"
+                            title="Click to play this segment (will load audio if needed)"
                         >
                             <p className="whitespace-normal">&quot;{segment.text.length > 200 ? segment.text.slice(0, 100) + '...' : segment.text}&quot;</p>
                         </Button>

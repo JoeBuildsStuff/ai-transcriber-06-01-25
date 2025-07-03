@@ -53,7 +53,7 @@ export interface MeetingDetails extends Meeting {
   formatted_transcript: FormattedTranscriptGroup[] | null;
   summary_jsonb: Record<string, string> | null;
   openai_response: string | null;
-  audioUrl: string | null;
+  hasAudio: boolean; // Indicates if audio file is available
   user_notes?: string | null;
   meeting_reviewed?: boolean | null;
   attendees?: MeetingAttendeeWithContact[];

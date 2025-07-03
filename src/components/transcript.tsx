@@ -184,7 +184,7 @@ const Transcript: React.FC<TranscriptProps> = ({
                 variant="ghost"
                 className="text-xs text-muted-foreground h-6"
                 onClick={() => onSeekAndPlay(group.start)}
-                title={`Jump to ${formatTime(group.start)}`}
+                title={`Jump to ${formatTime(group.start)} (will load audio if needed)`}
               >
                 {formatTime(group.start)}
               </Button>

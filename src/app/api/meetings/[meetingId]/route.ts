@@ -76,24 +76,12 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
       // Don't fail the entire request if attendees can't be fetched
     }
 
-    let audioUrl = null;
-    if (meeting.audio_file_path) {
-        const { data, error: signedUrlError } = await supabase.storage
-            .from('ai-transcriber-audio')
-            .createSignedUrl(meeting.audio_file_path, 3600); // 1 hour expiration
-
-        if (signedUrlError) {
-            console.error('Error creating signed URL:', signedUrlError);
-            // Not returning an error, just proceeding without the URL
-        } else {
-            audioUrl = data.signedUrl;
-        }
-    }
-
+    // Don't create audio URL by default to save bandwidth
+    // Audio URL will be fetched lazily when needed via /api/meetings/[meetingId]/audio
     const meetingWithUrl = { 
       ...meeting, 
-      audioUrl,
-      attendees: attendees || []
+      attendees: attendees || [],
+      hasAudio: !!meeting.audio_file_path // Indicate if audio is available
     };
 
     return NextResponse.json(meetingWithUrl);

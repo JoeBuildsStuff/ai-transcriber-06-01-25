@@ -35,7 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/component
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
-import AudioPlayer from '@/components/audio-player';
+import LazyAudioPlayer from '@/components/lazy-audio-player';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
 import UploadAudio from './_components/upload-audio';
 import UserNotes from './_components/user-notes';
@@ -875,11 +875,11 @@ export default function MeetingDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {meeting.audioUrl && meeting.transcription?.metadata?.duration ? (
+      {meeting.hasAudio && meeting.transcription?.metadata?.duration ? (
         <div className="pt-4">
-            <AudioPlayer
+            <LazyAudioPlayer
                 ref={audioPlayerRef}
-                audioUrl={meeting.audioUrl}
+                meetingId={meetingId}
                 duration={meeting.transcription.metadata.duration}
                 onTimeUpdate={setCurrentAudioTime}
             />
