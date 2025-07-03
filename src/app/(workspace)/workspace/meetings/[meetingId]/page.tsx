@@ -64,6 +64,7 @@ export default function MeetingDetailPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [currentAudioTime, setCurrentAudioTime] = useState(0);
   const [isUpdatingReviewed, setIsUpdatingReviewed] = useState(false);
+  const [updatingAttendeeId, setUpdatingAttendeeId] = useState<string | null>(null);
 
   const fetchContacts = async () => {
     try {
@@ -592,6 +593,72 @@ export default function MeetingDetailPage() {
     }
   };
 
+  const cycleAttendanceStatus = (currentStatus: 'present' | 'absent' | 'unknown'): 'present' | 'absent' | 'unknown' => {
+    const statusOrder: ('present' | 'absent' | 'unknown')[] = ['unknown', 'present', 'absent'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const nextIndex = (currentIndex + 1) % statusOrder.length;
+    return statusOrder[nextIndex];
+  };
+
+
+
+  const handleAttendanceStatusChange = async (attendeeId: string, currentStatus: 'present' | 'absent' | 'unknown') => {
+    if (!meeting || updatingAttendeeId === attendeeId) return;
+    
+    const newStatus = cycleAttendanceStatus(currentStatus);
+    
+    // Store the previous attendees for potential rollback
+    const previousAttendees = meeting.attendees;
+    
+    // Optimistically update the UI immediately
+    setMeeting(prev => {
+      if (!prev || !prev.attendees) return prev;
+      
+      return {
+        ...prev,
+        attendees: prev.attendees.map(attendee => 
+          attendee.id === attendeeId 
+            ? { ...attendee, attendance_status: newStatus }
+            : attendee
+        )
+      };
+    });
+    
+    setUpdatingAttendeeId(attendeeId);
+    
+    try {
+      const response = await fetch(`/api/meetings/${meetingId}/attendees/${attendeeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendance_status: newStatus }),
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to update attendance status');
+      }
+      
+      // Success - the optimistic update was correct, show subtle confirmation
+      toast.success(`Attendance marked as ${newStatus}`, {
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error("Error updating attendance status:", err);
+      
+      // Rollback the optimistic update
+      setMeeting(prev => prev ? { ...prev, attendees: previousAttendees } : null);
+      
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      toast.error('Failed to update attendance status', { 
+        description: errorMessage,
+        duration: 4000,
+      });
+    } finally {
+      setUpdatingAttendeeId(null);
+    }
+  };
+
   if (isLoading) {
     return (
     <div className="flex flex-col space-y-4 pt-2 h-full">
@@ -687,6 +754,7 @@ export default function MeetingDetailPage() {
       {/* Meeting Header */}
         <div className="flex flex-row items-start justify-between">
             <div className="flex-grow min-w-0 space-y-2">
+              <div className="flex flex-row justify-between">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-xl md:text-2xl font-semibold flex items-center min-w-0">
                         <span className="truncate">
@@ -697,58 +765,28 @@ export default function MeetingDetailPage() {
                         <Pencil className="w-4 h-4" />
                     </Button>
                   </div>
-                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 flex items-center flex-wrap">
-                    <span className="flex items-center">
-                        <CalendarDays className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
-                        {format(new Date(meeting.meeting_at), "MMMM do, yyyy")}
-                    </span>
-                    <span className="flex items-center">
-                        <Clock className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
-                        {format(new Date(meeting.meeting_at), "p")}
-                    </span>
-                    <span>
-                        ({formatDistanceToNow(new Date(meeting.meeting_at), { addSuffix: true })})
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs md:text-sm text-muted-foreground">Attendees: </span>
-                  {meeting.attendees && meeting.attendees.length > 0 ? (
-                    meeting.attendees.map((attendee) => (
-                      <Badge key={attendee.id} variant="outline">
-                        {attendee.contacts?.display_name || 
-                         `${attendee.contacts?.first_name || ''} ${attendee.contacts?.last_name || ''}`.trim() ||
-                         attendee.contacts?.primary_email ||
-                         'Unknown'}
-                        {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No attendees added</span>
-                  )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2"> {/* Container for buttons */} 
-            <Button 
-              variant={meeting?.meeting_reviewed ? "green" : "gray"} 
-              size="sm" 
-              className="items-center gap-2"
-              onClick={() => handleMeetingReviewedChange(!meeting?.meeting_reviewed)}
-              disabled={isUpdatingReviewed}
-            >
-              {meeting?.meeting_reviewed ? (
-                <>
-                  <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-sm">Reviewed</span>
-                </>
-              ) : (
-                <>
-                  <Circle className="size-4" />
-                  <span className="text-sm">Not Reviewed</span>
-                </>
-              )}
-            </Button>
+                  <div className="flex items-center gap-2"> {/* Container for buttons */} 
+              <Button 
+                variant={meeting?.meeting_reviewed ? "green" : "gray"} 
+                size="sm" 
+                className="items-center gap-2"
+                onClick={() => handleMeetingReviewedChange(!meeting?.meeting_reviewed)}
+                disabled={isUpdatingReviewed}
+              >
+                {meeting?.meeting_reviewed ? (
+                  <>
+                    <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm">Reviewed</span>
+                  </>
+                ) : (
+                  <>
+                    <Circle className="size-4" />
+                    <span className="text-sm">Not Reviewed</span>
+                  </>
+                )}
+              </Button>
               <DropdownMenu>  
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="ml-auto"> <Ellipsis className="w-4 h-4" /></Button>
@@ -773,6 +811,48 @@ export default function MeetingDetailPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            </div>
+                <div className="text-xs md:text-sm text-muted-foreground space-x-2 md:space-x-3 flex items-center flex-wrap">
+                    <span className="flex items-center">
+                        <CalendarDays className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
+                        {format(new Date(meeting.meeting_at), "MMMM do, yyyy")}
+                    </span>
+                    <span className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 mr-1 md:mr-1.5" />
+                        {format(new Date(meeting.meeting_at), "p")}
+                    </span>
+                    <span>
+                        ({formatDistanceToNow(new Date(meeting.meeting_at), { addSuffix: true })})
+                    </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs md:text-sm text-muted-foreground">Attendees: </span>
+                  {meeting.attendees && meeting.attendees.length > 0 ? (
+                    meeting.attendees.map((attendee) => (
+                      <Badge 
+                        key={attendee.id} 
+                        variant={
+                          attendee.attendance_status === 'present' ? 'blue' :
+                          attendee.attendance_status === 'absent' ? 'red' : 'gray'
+                        }
+                        className={`cursor-pointer transition-colors ${
+                          updatingAttendeeId === attendee.id ? 'opacity-50' : 'hover:opacity-80'
+                        }`}
+                        onClick={() => handleAttendanceStatusChange(attendee.id, attendee.attendance_status)}
+                      >
+                        {attendee.contacts?.display_name || 
+                         `${attendee.contacts?.first_name || ''} ${attendee.contacts?.last_name || ''}`.trim() ||
+                         attendee.contacts?.primary_email ||
+                         'Unknown'}
+                        {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No attendees added</span>
+                  )}
+              </div>
+            </div>
+
         </div>
 
       {/* Delete Confirmation Dialog */}
