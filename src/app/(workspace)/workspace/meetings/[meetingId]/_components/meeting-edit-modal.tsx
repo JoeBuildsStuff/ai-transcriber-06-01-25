@@ -64,6 +64,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
   const [, setIsLoadingAttendees] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [attendeesKey, setAttendeesKey] = useState(0)
 
   useEffect(() => {
     if (meeting) {
@@ -109,6 +110,8 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
         fixed: false
       }))
       setSelectedAttendees(attendeeOptions)
+      // Force re-render of MultipleSelector to fix badge layout
+      setAttendeesKey(prev => prev + 1)
     } catch (error) {
       console.error('Error loading attendees:', error)
       toast.error('Failed to load current attendees')
@@ -329,12 +332,13 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
                   Meeting Attendees
                 </Label>
                 <MultipleSelector
+                  key={attendeesKey}
                   value={selectedAttendees}
                   onChange={setSelectedAttendees}
                   options={getContactOptions()}
                   placeholder="Select attendees..."
-                  badgeClassName="pe-6"
                   className="[&_[data-state=open]]:z-[60]"
+                  badgeClassName="!pe-7"
                   emptyIndicator={
                     isLoadingContacts ? (
                       <p className="text-center text-gray-600">Loading contacts...</p>
