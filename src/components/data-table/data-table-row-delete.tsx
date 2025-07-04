@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -38,13 +39,22 @@ export default function DataTableRowDelete({
       const result = await deleteAction(selectedRowIds)
       
       if (result.success) {
+        toast.success("Rows deleted", {
+          description: `${result.deletedCount || selectedRowIds.length} row(s) have been deleted.`,
+        })
         router.refresh()
         onComplete?.()
         setOpen(false)
       } else {
+        toast.error("Deletion failed", {
+          description: result.error || "An unknown error occurred.",
+        })
         console.error("Failed to delete items:", result.error)
       }
     } catch (error) {
+      toast.error("Deletion failed", {
+        description: "An unexpected error occurred while deleting the items.",
+      })
       console.error("Error deleting items:", error)
     } finally {
       setIsDeleting(false)

@@ -16,15 +16,11 @@ export type Database = {
           updated_at: string | null
           first_name: string | null
           last_name: string | null
-          nickname: string | null
           primary_email: string | null
           primary_phone: string | null
           company: string | null
           job_title: string | null
-          birthday: string | null
           notes: string | null
-          is_favorite: boolean | null
-          tags: string[] | null
           user_id: string | null
           display_name: string | null
         }
@@ -34,15 +30,11 @@ export type Database = {
           updated_at?: string | null
           first_name?: string | null
           last_name?: string | null
-          nickname?: string | null
           primary_email?: string | null
           primary_phone?: string | null
           company?: string | null
           job_title?: string | null
-          birthday?: string | null
           notes?: string | null
-          is_favorite?: boolean | null
-          tags?: string[] | null
           user_id?: string | null
           display_name?: string | null
         }
@@ -52,15 +44,11 @@ export type Database = {
           updated_at?: string | null
           first_name?: string | null
           last_name?: string | null
-          nickname?: string | null
           primary_email?: string | null
           primary_phone?: string | null
           company?: string | null
           job_title?: string | null
-          birthday?: string | null
           notes?: string | null
-          is_favorite?: boolean | null
-          tags?: string[] | null
           user_id?: string | null
           display_name?: string | null
         }
@@ -70,111 +58,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contact_addresses: {
-        Row: {
-          id: string
-          contact_id: string | null
-          street: string | null
-          city: string | null
-          state: string | null
-          postal_code: string | null
-          country: string | null
-          label: string | null
-        }
-        Insert: {
-          id?: string
-          contact_id?: string | null
-          street?: string | null
-          city?: string | null
-          state?: string | null
-          postal_code?: string | null
-          country?: string | null
-          label?: string | null
-        }
-        Update: {
-          id?: string
-          contact_id?: string | null
-          street?: string | null
-          city?: string | null
-          state?: string | null
-          postal_code?: string | null
-          country?: string | null
-          label?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_addresses_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contact_emails: {
-        Row: {
-          id: string
-          contact_id: string | null
-          email: string
-          label: string | null
-          is_primary: boolean | null
-        }
-        Insert: {
-          id?: string
-          contact_id?: string | null
-          email: string
-          label?: string | null
-          is_primary?: boolean | null
-        }
-        Update: {
-          id?: string
-          contact_id?: string | null
-          email?: string
-          label?: string | null
-          is_primary?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_emails_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contact_phones: {
-        Row: {
-          id: string
-          contact_id: string | null
-          phone: string
-          label: string | null
-          is_primary: boolean | null
-        }
-        Insert: {
-          id?: string
-          contact_id?: string | null
-          phone: string
-          label?: string | null
-          is_primary?: boolean | null
-        }
-        Update: {
-          id?: string
-          contact_id?: string | null
-          phone?: string
-          label?: string | null
-          is_primary?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_phones_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
             referencedColumns: ["id"]
           }
         ]
@@ -304,6 +187,182 @@ export type Database = {
           },
           {
             foreignKeyName: "meeting_attendees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      new_companies: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_companies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      new_contacts: {
+        Row: {
+          id: string
+          first_name: string | null
+          last_name: string | null
+          city: string | null
+          state: string | null
+          company_id: string | null
+          job_title: string | null
+          description: string | null
+          linkedin: string | null
+          created_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          first_name?: string | null
+          last_name?: string | null
+          city?: string | null
+          state?: string | null
+          company_id?: string | null
+          job_title?: string | null
+          description?: string | null
+          linkedin?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          first_name?: string | null
+          last_name?: string | null
+          city?: string | null
+          state?: string | null
+          company_id?: string | null
+          job_title?: string | null
+          description?: string | null
+          linkedin?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "new_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      new_contact_emails: {
+        Row: {
+          id: string
+          contact_id: string | null
+          email: string
+          display_order: number | null
+          created_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          contact_id?: string | null
+          email: string
+          display_order?: number | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          contact_id?: string | null
+          email?: string
+          display_order?: number | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_contact_emails_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_contact_emails_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      new_contact_phones: {
+        Row: {
+          id: string
+          contact_id: string | null
+          phone: string
+          display_order: number | null
+          created_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          contact_id?: string | null
+          phone: string
+          display_order?: number | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          contact_id?: string | null
+          phone?: string
+          display_order?: number | null
+          created_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_contact_phones_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_contact_phones_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

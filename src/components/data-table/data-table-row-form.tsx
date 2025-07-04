@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { CalendarIcon, X, Plus, Save } from "lucide-react"
@@ -83,6 +84,9 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
     // Check if this field should be excluded from the form
     if (column.meta?.excludeFromForm) return null
     
+    // Hide readonly fields in add form
+    if (!isEditing && column.meta?.readOnly) return null
+    
     const value = formData[fieldName]
     const meta = column.meta
     if (!meta) return null
@@ -95,13 +99,16 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
         
         return (
           <div key={fieldName} className="space-y-2">
-            <Label>{label}</Label>
+            <Label className={cn(readOnly && "text-muted-foreground")}>{label}</Label>
             <div className="flex flex-wrap gap-2">
               {options?.map((option: { label: string; value: string }) => (
-                <Badge
+                <Button
                   key={option.value}
-                  variant={selectedValues.includes(option.value) ? "default" : "outline"}
-                  className={readOnly ? "cursor-default" : "cursor-pointer"}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={readOnly}
+                  className="h-auto p-0 hover:bg-transparent"
                   onClick={readOnly ? undefined : () => {
                     const newValues = selectedValues.includes(option.value)
                       ? selectedValues.filter((v: string) => v !== option.value)
@@ -109,8 +116,13 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
                     handleInputChange(fieldName, newValues)
                   }}
                 >
-                  {option.label}
-                </Badge>
+                  <Badge
+                    variant={selectedValues.includes(option.value) ? "default" : "outline"}
+                    className={readOnly ? "cursor-default" : "cursor-pointer"}
+                  >
+                    {option.label}
+                  </Badge>
+                </Button>
               ))}
             </div>
           </div>
@@ -119,7 +131,7 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
       case "select":
         return (
           <div key={fieldName} className="space-y-2">
-            <Label htmlFor={fieldName}>{label}</Label>
+            <Label htmlFor={fieldName} className={cn(readOnly && "text-muted-foreground")}>{label}</Label>
             <Select 
               value={value as string || ""} 
               onValueChange={(newValue) => handleInputChange(fieldName, newValue)}
@@ -142,7 +154,7 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
       case "boolean":
         return (
           <div key={fieldName} className="flex items-center justify-between rounded-lg border p-3">
-            <Label htmlFor={fieldName} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <Label htmlFor={fieldName} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", readOnly && "text-muted-foreground")}>
               {label}
             </Label>
             <Switch
@@ -159,7 +171,7 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
         
         return (
           <div key={fieldName} className="space-y-2">
-            <Label htmlFor={fieldName}>{label}</Label>
+            <Label htmlFor={fieldName} className={cn(readOnly && "text-muted-foreground")}>{label}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -193,7 +205,7 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
         if (fieldName === "notes") {
           return (
             <div key={fieldName} className="space-y-2">
-              <Label htmlFor={fieldName}>{label}</Label>
+              <Label htmlFor={fieldName} className={cn(readOnly && "text-muted-foreground")}>{label}</Label>
               <Textarea
                 id={fieldName}
                 value={value as string || ""}
@@ -215,7 +227,7 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
         
         return (
           <div key={fieldName} className="space-y-2">
-            <Label htmlFor={fieldName}>{label}</Label>
+            <Label htmlFor={fieldName} className={cn(readOnly && "text-muted-foreground")}>{label}</Label>
             <Input
               id={fieldName}
               type={inputType}
@@ -283,17 +295,30 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
       name: [],
       contact: [],
       work: [],
-      other: []
+      other: [],
+      readonly: []
     }
     
     cols.forEach(col => {
       if (!('accessorKey' in col) || !col.accessorKey || col.meta?.excludeFromForm) return
       
+      // Skip readonly fields in add form
+      if (!isEditing && col.meta?.readOnly) return
+      
       const key = col.accessorKey as string
-      if (key.includes('name')) groups.name.push(col)
-      else if (key.includes('email') || key.includes('phone')) groups.contact.push(col)
-      else if (key.includes('company') || key.includes('job') || key.includes('title')) groups.work.push(col)
-      else groups.other.push(col)
+      
+      // Group readonly fields separately
+      if (col.meta?.readOnly) {
+        groups.readonly.push(col)
+      } else if (key.includes('name')) {
+        groups.name.push(col)
+      } else if (key.includes('email') || key.includes('phone')) {
+        groups.contact.push(col)
+      } else if (key.includes('company') || key.includes('job') || key.includes('title')) {
+        groups.work.push(col)
+      } else {
+        groups.other.push(col)
+      }
     })
     
     return groups
@@ -302,32 +327,46 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
   const fieldGroups = groupFields(formColumns)
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 px-4">
-      {/* Name fields */}
-      {fieldGroups.name.length > 0 && (
-        <div className={fieldGroups.name.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
-          {fieldGroups.name.map(renderFormField)}
-        </div>
-      )}
-      
-      {/* Contact fields */}
-      {fieldGroups.contact.length > 0 && (
-        <div className={fieldGroups.contact.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
-          {fieldGroups.contact.map(renderFormField)}
-        </div>
-      )}
-      
-      {/* Work fields */}
-      {fieldGroups.work.length > 0 && (
-        <div className={fieldGroups.work.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
-          {fieldGroups.work.map(renderFormField)}
-        </div>
-      )}
-      
-      {/* Other fields */}
-      {fieldGroups.other.map(renderFormField)}
+    <form onSubmit={handleSubmit} className="h-full flex flex-col">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Name fields */}
+        {fieldGroups.name.length > 0 && (
+          <div className={fieldGroups.name.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
+            {fieldGroups.name.map(renderFormField)}
+          </div>
+        )}
+        
+        {/* Contact fields */}
+        {fieldGroups.contact.length > 0 && (
+          <div className={fieldGroups.contact.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
+            {fieldGroups.contact.map(renderFormField)}
+          </div>
+        )}
+        
+        {/* Work fields */}
+        {fieldGroups.work.length > 0 && (
+          <div className={fieldGroups.work.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
+            {fieldGroups.work.map(renderFormField)}
+          </div>
+        )}
+        
+        {/* Other fields */}
+        {fieldGroups.other.map(renderFormField)}
+        
+        {/* Readonly fields - only show in edit mode */}
+        {isEditing && fieldGroups.readonly.length > 0 && (
+          <>
+            <div className="py-2">
+              <Separator />
+            </div>
+            <div className="space-y-4">
+              {fieldGroups.readonly.map(renderFormField)}
+            </div>
+          </>
+        )}
+      </div>
 
-      <div className="flex justify-between gap-2">
+      <div className="flex justify-between gap-2 p-4 border-t bg-background">
         <Button
           type="button"
           variant="outline"

@@ -1,15 +1,15 @@
-import DataTableContacts from "@/app/(workspace)/workspace/contacts/_components/contacts-table";
+import DataTableContacts from "./_components/contacts-table"
 
-export default async function DataTableContactsPage({
+export default async function NewContactsPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const params = await searchParams
-    
-    return (
-        <div className="w-full mt-5">
-             <DataTableContacts searchParams={params} />     
-        </div>
-    )
+
+  return (
+    <main className="mx-auto">
+      <DataTableContacts searchParams={params} />
+    </main>
+  )
 }

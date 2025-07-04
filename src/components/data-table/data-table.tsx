@@ -33,7 +33,40 @@ import {
   updateSearchParams 
 } from "@/lib/data-table"
 
-interface DataTableProps<TData, TValue> {
+/**
+ * Props for the DataTable component
+ */
+export interface DataTableProps {
+  /** Array of column definitions that define the table structure */
+  columns: ColumnDef<Record<string, unknown>, unknown>[]
+  /** Array of data objects to display in the table */
+  data: Record<string, unknown>[]
+  /** Initial state for the table including pagination, sorting, filters, etc. */
+  initialState?: Partial<DataTableState>
+  /** Total number of pages for server-side pagination */
+  pageCount?: number
+  /** Function to handle bulk deletion of rows */
+  deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
+  /** Function to handle creation of new rows */
+  createAction?: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  /** Function to handle updating existing rows */
+  updateAction?: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  /** Custom form component for adding new rows */
+  customAddForm?: React.ComponentType<{
+    onSuccess?: () => void
+    onCancel?: () => void
+    createAction?: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  }>
+  /** Custom form component for editing existing rows */
+  customEditForm?: React.ComponentType<{
+    data: Record<string, unknown>
+    onSuccess?: () => void
+    onCancel?: () => void
+    updateAction?: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  }>
+}
+
+interface DataTableInternalProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   initialState?: Partial<DataTableState>
@@ -41,6 +74,17 @@ interface DataTableProps<TData, TValue> {
   deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
   createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
   updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  customAddForm?: React.ComponentType<{
+    onSuccess?: () => void
+    onCancel?: () => void
+    createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  }>
+  customEditForm?: React.ComponentType<{
+    data: TData
+    onSuccess?: () => void
+    onCancel?: () => void
+    updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  }>
 }
 
 export function DataTable<TData, TValue>({
@@ -51,7 +95,9 @@ export function DataTable<TData, TValue>({
   deleteAction,
   createAction,
   updateAction,
-}: DataTableProps<TData, TValue>) {
+  customAddForm,
+  customEditForm,
+}: DataTableInternalProps<TData, TValue>) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -124,13 +170,15 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div>
-        <div className="pb-2">
+    <div className="">
+        <div className="pb-2 ">
             <DataTableToolbar 
               table={table} 
               deleteAction={deleteAction} 
               createAction={createAction}
               updateAction={updateAction}
+              customAddForm={customAddForm}
+              customEditForm={customEditForm}
             />
         </div>
 

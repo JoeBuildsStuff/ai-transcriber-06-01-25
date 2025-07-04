@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "types:generate": "npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema ai_transcriber > src/types/supabase.ts"
   },
   "dependencies": {
     "@deepgram/sdk": "^4.2.0",

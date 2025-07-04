@@ -1,15 +1,13 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Star } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
-import { Contacts } from "../_lib/validations"
+import { ContactWithRelations } from "../_lib/validations"
+import { AtSign, BriefcaseBusiness, Building2, IdCard, MapPin, Phone, Pilcrow } from "lucide-react"
 
-export const columns: ColumnDef<Contacts>[] = [
+export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -31,24 +29,33 @@ export const columns: ColumnDef<Contacts>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+    meta: {
+      excludeFromForm: true,
+    },
   },
   {
-    accessorKey: "display_name",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    id: "display_name",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <IdCard className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Name" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const displayName = row.getValue("display_name") as string
+      const firstName = row.original.first_name || ""
+      const lastName = row.original.last_name || ""
+      const displayName = `${firstName} ${lastName}`.trim() || "—"
 
       return (
         <div className="flex items-center gap-2">
-            <span className="font-medium">{displayName}</span>
+          <span className="font-medium">{displayName}</span>
         </div>
       )
     },
     meta: {
       label: "Name",
       variant: "text",
-      placeholder: "Search names...",
-      readOnly: true,
+      placeholder: "Display Name...",
     },
     enableColumnFilter: true,
   },
@@ -57,12 +64,12 @@ export const columns: ColumnDef<Contacts>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="First Name" />,
     cell: ({ row }) => {
       const firstName = row.getValue("first_name") as string
-      return <div className="">{firstName}</div>
+      return <div className="">{firstName || "—"}</div>
     },
     meta: {
       label: "First Name",
       variant: "text",
-      placeholder: "Search first names...",
+      placeholder: "John",
     },
     enableColumnFilter: true,
   },
@@ -71,196 +78,205 @@ export const columns: ColumnDef<Contacts>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Last Name" />,
     cell: ({ row }) => {
       const lastName = row.getValue("last_name") as string
-      return <div className="">{lastName}</div>
+      return <div className="">{lastName || "—"}</div>
     },
     meta: {
       label: "Last Name",
       variant: "text",
-      placeholder: "Search last names...",
+      placeholder: "Doe",
     },
     enableColumnFilter: true,
   },
   {
-    accessorKey: "nickname",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Nickname" />,
+    id: "primary_email",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <AtSign className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Email" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const nickname = row.getValue("nickname") as string
-      if (!nickname) return <div className="text-muted-foreground">—</div>
-      return <div className="text-sm">{nickname}</div>
-    },
-    meta: {
-      label: "Nickname",
-      variant: "text",
-      placeholder: "Search nicknames...",
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "primary_email",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-    cell: ({ row }) => {
-      const email = row.getValue("primary_email") as string
-      return <div className="text-muted-foreground">{email}</div>
+      const emails = row.original.emails || []
+      const primaryEmail = emails.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0]
+      
+      if (!primaryEmail) return <div className="text-muted-foreground">—</div>
+      
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="blue" className="text-sm font-normal">{primaryEmail.email}</Badge>
+          {emails.length > 1 && (
+            <Badge variant="gray" className="text-xs font-normal">
+              +{emails.length - 1}
+            </Badge>
+          )}
+        </div>
+      )
     },
     meta: {
       label: "Email",
       variant: "text",
-      placeholder: "Search emails...",
+      placeholder: "john@example.com",
     },
     enableColumnFilter: true,
   },
   {
-    accessorKey: "primary_phone",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
+    accessorKey: "description",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <Pilcrow className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Description" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const phone = row.getValue("primary_phone") as string
-      if (!phone) return <div className="text-muted-foreground">—</div>
+      const description = row.getValue("description") as string
+      if (!description) return <div className="text-muted-foreground">—</div>
       
-      // Format phone number as (XXX) XXX-XXXX
-      const formatted = phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+      // Truncate description for display
+      const truncated = description.length > 50 ? description.substring(0, 50) + "..." : description
       
-      return <div className="text-muted-foreground">{formatted}</div>
+      return (
+        <div className="text-sm text-muted-foreground max-w-[200px] truncate" title={description}>
+          {truncated}
+        </div>
+      )
     },
     meta: {
-      label: "Phone",
+      label: "Description",
       variant: "text",
-      placeholder: "Search phone numbers...",
+      placeholder: "Additional notes about this contact...",
     },
     enableColumnFilter: true,
   },
   {
-    accessorKey: "company",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
+    id: "company_name",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <Building2 className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Company" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const company = row.getValue("company") as string
-      return <div className="">{company}</div>
+      const company = row.original.company
+      if (!company) return <div className="text-muted-foreground">—</div>
+      return <Badge variant="outline" className="text-sm font-normal">{company.name}</Badge>
     },
     meta: {
       label: "Company",
       variant: "text",
-      placeholder: "Search companies...",
+      placeholder: "Company ABC",
     },
     enableColumnFilter: true,
   },
   {
     accessorKey: "job_title",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Job Title" />,
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <BriefcaseBusiness className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Title" />
+      </div>
+    ),
     cell: ({ row }) => {
       const jobTitle = row.getValue("job_title") as string
-      return <div className="text-sm">{jobTitle}</div>
+      return <div className="text-sm">{jobTitle || "—"}</div>
     },
     meta: {
       label: "Job Title",
       variant: "text",
-      placeholder: "Search job titles...",
+      placeholder: "Software Engineer",
     },
     enableColumnFilter: true,
   },
   {
-    accessorKey: "birthday",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Birthday" />,
+    id: "primary_phone",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <Phone className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Phone" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const birthday = row.getValue("birthday") as string
-      if (!birthday) return <div className="text-muted-foreground">—</div>
+      const phones = row.original.phones || []
+      const primaryPhone = phones.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0]
       
-      const date = new Date(birthday)
-      const formatted = new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-      }).format(date)
+      if (!primaryPhone) return <div className="text-muted-foreground">—</div>
       
-      return <div className="text-sm">{formatted}</div>
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="blue" className="text-sm font-normal">{primaryPhone.phone}</Badge>
+          {phones.length > 1 && (
+            <Badge variant="gray" className="text-xs font-normal">
+              +{phones.length - 1}
+            </Badge>
+          )}
+        </div>
+      )
     },
     meta: {
-      label: "Birthday",
-      variant: "date",
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "notes",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
-    cell: ({ row }) => {
-      const notes = row.getValue("notes") as string
-      if (!notes) return <div className="text-muted-foreground">—</div>
-      
-      // Truncate notes if too long
-      const truncated = notes.length > 50 ? notes.substring(0, 47) + "..." : notes
-      
-      return <div className="text-sm max-w-[200px] truncate" title={notes}>{truncated}</div>
-    },
-    meta: {
-      label: "Notes",
+      label: "Phone",
       variant: "text",
-      placeholder: "Search notes...",
+      placeholder: "(123) 456-7890",
     },
     enableColumnFilter: true,
   },
   {
-    accessorKey: "tags",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tags" />,
+    id: "location",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <MapPin className="size-4 shrink-0" strokeWidth={1.5} />
+        <DataTableColumnHeader column={column} title="Location" />
+      </div>
+    ),
     cell: ({ row }) => {
-      const tags = row.getValue("tags") as string[] | null
+      const city = row.original.city || ""
+      const state = row.original.state || ""
+      const location = `${city}${city && state ? ', ' : ''}${state}`.trim()
       
-      if (!tags || tags.length === 0) {
-        return <div className="text-muted-foreground">—</div>
+      if (!location) return <div className="text-muted-foreground">—</div>
+      
+      return <div className="text-sm text-muted-foreground">{location}</div>
+    },
+    meta: {
+      label: "Location",
+      variant: "text",
+      placeholder: "San Francisco, CA",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    accessorKey: "linkedin",
+    header: ({ column }) => (
+      <div className="flex items-center gap-2">
+        <div className="border border-muted-foreground rounded size-4 flex items-center justify-center">
+          <span className="text-xs">in</span>
+        </div>
+        <DataTableColumnHeader column={column} title="LinkedIn" />
+      </div>
+    ),
+    cell: ({ row }) => {
+      const linkedin = row.getValue("linkedin") as string
+      if (!linkedin) return <div className="text-muted-foreground">—</div>
+      
+      // Extract username from LinkedIn URL
+      const match = linkedin.match(/linkedin\.com\/in\/([^\/\?]+)/)
+      if (match) {
+        return <Badge variant="blue" className="text-sm font-normal">@{match[1]}</Badge>
       }
       
       return (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        <a 
+          href={linkedin} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 text-sm"
+        >
+          {linkedin}
+        </a>
       )
     },
     meta: {
-      label: "Tags",
-      variant: "multiSelect",
-      options: [
-        { label: "Engineering", value: "engineering" },
-        { label: "Product", value: "product" },
-        { label: "Analytics", value: "analytics" },
-        { label: "Operations", value: "ops" },
-        { label: "Marketing", value: "marketing" },
-        { label: "Investing", value: "investing" },
-        { label: "Developer", value: "developer" },
-        { label: "AI", value: "ai" },
-        { label: "CTO", value: "cto" },
-        { label: "Design", value: "design" },
-        { label: "Energy", value: "energy" },
-        { label: "Sustainability", value: "sustainability" },
-        { label: "Automation", value: "automation" },
-        { label: "Leadership", value: "leadership" },
-        { label: "Business", value: "business" },
-        { label: "Founder", value: "founder" },
-        { label: "Operations", value: "operations" },
-        { label: "Creative", value: "creative" },
-        { label: "Compliance", value: "compliance" },
-      ],
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "is_favorite",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Favorite" />,
-    cell: ({ row }) => {
-      const isFavorite = row.getValue("is_favorite") as boolean
-      return (
-        <div className="flex justify-center">
-          {isFavorite ? (
-                <Star className="size-5 fill-yellow-400 text-yellow-700 dark:text-yellow-400 dark:fill-yellow-900/30" strokeWidth={1} />
-            ) : (
-                <Star className="size-5 fill-gray-200 text-gray-400 dark:text-gray-400 dark:fill-gray-900/30" strokeWidth={1} />
-            )}
-        </div>
-      )
-    },
-    meta: {
-      label: "Favorite",
-      variant: "boolean",
+      label: "LinkedIn",
+      variant: "text",
+      placeholder: "https://www.linkedin.com/in/username",
     },
     enableColumnFilter: true,
   },
@@ -310,47 +326,4 @@ export const columns: ColumnDef<Contacts>[] = [
     },
     enableColumnFilter: true,
   },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const contact = row.original
-      return (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(contact.id)}
-              >
-                Copy contact ID
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(contact.primary_email || "")}
-              >
-                Copy email
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Edit contact</DropdownMenuItem>
-              <DropdownMenuItem>View details</DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  // Toggle favorite logic would go here
-                  console.log("Toggle favorite for", contact.display_name)
-                }}
-              >
-                {contact.is_favorite ? "Remove from favorites" : "Add to favorites"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    },
-  },
-  
 ]
