@@ -23,6 +23,10 @@ export type Database = {
           notes: string | null
           user_id: string | null
           display_name: string | null
+          birthday: string | null
+          is_favorite: boolean | null
+          nickname: string | null
+          tags: string[] | null
         }
         Insert: {
           id?: string
@@ -37,6 +41,10 @@ export type Database = {
           notes?: string | null
           user_id?: string | null
           display_name?: string | null
+          birthday?: string | null
+          is_favorite?: boolean | null
+          nickname?: string | null
+          tags?: string[] | null
         }
         Update: {
           id?: string
@@ -51,6 +59,10 @@ export type Database = {
           notes?: string | null
           user_id?: string | null
           display_name?: string | null
+          birthday?: string | null
+          is_favorite?: boolean | null
+          nickname?: string | null
+          tags?: string[] | null
         }
         Relationships: [
           {

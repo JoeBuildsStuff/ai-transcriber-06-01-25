@@ -22,6 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { AudioLines, Calendar, ChevronRight, Loader2, Plus, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
@@ -32,6 +33,8 @@ import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
+import { createContact } from "@/app/(workspace)/workspace/contacts/_lib/actions"
+import { ContactAddForm } from "@/app/(workspace)/workspace/contacts/_components/contacts-form-wrapper"
 import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
@@ -54,6 +57,7 @@ export function AppSidebar() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isContactSheetOpen, setIsContactSheetOpen] = useState(false)
 
   useEffect(() => {
     const fetchMeetings = async () => {
@@ -121,8 +125,19 @@ export function AppSidebar() {
   }
 
   const handleCreateContact = () => {
-    console.log("Create contact clicked")
-    toast.info("This feature is not yet implemented.")
+    setIsContactSheetOpen(true)
+  }
+
+  const handleContactSuccess = () => {
+    setIsContactSheetOpen(false)
+    toast.success("Contact created", {
+      description: "The new contact has been successfully added.",
+    })
+    router.refresh()
+  }
+
+  const handleContactCancel = () => {
+    setIsContactSheetOpen(false)
   }
 
   const navigationItems = [
@@ -166,168 +181,188 @@ export function AppSidebar() {
   });
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <SidebarLogo />
-      </SidebarHeader>
-      <SidebarContent className="flex flex-col">
-        {/* Quick Actions */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <UploadAudioProcess> 
-                  <SidebarMenuButton className="w-full justify-start">
-                    <AudioLines className="w-4 h-4 mr-2 flex-none" />
-                    <span>New Transcription</span>
-                  </SidebarMenuButton>
-                </UploadAudioProcess> 
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton 
-                    asChild
-                    className={cn(
-                      "w-full justify-start",
-                      pathname.startsWith(item.href)
-                        ? "bg-muted/50 hover:bg-muted font-semibold"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="w-3.5 h-3.5 mr-2 flex-none" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {item.action && (
-                    <SidebarMenuAction asChild>
-                      <button
-                        onClick={item.action}
-                        disabled={item.isActionLoading}
-                        className="disabled:cursor-not-allowed text-muted-foreground hover:text-foreground"
-                        aria-label={item.actionAriaLabel}
-                      >
-                        {item.isActionLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Plus className="h-4 w-4" />
-                        )}
-                      </button>
-                    </SidebarMenuAction>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        
-        {/* Contacts */}
-        <SidebarGroup>
-          <SidebarGroupLabel><span>Contacts</span></SidebarGroupLabel>
-          <SidebarGroupAction title="Add Contact">
-            <Plus /> <span className="sr-only">Add Contact</span>
-          </SidebarGroupAction>
-          <SidebarGroupContent>
-            <p className="text-xs text-muted-foreground px-3">No contacts found.</p>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Meetings with Collapsible Groups */}
-        {user && (
-          <SidebarGroup className="overflow-y-auto flex-grow">
-            <SidebarGroupLabel className="flex items-center justify-between">
-              <span>Meetings</span>
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            </SidebarGroupLabel>
+    <>
+      <Sidebar>
+        <SidebarHeader>
+          <SidebarLogo />
+        </SidebarHeader>
+        <SidebarContent className="flex flex-col">
+          {/* Quick Actions */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
             <SidebarGroupContent>
-              {meetingsByDate.length > 0 ? (
-                <SidebarMenu>
-                  {meetingsByDate.map((dateGroup) => (
-                    <Collapsible
-                      key={dateGroup.title}
-                      asChild
-                      defaultOpen={dateGroup.isActive}
-                      className="group/collapsible"
-                    >
-                      <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton>
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>
-                            </div>
-                            <ChevronRight className="ml-auto flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                          {dateGroup.items.map((meeting) => (
-                            <SidebarMenuSubItem key={meeting.id}>
-                              <SidebarMenuSubButton 
-                                asChild
-                                className={cn(
-                                  meeting.isActive && "bg-muted font-semibold"
-                                )}
-                              >
-                                <Link href={meeting.url}>
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  {meeting.time && (
-                                    <div className="relative">
-                                      <Badge variant="outline" className="">
-                                        {meeting.time}
-                                      </Badge>
-                                      {!meeting.isReviewed && (
-                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
-                                      )}
-                                    </div>
-                                  )}
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <span className="truncate text-sm flex-1">
-                                            {meeting.title}
-                                          </span>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" showArrow={true} className="ml-2">
-                                          <p>{meeting.title}</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  ))}
-                </SidebarMenu>
-              ) : (
-                !isLoading && (
-                  <p className="text-xs text-muted-foreground px-3">
-                    No meetings found.
-                  </p>
-                )
-              )}
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <UploadAudioProcess> 
+                    <SidebarMenuButton className="w-full justify-start">
+                      <AudioLines className="w-4 h-4 mr-2 flex-none" />
+                      <span>New Transcription</span>
+                    </SidebarMenuButton>
+                  </UploadAudioProcess> 
+                </SidebarMenuItem>
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
-      </SidebarContent>
-      <SidebarFooter>
-        <AuthButton />
-      </SidebarFooter>
-    </Sidebar>
+
+          {/* Navigation */}
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton 
+                      asChild
+                      className={cn(
+                        "w-full justify-start",
+                        pathname.startsWith(item.href)
+                          ? "bg-muted/50 hover:bg-muted font-semibold"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="w-3.5 h-3.5 mr-2 flex-none" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {item.action && (
+                      <SidebarMenuAction asChild>
+                        <button
+                          onClick={item.action}
+                          disabled={item.isActionLoading}
+                          className="disabled:cursor-not-allowed text-muted-foreground hover:text-foreground"
+                          aria-label={item.actionAriaLabel}
+                        >
+                          {item.isActionLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                        </button>
+                      </SidebarMenuAction>
+                    )}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          
+          {/* Contacts */}
+          <SidebarGroup>
+            <SidebarGroupLabel><span>Contacts</span></SidebarGroupLabel>
+            <SidebarGroupAction title="Add Contact" onClick={handleCreateContact}>
+              <Plus /> <span className="sr-only">Add Contact</span>
+            </SidebarGroupAction>
+            <SidebarGroupContent>
+              <p className="text-xs text-muted-foreground px-3">No contacts found.</p>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Meetings with Collapsible Groups */}
+          {user && (
+            <SidebarGroup className="overflow-y-auto flex-grow">
+              <SidebarGroupLabel className="flex items-center justify-between">
+                <span>Meetings</span>
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                {meetingsByDate.length > 0 ? (
+                  <SidebarMenu>
+                    {meetingsByDate.map((dateGroup) => (
+                      <Collapsible
+                        key={dateGroup.title}
+                        asChild
+                        defaultOpen={dateGroup.isActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton>
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>
+                              </div>
+                              <ChevronRight className="ml-auto flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                            {dateGroup.items.map((meeting) => (
+                              <SidebarMenuSubItem key={meeting.id}>
+                                <SidebarMenuSubButton 
+                                  asChild
+                                  className={cn(
+                                    meeting.isActive && "bg-muted font-semibold"
+                                  )}
+                                >
+                                  <Link href={meeting.url}>
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    {meeting.time && (
+                                      <div className="relative">
+                                        <Badge variant="outline" className="">
+                                          {meeting.time}
+                                        </Badge>
+                                        {!meeting.isReviewed && (
+                                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
+                                        )}
+                                      </div>
+                                    )}
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="truncate text-sm flex-1">
+                                              {meeting.title}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="right" showArrow={true} className="ml-2">
+                                            <p>{meeting.title}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </div>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    ))}
+                  </SidebarMenu>
+                ) : (
+                  !isLoading && (
+                    <p className="text-xs text-muted-foreground px-3">
+                      No meetings found.
+                    </p>
+                  )
+                )}
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </SidebarContent>
+        <SidebarFooter>
+          <AuthButton />
+        </SidebarFooter>
+      </Sidebar>
+
+      {/* Contact Creation Sheet */}
+      <Sheet open={isContactSheetOpen} onOpenChange={setIsContactSheetOpen}>
+        <SheetContent className="flex flex-col sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Add New Contact</SheetTitle>
+            <SheetDescription>Create a new contact in your address book.</SheetDescription>
+          </SheetHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            <ContactAddForm
+              onSuccess={handleContactSuccess}
+              onCancel={handleContactCancel}
+              createAction={createContact}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
