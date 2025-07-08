@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
-import { ContactWithRelations, Company } from "./validations"
+import { PersonWithRelations, Company, PersonEmail, PersonPhone } from "./validations"
 import { PostgrestError } from "@supabase/supabase-js"
 
 export async function getCompanies(): Promise<{
@@ -8,64 +8,20 @@ export async function getCompanies(): Promise<{
   error: PostgrestError | null
 }> {
   const supabase = await createClient()
-  
-  // Get the current user to filter companies by user_id
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  
-  if (userError || !user) {
-    console.error("Error getting current user:", userError)
-    return { 
-      data: [], 
-      error: {
-        message: "User not authenticated",
-        details: userError?.message || "Authentication required",
-        hint: "Please log in to access companies",
-        code: "AUTH_ERROR"
-      } as PostgrestError
-    }
-  }
-
   const { data, error } = await supabase
     .from("new_companies")
     .select("*")
-    .eq("user_id", user.id)
     .order("name", { ascending: true })
   
-  // Transform the data to match our Company type
-  const transformedData = data?.map(company => ({
-    ...company,
-    created_at: company.created_at || undefined,
-    description: company.description || undefined,
-    user_id: company.user_id || undefined,
-  })) as Company[] || []
-  
-  return { data: transformedData, error }
+  return { data: data ?? [], error }
 }
 
-export async function getContacts(searchParams: SearchParams): Promise<{
-  data: ContactWithRelations[],
+export async function getPersons(searchParams: SearchParams): Promise<{
+  data: PersonWithRelations[],
   count: number,
   error: PostgrestError | null
 }> {
   const supabase = await createClient()
-  
-  // Get the current user to filter contacts by user_id
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  
-  if (userError || !user) {
-    console.error("Error getting current user:", userError)
-    return { 
-      data: [], 
-      count: 0, 
-      error: {
-        message: "User not authenticated",
-        details: userError?.message || "Authentication required",
-        hint: "Please log in to access contacts",
-        code: "AUTH_ERROR"
-      } as PostgrestError
-    }
-  }
-
   const {
     pagination,
     sorting,
@@ -84,7 +40,6 @@ export async function getContacts(searchParams: SearchParams): Promise<{
       emails:new_contact_emails(*),
       phones:new_contact_phones(*)
     `, { count: "exact" })
-    .eq("user_id", user.id) // Filter by current user
 
   // Sorting
   if (sort.length > 0) {
@@ -213,10 +168,10 @@ export async function getContacts(searchParams: SearchParams): Promise<{
   const { data, count, error } = await query
 
   // Sort emails and phones by display_order for consistent primary selection
-  const processedData = (data as unknown as ContactWithRelations[])?.map(contact => ({
-    ...contact,
-    emails: contact.emails?.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)) || [],
-    phones: contact.phones?.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)) || []
+  const processedData = (data as unknown as PersonWithRelations[])?.map(person => ({
+    ...person,
+    emails: person.emails?.sort((a, b) => a.display_order - b.display_order) || [],
+    phones: person.phones?.sort((a, b) => a.display_order - b.display_order) || []
   })) || []
 
   return {
@@ -226,3 +181,70 @@ export async function getContacts(searchParams: SearchParams): Promise<{
   }
 }
 
+export async function getContactById(contactId: string) {
+  const supabase = await createClient()
+  
+  try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      throw new Error("User not authenticated")
+    }
+
+    // Fetch contact with all related data
+    const { data: contact, error: contactError } = await supabase
+      .from("new_contacts")
+      .select(`
+        *,
+        company:new_companies(*),
+        emails:new_contact_emails(*),
+        phones:new_contact_phones(*)
+      `)
+      .eq("id", contactId)
+      .eq("user_id", user.id) // Ensure user can only access their own contacts
+      .single()
+
+    if (contactError) {
+      console.error("Error fetching contact:", contactError)
+      throw new Error(contactError.message)
+    }
+
+    if (!contact) {
+      throw new Error("Contact not found")
+    }
+
+    // Sort emails and phones by display_order
+    const sortedEmails = contact.emails?.sort((a: PersonEmail, b: PersonEmail) => a.display_order - b.display_order) || []
+    const sortedPhones = contact.phones?.sort((a: PersonPhone, b: PersonPhone) => a.display_order - b.display_order) || []
+
+    // Transform to match the expected format from the page component
+    return {
+      id: contact.id,
+      firstName: contact.first_name || '',
+      lastName: contact.last_name || '',
+      displayName: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
+      nickname: contact.nickname || '',
+      tags: contact.tags || [],
+      primaryEmail: sortedEmails[0]?.email || '',
+      primaryPhone: sortedPhones[0]?.phone || '',
+      birthday: contact.birthday || '',
+      company: contact.company?.name || '',
+      jobTitle: contact.job_title || '',
+      notes: contact.notes || '',
+      isFavorite: contact.is_favorite || false,
+      city: contact.city || '',
+      state: contact.state || '',
+      linkedin: contact.linkedin || '',
+      description: contact.description || '',
+      emails: sortedEmails,
+      phones: sortedPhones,
+      created_at: contact.created_at,
+      updated_at: contact.updated_at
+    }
+  } catch (error) {
+    console.error("Unexpected error fetching contact:", error)
+    throw error
+  }
+}

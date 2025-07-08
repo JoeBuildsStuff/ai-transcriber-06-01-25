@@ -33,8 +33,8 @@ import { useAuth } from "@/contexts/auth-context"
 import UploadAudioProcess from "./upload-audio-process"
 import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
-import { createContact } from "@/app/(workspace)/workspace/contacts/_lib/actions"
-import { ContactAddForm } from "@/app/(workspace)/workspace/contacts/_components/contacts-form-wrapper"
+import { createPerson } from "@/app/(workspace)/workspace/contacts/_lib/actions"
+import { ContactAddForm } from "@/app/(workspace)/workspace/contacts/_components/form-wrapper"
 import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
@@ -366,7 +366,7 @@ export function AppSidebar() {
             <ContactAddForm
               onSuccess={handleContactSuccess}
               onCancel={handleContactCancel}
-              createAction={createContact}
+              createAction={createPerson}
             />
           </div>
         </SheetContent>

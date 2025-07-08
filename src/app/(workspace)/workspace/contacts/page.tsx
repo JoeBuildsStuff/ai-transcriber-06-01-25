@@ -1,6 +1,6 @@
-import DataTableContacts from "./_components/contacts-table"
+import DataTablePerson from "./_components/table"
 
-export default async function NewContactsPage({
+export default async function Page({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -8,8 +8,8 @@ export default async function NewContactsPage({
   const params = await searchParams
 
   return (
-    <main className="mx-auto">
-      <DataTableContacts searchParams={params} />
+    <main className="">
+      <DataTablePerson searchParams={params} />
     </main>
   )
 }

@@ -3,7 +3,7 @@
 import { Star } from "lucide-react"
 import { useOptimistic, useTransition } from "react"
 import { toast } from "sonner"
-import { toggleContactFavorite } from "@/actions/contacts"
+import { toggleContactFavorite } from "../../_lib/actions"
 import { Button } from "@/components/ui/button"
 
 export default function ContactFavorite({ contactId, isFavorite }: { contactId: string, isFavorite: boolean }) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { updateContactNotes } from "@/actions/contacts"
+import { updateContactNotes } from "../../_lib/actions"
 import { toast } from "sonner"
 import { Loader2, Save, RotateCcw, Check } from "lucide-react"
 import Tiptap from "@/components/tiptap"

@@ -7,189 +7,102 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.1 (d3f7cba)"
+  }
   ai_transcriber: {
     Tables: {
       contacts: {
         Row: {
-          id: string
+          company: string | null
           created_at: string | null
-          updated_at: string | null
+          display_name: string | null
           first_name: string | null
+          id: string
+          job_title: string | null
           last_name: string | null
+          notes: string | null
           primary_email: string | null
           primary_phone: string | null
-          company: string | null
-          job_title: string | null
-          notes: string | null
-          user_id: string | null
-          display_name: string | null
-          birthday: string | null
-          is_favorite: boolean | null
-          nickname: string | null
-          tags: string[] | null
-        }
-        Insert: {
-          id?: string
-          created_at?: string | null
-          updated_at?: string | null
-          first_name?: string | null
-          last_name?: string | null
-          primary_email?: string | null
-          primary_phone?: string | null
-          company?: string | null
-          job_title?: string | null
-          notes?: string | null
-          user_id?: string | null
-          display_name?: string | null
-          birthday?: string | null
-          is_favorite?: boolean | null
-          nickname?: string | null
-          tags?: string[] | null
-        }
-        Update: {
-          id?: string
-          created_at?: string | null
-          updated_at?: string | null
-          first_name?: string | null
-          last_name?: string | null
-          primary_email?: string | null
-          primary_phone?: string | null
-          company?: string | null
-          job_title?: string | null
-          notes?: string | null
-          user_id?: string | null
-          display_name?: string | null
-          birthday?: string | null
-          is_favorite?: boolean | null
-          nickname?: string | null
-          tags?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contacts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      meetings: {
-        Row: {
-          id: string
-          user_id: string | null
-          audio_file_path: string | null
-          original_file_name: string | null
-          transcription: Json | null
-          formatted_transcript: Json | null
-          summary: string | null
-          created_at: string | null
           updated_at: string | null
-          openai_response: Json | null
-          title: string | null
-          meeting_at: string | null
-          speaker_names: Json | null
-          summary_jsonb: Json | null
-          meeting_reviewed: boolean | null
-          user_notes: string | null
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          user_id?: string | null
-          audio_file_path?: string | null
-          original_file_name?: string | null
-          transcription?: Json | null
-          formatted_transcript?: Json | null
-          summary?: string | null
+          company?: string | null
           created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          notes?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
           updated_at?: string | null
-          openai_response?: Json | null
-          title?: string | null
-          meeting_at?: string | null
-          speaker_names?: Json | null
-          summary_jsonb?: Json | null
-          meeting_reviewed?: boolean | null
-          user_notes?: string | null
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          user_id?: string | null
-          audio_file_path?: string | null
-          original_file_name?: string | null
-          transcription?: Json | null
-          formatted_transcript?: Json | null
-          summary?: string | null
+          company?: string | null
           created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          notes?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
           updated_at?: string | null
-          openai_response?: Json | null
-          title?: string | null
-          meeting_at?: string | null
-          speaker_names?: Json | null
-          summary_jsonb?: Json | null
-          meeting_reviewed?: boolean | null
-          user_notes?: string | null
+          user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "meetings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       meeting_attendees: {
         Row: {
-          id: string
-          meeting_id: string
-          contact_id: string
-          user_id: string
-          invitation_status: string | null
           attendance_status: string | null
-          role: string | null
-          invited_at: string | null
-          responded_at: string | null
+          contact_id: string
           created_at: string | null
-          updated_at: string | null
+          id: string
+          invitation_status: string | null
+          invited_at: string | null
+          meeting_id: string
           notes: string | null
+          responded_at: string | null
+          role: string | null
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
-          id?: string
-          meeting_id: string
-          contact_id: string
-          user_id: string
-          invitation_status?: string | null
           attendance_status?: string | null
-          role?: string | null
-          invited_at?: string | null
-          responded_at?: string | null
+          contact_id: string
           created_at?: string | null
-          updated_at?: string | null
+          id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          meeting_id: string
           notes?: string | null
+          responded_at?: string | null
+          role?: string | null
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          meeting_id?: string
-          contact_id?: string
-          user_id?: string
-          invitation_status?: string | null
           attendance_status?: string | null
-          role?: string | null
-          invited_at?: string | null
-          responded_at?: string | null
+          contact_id?: string
           created_at?: string | null
-          updated_at?: string | null
+          id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
+          meeting_id?: string
           notes?: string | null
+          responded_at?: string | null
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "meeting_attendees_meeting_id_fkey"
-            columns: ["meeting_id"]
-            isOneToOne: false
-            referencedRelation: "meetings"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "meeting_attendees_contact_id_fkey"
             columns: ["contact_id"]
@@ -198,86 +111,212 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "meeting_attendees_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "meetings"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      meetings: {
+        Row: {
+          audio_file_path: string | null
+          created_at: string | null
+          formatted_transcript: Json | null
+          id: string
+          meeting_at: string | null
+          meeting_reviewed: boolean | null
+          openai_response: Json | null
+          original_file_name: string | null
+          speaker_names: Json | null
+          summary: string | null
+          summary_jsonb: Json | null
+          title: string | null
+          transcription: Json | null
+          updated_at: string | null
+          user_id: string | null
+          user_notes: string | null
+        }
+        Insert: {
+          audio_file_path?: string | null
+          created_at?: string | null
+          formatted_transcript?: Json | null
+          id?: string
+          meeting_at?: string | null
+          meeting_reviewed?: boolean | null
+          openai_response?: Json | null
+          original_file_name?: string | null
+          speaker_names?: Json | null
+          summary?: string | null
+          summary_jsonb?: Json | null
+          title?: string | null
+          transcription?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_notes?: string | null
+        }
+        Update: {
+          audio_file_path?: string | null
+          created_at?: string | null
+          formatted_transcript?: Json | null
+          id?: string
+          meeting_at?: string | null
+          meeting_reviewed?: boolean | null
+          openai_response?: Json | null
+          original_file_name?: string | null
+          speaker_names?: Json | null
+          summary?: string | null
+          summary_jsonb?: Json | null
+          title?: string | null
+          transcription?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_notes?: string | null
+        }
+        Relationships: []
       }
       new_companies: {
         Row: {
+          created_at: string | null
+          description: string | null
           id: string
           name: string
-          description: string | null
-          created_at: string | null
           user_id: string | null
         }
         Insert: {
+          created_at?: string | null
+          description?: string | null
           id?: string
           name: string
-          description?: string | null
-          created_at?: string | null
           user_id?: string | null
         }
         Update: {
+          created_at?: string | null
+          description?: string | null
           id?: string
           name?: string
-          description?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      new_contact_emails: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          display_order: number | null
+          email: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id?: string | null
           created_at?: string | null
+          display_order?: number | null
+          email: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          email?: string
+          id?: string
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "new_companies_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "new_contact_emails_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "new_contacts"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      new_contact_phones: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          phone: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          phone: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          phone?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_contact_phones_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       new_contacts: {
         Row: {
-          id: string
-          first_name: string | null
-          last_name: string | null
           city: string | null
-          state: string | null
           company_id: string | null
-          job_title: string | null
-          description: string | null
-          linkedin: string | null
           created_at: string | null
+          description: string | null
+          first_name: string | null
+          id: string
+          job_title: string | null
+          last_name: string | null
+          linkedin: string | null
+          state: string | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
-          id?: string
-          first_name?: string | null
-          last_name?: string | null
           city?: string | null
-          state?: string | null
           company_id?: string | null
-          job_title?: string | null
-          description?: string | null
-          linkedin?: string | null
           created_at?: string | null
+          description?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          linkedin?: string | null
+          state?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
-          id?: string
-          first_name?: string | null
-          last_name?: string | null
           city?: string | null
-          state?: string | null
           company_id?: string | null
-          job_title?: string | null
-          description?: string | null
-          linkedin?: string | null
           created_at?: string | null
+          description?: string | null
+          first_name?: string | null
+          id?: string
+          job_title?: string | null
+          last_name?: string | null
+          linkedin?: string | null
+          state?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -289,102 +328,84 @@ export type Database = {
             referencedRelation: "new_companies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "new_contacts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      new_contact_emails: {
-        Row: {
-          id: string
-          contact_id: string | null
-          email: string
-          display_order: number | null
-          created_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          id?: string
-          contact_id?: string | null
-          email: string
-          display_order?: number | null
-          created_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          id?: string
-          contact_id?: string | null
-          email?: string
-          display_order?: number | null
-          created_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "new_contact_emails_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "new_contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "new_contact_emails_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      new_contact_phones: {
-        Row: {
-          id: string
-          contact_id: string | null
-          phone: string
-          display_order: number | null
-          created_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          id?: string
-          contact_id?: string | null
-          phone: string
-          display_order?: number | null
-          created_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          id?: string
-          contact_id?: string | null
-          phone?: string
-          display_order?: number | null
-          created_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "new_contact_phones_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "new_contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "new_contact_phones_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      meeting_attendees_with_contacts: {
+        Row: {
+          attendance_status: string | null
+          company: string | null
+          contact_id: string | null
+          created_at: string | null
+          display_name: string | null
+          first_name: string | null
+          id: string | null
+          invitation_status: string | null
+          invited_at: string | null
+          job_title: string | null
+          last_name: string | null
+          meeting_id: string | null
+          notes: string | null
+          primary_email: string | null
+          primary_phone: string | null
+          responded_at: string | null
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attendees_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings_with_attendee_summary: {
+        Row: {
+          absent_count: number | null
+          accepted_count: number | null
+          audio_file_path: string | null
+          created_at: string | null
+          declined_count: number | null
+          formatted_transcript: Json | null
+          id: string | null
+          meeting_at: string | null
+          meeting_reviewed: boolean | null
+          no_response_count: number | null
+          openai_response: Json | null
+          original_file_name: string | null
+          present_count: number | null
+          speaker_names: Json | null
+          summary: string | null
+          summary_jsonb: Json | null
+          tentative_count: number | null
+          title: string | null
+          total_invited: number | null
+          transcription: Json | null
+          updated_at: string | null
+          user_id: string | null
+          user_notes: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -398,21 +419,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "ai_transcriber">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -430,14 +455,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -453,14 +480,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -476,35 +505,39 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
-  DefaultSchemaCompositeTypeNameOrOptions extends
+  PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
-  CompositeTypeName extends DefaultSchemaCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = DefaultSchemaCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : DefaultSchemaCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][DefaultSchemaCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   ai_transcriber: {
     Enums: {},
   },
-} as const 
+} as const

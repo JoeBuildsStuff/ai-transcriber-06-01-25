@@ -155,9 +155,9 @@ export function DataTableViewOptions<TData>({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="flex shrink-0"
+          className="flex ml-auto"
         >
-          <Settings2 />
+          <Settings2 className="size-4 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-fit p-0" align="end">

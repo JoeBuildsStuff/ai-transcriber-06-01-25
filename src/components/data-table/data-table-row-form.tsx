@@ -24,6 +24,7 @@ interface DataTableRowFormProps<TData> {
   onCancel?: () => void
   createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
   updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  isMultiEdit?: boolean
 }
 
 type FormData = Record<string, string | boolean | string[] | null | undefined>
@@ -49,7 +50,8 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
   onSuccess, 
   onCancel,
   createAction,
-  updateAction
+  updateAction,
+  isMultiEdit = false
 }: DataTableRowFormProps<TData>) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -65,7 +67,8 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
     formColumns.forEach(column => {
       if ('accessorKey' in column && column.accessorKey && !column.meta?.excludeFromForm) {
         const key = column.accessorKey as string
-        initialData[key] = (data?.[key as keyof TData] as string | boolean | string[] | null | undefined) ?? ""
+        // For multi edit, start with empty values so only modified fields are updated
+        initialData[key] = isMultiEdit ? "" : (data?.[key as keyof TData] as string | boolean | string[] | null | undefined) ?? ""
       }
     })
     
@@ -254,6 +257,13 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
         const column = formColumns.find(col => 'accessorKey' in col && col.accessorKey === key)
         if (column?.meta?.readOnly) return // Skip read-only fields
         
+        // For multi edit, only include fields that have been modified (not empty)
+        if (isMultiEdit) {
+          if (typeof value === 'string' && value.trim() === '') return
+          if (Array.isArray(value) && value.length === 0) return
+          if (value === null || value === undefined) return
+        }
+        
         if (typeof value === 'string') {
           cleanedData[key] = value.trim() || undefined
         } else if (Array.isArray(value)) {
@@ -264,7 +274,13 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
       })
 
       let result
-      if (isEditing && updateAction && data && 'id' in data) {
+      if (isMultiEdit && updateAction) {
+        // For multi edit, use updateAction with empty id (the action will handle multiple IDs)
+        const updateData = Object.fromEntries(
+          Object.entries(cleanedData).filter(([, v]) => v !== undefined)
+        )
+        result = await updateAction('', updateData as Partial<TData>)
+      } else if (isEditing && updateAction && data && 'id' in data) {
         const updateData = Object.fromEntries(
           Object.entries(cleanedData).filter(([, v]) => v !== undefined)
         )
@@ -380,7 +396,12 @@ export function DataTableRowForm<TData extends Record<string, unknown>>({
           disabled={isSubmitting}
           className="w-1/2"
         >
-          {isEditing ? (
+          {isMultiEdit ? (
+            <>
+              <Save className="size-4 shrink-0" />
+              {isSubmitting ? "Updating..." : "Update All"}
+            </>
+          ) : isEditing ? (
             <>
               <Save className="size-4 shrink-0" />
               {isSubmitting ? "Saving..." : "Save Changes"}

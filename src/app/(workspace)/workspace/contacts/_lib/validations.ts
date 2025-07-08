@@ -1,58 +1,53 @@
-// Base table types (matching your database schema)
-export type Contact = {
+export type Person = {
   id: string;
-  created_at?: string | null;
-  updated_at?: string | null;
-  first_name?: string | null;
-  last_name?: string | null;
-  city?: string | null;
-  state?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  first_name?: string;
+  last_name?: string;
+  city?: string;
+  state?: string;
   company_id?: string | null;
-  job_title?: string | null;
-  description?: string | null;
-  linkedin?: string | null;
-  user_id?: string | null;
+  job_title?: string;
+  description?: string;
+  linkedin?: string;
 }
 
 export type Company = {
   id: string;
-  created_at?: string | null;
+  created_at?: string;
   name: string;
-  description?: string | null;
-  user_id?: string | null;
+  description?: string;
 }
 
-export type ContactEmail = {
+export type PersonEmail = {
   id: string;
-  contact_id: string | null;
+  contact_id: string;
   email: string;
-  display_order: number | null;
-  created_at?: string | null;
-  user_id?: string | null;
+  display_order: number;
+  created_at?: string;
 }
 
-export type ContactPhone = {
+export type PersonPhone = {
   id: string;
-  contact_id: string | null;
+  contact_id: string;
   phone: string;
-  display_order: number | null;
-  created_at?: string | null;
-  user_id?: string | null;
+  display_order: number;
+  created_at?: string;
 }
 
 // Enhanced types with relationships
-export type ContactWithCompany = Contact & {
+export type PersonWithCompany = Person & {
   company?: Company;
 }
 
-export type ContactWithRelations = Contact & {
+export type PersonWithRelations = Person & {
   company?: Company;
-  emails: ContactEmail[];
-  phones: ContactPhone[];
+  emails: PersonEmail[];
+  phones: PersonPhone[];
 }
 
 // Form-specific types (for your React component)
-export type ContactFormData = {
+export type PersonFormData = {
   firstName: string;
   lastName: string;
   emails: string[];
@@ -67,23 +62,23 @@ export type ContactFormData = {
 
 // API response types
 export type ContactListResponse = {
-  contacts: ContactWithCompany[];
+  contacts: PersonWithCompany[];
   total: number;
 }
 
-export type ContactDetailResponse = ContactWithRelations;
+export type ContactDetailResponse = PersonWithRelations;
 
 // Insert/Update types (without generated fields)
-export type ContactInsert = Omit<Contact, 'id' | 'created_at' | 'updated_at'>;
-export type ContactUpdate = Partial<ContactInsert>;
+export type PersonInsert = Omit<Person, 'id' | 'created_at' | 'updated_at'>;
+export type PersonUpdate = Partial<PersonInsert>;
 
-export type ContactEmailInsert = Omit<ContactEmail, 'id' | 'created_at'>;
-export type ContactPhoneInsert = Omit<ContactPhone, 'id' | 'created_at'>;
+export type PersonEmailInsert = Omit<PersonEmail, 'id' | 'created_at'>;
+export type PersonPhoneInsert = Omit<PersonPhone, 'id' | 'created_at'>;
 
 export type CompanyInsert = Omit<Company, 'id' | 'created_at'>;
 
 // Utility types for the component
-export type ContactData = {
+export type PersonData = {
   firstName: string;
   lastName: string;
   emails: string[];

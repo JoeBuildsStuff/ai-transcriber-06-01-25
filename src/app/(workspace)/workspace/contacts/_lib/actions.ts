@@ -2,12 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { Contact } from "./validations"
+import { Person } from "./validations"
 import { getCompanies as dbGetCompanies } from "./queries"
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
-interface ContactWithExtras extends Omit<Contact, "id" | "created_at" | "updated_at"> {
+interface PersonWithExtras extends Omit<Person, "id" | "created_at" | "updated_at"> {
   _emails?: string[]
   _phones?: string[]
   company_name?: string
@@ -51,7 +51,7 @@ async function findOrCreateCompany(supabase: SupabaseClient<Database>, companyNa
     return newCompany.id
 }
 
-export async function createContact(data: Record<string, unknown>) {
+export async function createPerson(data: Record<string, unknown>) {
   const supabase = await createClient()
   
   try {
@@ -64,20 +64,23 @@ export async function createContact(data: Record<string, unknown>) {
     }
 
     // Extract emails, phones and company from the data
-    const { _emails, _phones, company_name, ...contactData } = data as ContactWithExtras
+    const { _emails, _phones, company_name, ...contactData } = data as PersonWithExtras
     
     // Include user_id in the contact data
-    contactData.user_id = user.id
+    const contactDataWithUserId = {
+      ...contactData,
+      user_id: user.id
+    }
     
     if (company_name) {
       const companyId = await findOrCreateCompany(supabase, company_name, user.id)
-      contactData.company_id = companyId
+      contactDataWithUserId.company_id = companyId
     }
 
     // Start a transaction by creating the contact first
     const { data: newContact, error: contactError } = await supabase
       .from("new_contacts")
-      .insert([contactData])
+      .insert([contactDataWithUserId])
       .select()
       .single()
     
@@ -136,7 +139,7 @@ export async function createContact(data: Record<string, unknown>) {
   }
 }
 
-export async function updateContact(id: string, data: Record<string, unknown>) {
+export async function updatePerson(id: string, data: Record<string, unknown>) {
   const supabase = await createClient()
   
   try {
@@ -149,7 +152,7 @@ export async function updateContact(id: string, data: Record<string, unknown>) {
     }
 
     // Extract emails and phones from the data
-    const { _emails, _phones, company_name, ...contactData } = data as ContactWithExtras
+    const { _emails, _phones, company_name, ...contactData } = data as PersonWithExtras
     
     if (company_name !== undefined) {
       const companyId = await findOrCreateCompany(supabase, company_name, user.id)
@@ -250,7 +253,126 @@ export async function getCompanies() {
   return await dbGetCompanies()
 }
 
-export async function deleteContacts(contactIds: string[]) {
+export async function multiUpdatePersons(personIds: string[], data: Record<string, unknown>) {
+  const supabase = await createClient()
+  
+  try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      return { success: false, error: "User not authenticated" }
+    }
+
+    // Extract emails, phones and company from the data
+    const { _emails, _phones, company_name, ...contactData } = data as PersonWithExtras
+    
+    // Only process fields that are actually provided (not undefined)
+    const fieldsToUpdate = Object.fromEntries(
+      Object.entries(contactData).filter(([, value]) => value !== undefined)
+    )
+    
+    if (company_name !== undefined) {
+      const companyId = await findOrCreateCompany(supabase, company_name, user.id)
+      fieldsToUpdate.company_id = companyId
+    }
+    
+    // Update all contacts with the provided data
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      const { error: contactError } = await supabase
+        .from("new_contacts")
+        .update(fieldsToUpdate)
+        .in("id", personIds)
+        .eq("user_id", user.id) // Ensure user can only update their own contacts
+      
+      if (contactError) {
+        console.error("Error multi updating contacts:", contactError)
+        return { success: false, error: contactError.message }
+      }
+    }
+    
+    // Handle multi email updates if provided
+    if (_emails !== undefined) {
+      // Delete existing emails for all contacts for this user
+      const { error: deleteEmailError } = await supabase
+        .from("new_contact_emails")
+        .delete()
+        .in("contact_id", personIds)
+        .eq("user_id", user.id)
+      
+      if (deleteEmailError) {
+        console.error("Error deleting existing emails:", deleteEmailError)
+        return { success: false, error: deleteEmailError.message }
+      }
+      
+      // Insert new emails for all contacts
+      if (_emails.length > 0) {
+        const emailsToInsert = personIds.flatMap(contactId =>
+          _emails.map((email, index) => ({
+            contact_id: contactId,
+            email: email,
+            display_order: index,
+            user_id: user.id
+          }))
+        )
+        
+        const { error: emailError } = await supabase
+          .from("new_contact_emails")
+          .insert(emailsToInsert)
+        
+        if (emailError) {
+          console.error("Error creating emails:", emailError)
+          return { success: false, error: emailError.message }
+        }
+      }
+    }
+    
+    // Handle multi phone updates if provided
+    if (_phones !== undefined) {
+      // Delete existing phones for all contacts for this user
+      const { error: deletePhoneError } = await supabase
+        .from("new_contact_phones")
+        .delete()
+        .in("contact_id", personIds)
+        .eq("user_id", user.id)
+      
+      if (deletePhoneError) {
+        console.error("Error deleting existing phones:", deletePhoneError)
+        return { success: false, error: deletePhoneError.message }
+      }
+      
+      // Insert new phones for all contacts
+      if (_phones.length > 0) {
+        const phonesToInsert = personIds.flatMap(contactId =>
+          _phones.map((phone, index) => ({
+            contact_id: contactId,
+            phone: phone,
+            display_order: index,
+            user_id: user.id
+          }))
+        )
+        
+        const { error: phoneError } = await supabase
+          .from("new_contact_phones")
+          .insert(phonesToInsert)
+        
+        if (phoneError) {
+          console.error("Error creating phones:", phoneError)
+          return { success: false, error: phoneError.message }
+        }
+      }
+    }
+    
+    revalidatePath("/contacts")
+    return { success: true, updatedCount: personIds.length }
+  } catch (error) {
+    console.error("Unexpected error multi updating contacts:", error)
+    return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+export async function deletePersons(personIds: string[]) {
   const supabase = await createClient()
   
   try {
@@ -266,7 +388,7 @@ export async function deleteContacts(contactIds: string[]) {
     const { error: emailError } = await supabase
       .from("new_contact_emails")
       .delete()
-      .in("contact_id", contactIds)
+      .in("contact_id", personIds)
       .eq("user_id", user.id)
     
     if (emailError) {
@@ -278,7 +400,7 @@ export async function deleteContacts(contactIds: string[]) {
     const { error: phoneError } = await supabase
       .from("new_contact_phones")
       .delete()
-      .in("contact_id", contactIds)
+      .in("contact_id", personIds)
       .eq("user_id", user.id)
     
     if (phoneError) {
@@ -290,7 +412,7 @@ export async function deleteContacts(contactIds: string[]) {
     const { error } = await supabase
       .from("new_contacts")
       .delete()
-      .in("id", contactIds)
+      .in("id", personIds)
       .eq("user_id", user.id) // Ensure user can only delete their own contacts
     
     if (error) {
@@ -299,9 +421,86 @@ export async function deleteContacts(contactIds: string[]) {
     }
     
     revalidatePath("/contacts")
-    return { success: true, deletedCount: contactIds.length }
+    return { success: true, deletedCount: personIds.length }
   } catch (error) {
     console.error("Unexpected error deleting contacts:", error)
     return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+export async function updateContactNotes(contactId: string, notes: string) {
+  const supabase = await createClient()
+
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    if (userError || !userData.user) {
+      return { error: "User not authenticated" }
+    }
+
+    const { error } = await supabase
+      .from("new_contacts")
+      .update({ notes })
+      .eq("id", contactId)
+      .eq("user_id", userData.user.id)
+
+    if (error) {
+      console.error("Error updating contact notes:", error)
+      return { error: "Failed to update contact notes." }
+    }
+
+    revalidatePath(`/workspace/contacts/${contactId}`)
+    return {}
+  } catch (e) {
+    const error = e as Error
+    console.error("Unexpected error updating contact notes:", error)
+    return { error: `An unexpected error occurred: ${error.message}` }
+  }
+}
+
+export async function toggleContactFavorite(contactId: string, currentIsFavorite: boolean) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    return {
+      error: "You must be logged in to update a contact.",
+      errorType: "auth"
+    }
+  }
+
+  if (!contactId) {
+      return {
+          error: "Contact ID is missing.",
+          errorType: "validation"
+      }
+  }
+
+  const { error } = await supabase
+    .from("new_contacts")
+    .update({ is_favorite: !currentIsFavorite })
+    .eq("id", contactId)
+    .eq("user_id", userData.user.id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating favorite status:', error)
+    if (error.code === 'PGRST116') {
+        return {
+            error: "Contact not found or you don't have permission to modify it.",
+            errorType: 'permission'
+        }
+    }
+    return {
+      error: "Failed to update favorite status. Please try again.",
+      errorType: "database"
+    }
+  }
+
+  revalidatePath("/workspace/contacts")
+  revalidatePath(`/workspace/contacts/${contactId}`)
+
+  return {
+    data: "Favorite status updated",
   }
 }

@@ -4,10 +4,11 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
-import { ContactWithRelations } from "../_lib/validations"
-import { AtSign, BriefcaseBusiness, Building2, IdCard, MapPin, Phone, Pilcrow } from "lucide-react"
+import { PersonWithRelations } from "../_lib/validations"
+import { ArrowUpRight, AtSign, BriefcaseBusiness, Building2, IdCard, MapPin, Phone, Pilcrow } from "lucide-react"
+import Link from "next/link"
 
-export const columns: ColumnDef<ContactWithRelations>[] = [
+export const columns: ColumnDef<PersonWithRelations>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -36,19 +37,28 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "display_name",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <IdCard className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Name" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Name" 
+        icon={<IdCard className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const firstName = row.original.first_name || ""
       const lastName = row.original.last_name || ""
       const displayName = `${firstName} ${lastName}`.trim() || "—"
+      const contactId = row.original.id
 
       return (
         <div className="flex items-center gap-2">
-          <span className="font-medium">{displayName}</span>
+          <Link 
+            href={`/workspace/contacts/${contactId}`}
+            className="hover:underline cursor-pointer"
+          >
+            <span className="flex items-center gap-1">
+              {displayName} <ArrowUpRight className="size-4" strokeWidth={1.5} />
+            </span>
+          </Link>
         </div>
       )
     },
@@ -90,14 +100,15 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "primary_email",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <AtSign className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Email" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Email" 
+        icon={<AtSign className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const emails = row.original.emails || []
-      const primaryEmail = emails.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0]
+      const primaryEmail = emails.sort((a, b) => a.display_order - b.display_order)[0]
       
       if (!primaryEmail) return <div className="text-muted-foreground">—</div>
       
@@ -122,10 +133,11 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     accessorKey: "description",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <Pilcrow className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Description" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Description" 
+        icon={<Pilcrow className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const description = row.getValue("description") as string
@@ -150,10 +162,11 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "company_name",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <Building2 className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Company" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Company" 
+        icon={<Building2 className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const company = row.original.company
@@ -170,10 +183,11 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     accessorKey: "job_title",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <BriefcaseBusiness className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Title" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Title" 
+        icon={<BriefcaseBusiness className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const jobTitle = row.getValue("job_title") as string
@@ -189,14 +203,15 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "primary_phone",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <Phone className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Phone" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Phone" 
+        icon={<Phone className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const phones = row.original.phones || []
-      const primaryPhone = phones.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))[0]
+      const primaryPhone = phones.sort((a, b) => a.display_order - b.display_order)[0]
       
       if (!primaryPhone) return <div className="text-muted-foreground">—</div>
       
@@ -221,10 +236,11 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     id: "location",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <MapPin className="size-4 shrink-0" strokeWidth={1.5} />
-        <DataTableColumnHeader column={column} title="Location" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="Location" 
+        icon={<MapPin className="size-4 shrink-0" strokeWidth={1.5} />}
+      />
     ),
     cell: ({ row }) => {
       const city = row.original.city || ""
@@ -245,12 +261,15 @@ export const columns: ColumnDef<ContactWithRelations>[] = [
   {
     accessorKey: "linkedin",
     header: ({ column }) => (
-      <div className="flex items-center gap-2">
-        <div className="border border-muted-foreground rounded size-4 flex items-center justify-center">
-          <span className="text-xs">in</span>
-        </div>
-        <DataTableColumnHeader column={column} title="LinkedIn" />
-      </div>
+      <DataTableColumnHeader 
+        column={column} 
+        title="LinkedIn" 
+        icon={
+          <div className="border border-muted-foreground rounded size-4 flex items-center justify-center">
+            <span className="text-xs">in</span>
+          </div>
+        }
+      />
     ),
     cell: ({ row }) => {
       const linkedin = row.getValue("linkedin") as string

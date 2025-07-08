@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useState, useEffect, forwardRef, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import {
     DndContext,
@@ -32,8 +32,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Company } from '../_lib/validations';
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-export interface AttioContactProps {
+export interface PersonFormProps {
     /**
      * Initial first name value
      */
@@ -213,7 +214,7 @@ const SortablePhoneItem = forwardRef<HTMLInputElement, SortablePhoneItemProps>((
 });
 SortablePhoneItem.displayName = 'SortablePhoneItem';
 
-export default function AttioContact({
+export default function PersonForm({
     initialFirstName = "",
     initialLastName = "",
     initialEmails = [],
@@ -227,7 +228,7 @@ export default function AttioContact({
     availableCompanies,
     onChange,
     className
-}: AttioContactProps = {}) {
+}: PersonFormProps = {}) {
     const [firstName, setFirstName] = useState(initialFirstName);
     const [lastName, setLastName] = useState(initialLastName);
     const [emails, setEmails] = useState<string[]>(initialEmails);
@@ -618,34 +619,39 @@ export default function AttioContact({
                             align="start"
                             onKeyDown={(e) => handlePopoverKeyDown(e, () => setCompanyOpen(false))}
                         >
-                            <Command className="rounded-xl">
+                            <Command className="w-full rounded-xl">
                                 <CommandInput placeholder="Search companies..." />
-                                <CommandEmpty>No company found.</CommandEmpty>
-                                <CommandGroup className="max-h-60 overflow-auto">
-                                    {companies.map((companyData) => (
-                                        <CommandItem
-                                            key={companyData.id}
-                                            value={companyData.name}
-                                            onSelect={(currentValue) => {
-                                                setCompany(company === currentValue ? "" : currentValue);
-                                                setCompanyOpen(false);
-                                            }}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    company === companyData.name ? "opacity-100" : "opacity-0"
-                                                )}
-                                            />
-                                            {companyData.name}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                                <div className="border-t px-1 py-1">
+                                <ScrollArea className="h-60 pr-2">
+                                    <CommandList className="max-h-none overflow-hidden">
+                                        <CommandEmpty>No company found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {companies.map((companyData) => (
+                                                <CommandItem
+                                                    key={companyData.id}
+                                                    value={companyData.name}
+                                                    onSelect={(currentValue) => {
+                                                        setCompany(company === currentValue ? "" : currentValue);
+                                                        setCompanyOpen(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            company === companyData.name ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {companyData.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </ScrollArea>
+                                <CommandSeparator />
+                                <div className="p-1 h-9">
                                     <Button 
-                                        variant="ghost" 
+                                        variant="secondary" 
                                         size="sm"
-                                        className="w-full justify-start rounded-t-none"
+                                        className="w-full h-full justify-start rounded-t-none text-muted-foreground"
                                         onClick={() => {
                                             setCompanyOpen(false);
                                             setAddCompanyDialogOpen(true);

@@ -45,12 +45,14 @@ export interface DataTableProps {
   initialState?: Partial<DataTableState>
   /** Total number of pages for server-side pagination */
   pageCount?: number
-  /** Function to handle bulk deletion of rows */
+  /** Function to handle multi deletion of rows */
   deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
   /** Function to handle creation of new rows */
   createAction?: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
   /** Function to handle updating existing rows */
-  updateAction?: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  updateActionSingle?: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  /** Function to handle multi updating of multiple rows */
+  updateActionMulti?: (ids: string[], data: Record<string, unknown>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
   /** Custom form component for adding new rows */
   customAddForm?: React.ComponentType<{
     onSuccess?: () => void
@@ -58,11 +60,18 @@ export interface DataTableProps {
     createAction?: (data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
   }>
   /** Custom form component for editing existing rows */
-  customEditForm?: React.ComponentType<{
+  customEditFormSingle?: React.ComponentType<{
     data: Record<string, unknown>
     onSuccess?: () => void
     onCancel?: () => void
     updateAction?: (id: string, data: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>
+  }>
+  /** Custom form component for multi editing multiple rows */
+  customEditFormMulti?: React.ComponentType<{
+    selectedCount: number
+    onSuccess?: () => void
+    onCancel?: () => void
+    multiUpdateAction?: (ids: string[], data: Record<string, unknown>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
   }>
 }
 
@@ -73,17 +82,24 @@ interface DataTableInternalProps<TData, TValue> {
   pageCount?: number
   deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
   createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
-  updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  updateActionSingle?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  updateActionMulti?: (ids: string[], data: Partial<TData>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
   customAddForm?: React.ComponentType<{
     onSuccess?: () => void
     onCancel?: () => void
     createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
   }>
-  customEditForm?: React.ComponentType<{
+  customEditFormSingle?: React.ComponentType<{
     data: TData
     onSuccess?: () => void
     onCancel?: () => void
     updateAction?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
+  }>
+  customEditFormMulti?: React.ComponentType<{
+    selectedCount: number
+    onSuccess?: () => void
+    onCancel?: () => void
+    multiUpdateAction?: (ids: string[], data: Partial<TData>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
   }>
 }
 
@@ -94,9 +110,11 @@ export function DataTable<TData, TValue>({
   pageCount,
   deleteAction,
   createAction,
-  updateAction,
+  updateActionSingle,
+  updateActionMulti,
   customAddForm,
-  customEditForm,
+  customEditFormSingle,
+  customEditFormMulti,
 }: DataTableInternalProps<TData, TValue>) {
   const router = useRouter()
   const pathname = usePathname()
@@ -176,9 +194,11 @@ export function DataTable<TData, TValue>({
               table={table} 
               deleteAction={deleteAction} 
               createAction={createAction}
-              updateAction={updateAction}
+              updateActionSingle={updateActionSingle}
+              updateActionMulti={updateActionMulti}
               customAddForm={customAddForm}
-              customEditForm={customEditForm}
+              customEditFormSingle={customEditFormSingle}
+              customEditFormMulti={customEditFormMulti}
             />
         </div>
 

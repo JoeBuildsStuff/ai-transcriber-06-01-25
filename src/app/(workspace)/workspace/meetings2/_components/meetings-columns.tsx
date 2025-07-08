@@ -1,7 +1,7 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { ArrowUpRight, CheckCircle, Circle } from "lucide-react"
+import { CheckCircle, Circle } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -32,12 +32,6 @@ export const columns: ColumnDef<MeetingsList>[] = [
       />
       </div>
     ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    id: "action",
-    cell: ({ row }) => <div className="flex justify-start items-start w-2"><ArrowUpRight className="size-4 shrink-0"  /></div>,
     enableSorting: false,
     enableHiding: false,
   },

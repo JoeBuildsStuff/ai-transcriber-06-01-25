@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -68,8 +69,9 @@ export default function DataTableRowDelete({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline">
           <Trash2 className="size-4 shrink-0" />
+          <Badge variant="secondary">{selectedRowIds.length}</Badge>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
