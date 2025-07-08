@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Edit } from "lucide-react"
+import { PencilRuler } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -50,7 +50,7 @@ export default function DataTableRowEdit<TData>({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="icon">
-          <Edit className="size-4 shrink-0" />
+          <PencilRuler className="size-4 shrink-0" />
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col sm:max-w-md">

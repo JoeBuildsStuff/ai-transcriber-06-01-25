@@ -2,23 +2,13 @@
 
 import * as React from "react"
 import { Table } from "@tanstack/react-table"
-import { Settings2 } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 import DataTableFilter from "./data-table-filter"
 import DataTableSort from "./data-table-sort"
 import DataTableRowAdd from "./data-table-row-add"
 import DataTableRowEdit from "./data-table-row-edit"
 import DataTableRowDelete from "./data-table-row-delete"
+import { DataTableViewOptions } from "./data-table-view-options"
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -60,6 +50,29 @@ export default function DataTableToolbar<TData>({
   return (
     <div className="flex items-center gap-2">
 
+    {/* Action Buttons */}
+    {createAction && (
+      <DataTableRowAdd 
+        columns={table.getAllColumns().map(col => col.columnDef)} 
+        createAction={createAction}
+        customForm={customAddForm}
+      />
+    )}
+    {updateAction && (
+      <DataTableRowEdit 
+        columns={table.getAllColumns().map(col => col.columnDef)} 
+        selectedRows={selectedRows} 
+        updateAction={updateAction}
+        customForm={customEditForm}
+      />
+    )}
+    {deleteAction && selectedRowIds.length > 0 && (
+      <DataTableRowDelete 
+        selectedRowIds={selectedRowIds} 
+        deleteAction={deleteAction}
+        onComplete={handleDeleteComplete}
+      />
+    )}
             
       {/* Sort Controls */}
       <DataTableSort table={table} />
@@ -67,61 +80,11 @@ export default function DataTableToolbar<TData>({
       <DataTableFilter table={table} />
 
 
-      <div className="ml-auto flex items-center gap-2">
-        {/* Action Buttons */}
-        {createAction && (
-          <DataTableRowAdd 
-            columns={table.getAllColumns().map(col => col.columnDef)} 
-            createAction={createAction}
-            customForm={customAddForm}
-          />
-        )}
-        {updateAction && (
-          <DataTableRowEdit 
-            columns={table.getAllColumns().map(col => col.columnDef)} 
-            selectedRows={selectedRows} 
-            updateAction={updateAction}
-            customForm={customEditForm}
-          />
-        )}
-        {deleteAction && selectedRowIds.length > 0 && (
-          <DataTableRowDelete 
-            selectedRowIds={selectedRowIds} 
-            deleteAction={deleteAction}
-            onComplete={handleDeleteComplete}
-          />
-        )}
+      <div className="ml-auto flex items-center">
+
 
         {/* Column visibility toggle */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Settings2 className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {table
-              .getAllColumns()
-              .filter(
-                (column) =>
-                  typeof column.accessorFn !== "undefined" && column.getCanHide()
-              )
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DataTableViewOptions table={table} />
       </div>
     </div>
   )

@@ -1,41 +1,51 @@
 "use client"
 
+import { useState } from "react"
+import { Table, Column } from "@tanstack/react-table"
+import { Settings2, Circle, CircleCheckBig, GripVertical } from "lucide-react"
 import {
   DndContext,
   closestCenter,
-  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from "@dnd-kit/core"
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
+import {
+  useSortable,
+} from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { type Column, Table } from "@tanstack/react-table"
-import { GripVertical, Settings2 } from "lucide-react"
-import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
-interface SortableColumnProps<TData> {
+interface SortableItemProps<TData> {
+  id: string
   column: Column<TData, unknown>
+  isVisible: boolean
+  onToggleVisibility: () => void
 }
 
-function SortableColumn<TData>({ column }: SortableColumnProps<TData>) {
+function SortableItem<TData>({ id, column, isVisible, onToggleVisibility }: SortableItemProps<TData>) {
   const {
     attributes,
     listeners,
@@ -43,40 +53,38 @@ function SortableColumn<TData>({ column }: SortableColumnProps<TData>) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: column.id })
+  } = useSortable({ id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : 0,
-    position: "relative" as const,
   }
 
   return (
-    <div
+    <CommandItem
       ref={setNodeRef}
       style={style}
-      className="flex w-full items-center justify-between"
+      className="flex items-center justify-between cursor-pointer"
+      onSelect={onToggleVisibility}
     >
-      <DropdownMenuCheckboxItem
-        className="w-full capitalize"
-        checked={column.getIsVisible() ?? true}
-        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-        onSelect={(event) => event.preventDefault()}
-      >
-        {column.columnDef.meta?.label ?? column.id}
-      </DropdownMenuCheckboxItem>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="cursor-grab hover:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="size-4" />
-      </Button>
-    </div>
+      <div className="flex items-center space-x-2">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="size-4 shrink-0 text-muted-foreground" />
+        </div>
+        <span className="capitalize">{column.id}</span>
+      </div>
+      {isVisible ? (
+        <CircleCheckBig className="size-4 shrink-0" />
+      ) : (
+        <Circle className="size-4 shrink-0" />
+      )}
+    </CommandItem>
   )
 }
 
@@ -85,7 +93,8 @@ export function DataTableViewOptions<TData>({
 }: {
   table: Table<TData>
 }) {
-  const { columnOrder } = table.getState()
+  const [open, setOpen] = useState(false)
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -93,75 +102,98 @@ export function DataTableViewOptions<TData>({
     })
   )
 
+  // Get all hideable columns
+  const hideableColumns = table
+    .getAllColumns()
+    .filter(
+      (column) =>
+        typeof column.accessorFn !== "undefined" && column.getCanHide()
+    )
+
+  // Get current column order or use the original order
+  const currentOrder = table.getState().columnOrder
+  const orderedColumns = currentOrder.length > 0 
+    ? currentOrder
+        .map(id => hideableColumns.find(col => col.id === id))
+        .filter((c): c is NonNullable<typeof c> => c !== undefined)
+        .concat(hideableColumns.filter(col => !currentOrder.includes(col.id)))
+    : hideableColumns
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
+
     if (over && active.id !== over.id) {
-      const oldIndex = columnOrder.indexOf(active.id as string)
-      const newIndex = columnOrder.indexOf(over.id as string)
-      table.setColumnOrder(arrayMove(columnOrder, oldIndex, newIndex))
+      const oldIndex = orderedColumns.findIndex((col) => col?.id === active.id)
+      const newIndex = orderedColumns.findIndex((col) => col?.id === over.id)
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrderedColumns = arrayMove(orderedColumns, oldIndex, newIndex)
+        const newColumnOrder = newOrderedColumns.map(col => col!.id)
+        
+        const allColumnIds = table.getAllColumns().map(col => col.id)
+        const hideableColumnIds = hideableColumns.map(col => col.id)
+
+        const currentFullOrder = table.getState().columnOrder.length > 0
+          ? table.getState().columnOrder
+          : allColumnIds
+
+        let hideableIndex = 0
+        const newFullOrder = currentFullOrder.map(id => {
+          if (hideableColumnIds.includes(id)) {
+            return newColumnOrder[hideableIndex++]
+          }
+          return id
+        })
+
+        table.setColumnOrder(newFullOrder)
+      }
     }
   }
 
-  // Get all columns for ordering (including non-hideable ones)
-  const allColumns = table.getAllColumns()
-  
-  // Get only hideable columns for the view options display
-  const hideableColumns = React.useMemo(() => {
-    const columns =
-      columnOrder.length > 0
-        ? columnOrder
-            .map((id) => table.getColumn(id))
-            .filter(
-              (col): col is Column<TData, unknown> => {
-                if (!col || typeof col.accessorFn === "undefined") return false
-                const canHide = col.getCanHide()
-                return canHide === true
-              }
-            )
-        : table
-            .getAllColumns()
-            .filter(
-              (column) => {
-                if (typeof column.accessorFn === "undefined") return false
-                const canHide = column.getCanHide()
-                return canHide === true
-              }
-            )
-    return columns
-  }, [columnOrder, table])
-
-  // Initialize column order with all columns if not set
-  React.useEffect(() => {
-    if (columnOrder.length === 0 && allColumns.length > 0) {
-      table.setColumnOrder(allColumns.map((c) => c.id))
-    }
-  }, [columnOrder.length, allColumns, table])
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-auto">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="flex shrink-0"
+        >
           <Settings2 />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="">
-        <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={hideableColumns.map((c) => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {hideableColumns.map((column) => (
-              <SortableColumn key={column.id} column={column} />
-            ))}
-          </SortableContext>
-        </DndContext>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent className="w-fit p-0" align="end">
+        <Command>
+          <CommandInput placeholder="Search columns..." />
+          <CommandList>
+            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandGroup>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={orderedColumns.map(col => col!.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {orderedColumns.map((column) => {
+                     if (!column) return null
+                     const isVisible = column.getIsVisible()
+                     return (
+                       <SortableItem<TData>
+                         key={column.id}
+                         id={column.id}
+                         column={column}
+                         isVisible={isVisible}
+                         onToggleVisibility={() => column.toggleVisibility(!isVisible)}
+                       />
+                     )
+                   })}
+                </SortableContext>
+              </DndContext>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
