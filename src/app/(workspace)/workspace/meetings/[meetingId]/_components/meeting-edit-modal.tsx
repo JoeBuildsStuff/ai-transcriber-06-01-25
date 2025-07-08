@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/accordion"
 import { MeetingEditModalProps, Contact, MeetingAttendeeWithContact } from "@/types"
 import MultipleSelector, { Option } from "@/components/ui/multiselect"
-import { getAllContacts } from "@/actions/contacts"
+// TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
+import { getAllContacts } from "../../../contacts/_lib/queries"
 import { getMeetingAttendees, addMeetingAttendees, removeMeetingAttendees } from "@/actions/meetings"
 import { toast } from "sonner"
 

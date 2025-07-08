@@ -151,7 +151,7 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
           </Badge>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-fit p-3">
+      <PopoverContent align="start" className="w-fit p-2 rounded-xl">
         <div className="flex w-full flex-col gap-3">
           <p className="text-sm font-medium text-muted-foreground">
             Filter by:

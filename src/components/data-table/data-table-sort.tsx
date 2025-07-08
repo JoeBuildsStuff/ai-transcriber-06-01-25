@@ -125,7 +125,7 @@ export default function DataTableSort<TData>({ table }: DataTableSortProps<TData
           </Badge>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-sm p-3">
+      <PopoverContent align="start" className="w-sm p-2 rounded-xl">
         <div className="flex flex-col gap-3 w-full">
           <p className="text-sm font-medium text-muted-foreground">
             Sort by:

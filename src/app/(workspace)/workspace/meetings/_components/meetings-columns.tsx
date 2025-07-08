@@ -1,21 +1,18 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { Button } from "@/components/ui/button"
-import { CheckCircle, Circle, SquareArrowOutUpRight } from "lucide-react"
+import { CheckCircle, Circle } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { MeetingsList } from "../_lib/validations"
-import Link from "next/link"
-import { MeetingsDetailSheet } from "./meetings-detail-sheet"
 import { Badge } from "@/components/ui/badge"
 
 export const columns: ColumnDef<MeetingsList>[] = [
   {
     id: "select",
     header: ({ table }) => (
-      <div className="flex justify-start items-start w-1">
+      <div className="flex justify-start items-start w-2">
       <Checkbox
         checked={
           table.getIsAllPageRowsSelected() ||
@@ -27,7 +24,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <div className="flex justify-start items-start w-1">
+      <div className="flex justify-start items-start w-2">
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -36,26 +33,6 @@ export const columns: ColumnDef<MeetingsList>[] = [
       </div>
     ),
     enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const meeting = row.original
-      return (
-        <div className="w-fit">
-          <MeetingsDetailSheet meeting={meeting} />
-          <Button variant="ghost" size="sm" asChild>
-            <Link
-              href={`/workspace/meetings/${meeting.id}`}
-              className="flex items-center"
-            >
-              <SquareArrowOutUpRight className="size-4 shrink-0 text-muted-foreground" />
-            </Link>
-          </Button>
-        </div>
-      )
-    },
     enableHiding: false,
   },
   {

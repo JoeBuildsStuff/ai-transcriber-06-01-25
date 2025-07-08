@@ -457,6 +457,36 @@ export async function updateContactNotes(contactId: string, notes: string) {
   }
 }
 
+// TODO: createcontact vs creatperson? 
+export async function createContact(formData: FormData) {
+  // Extract data from FormData and convert to the format expected by createPerson
+  const data: Record<string, unknown> = {}
+  
+  for (const [key, value] of formData.entries()) {
+    if (value && typeof value === 'string' && value.trim() !== '') {
+      data[key] = value.trim()
+    }
+  }
+
+  // Call the existing createPerson function
+  const result = await createPerson(data)
+  
+  if (result.success && result.data) {
+    return {
+      contact: {
+        id: result.data.id,
+        first_name: result.data.first_name,
+        last_name: result.data.last_name,
+        // Add other fields as needed
+      }
+    }
+  } else {
+    return {
+      error: result.error || "Failed to create contact"
+    }
+  }
+}
+
 export async function toggleContactFavorite(contactId: string, currentIsFavorite: boolean) {
   const supabase = await createClient()
 

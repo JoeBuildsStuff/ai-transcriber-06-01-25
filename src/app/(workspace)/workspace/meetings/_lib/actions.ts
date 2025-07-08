@@ -85,6 +85,48 @@ export async function updateMeeting(id: string, data: Partial<Omit<Meetings, "id
   }
 }
 
+export async function multiUpdateMeetings(meetingIds: string[], data: Partial<Omit<Meetings, "id" | "created_at" | "updated_at">>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    console.error("User not authenticated for multi updating meetings")
+    return { success: false, error: "User not authenticated" }
+  }
+  
+  try {
+    // Only process fields that are actually provided (not undefined)
+    const fieldsToUpdate = Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined)
+    )
+    
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return { success: true, updatedCount: 0 }
+    }
+    
+    const { error } = await supabase
+      .schema("ai_transcriber")
+      .from("meetings")
+      .update(fieldsToUpdate)
+      .in("id", meetingIds)
+      .eq("user_id", user.id)
+    
+    if (error) {
+      console.error("Error multi updating meetings:", error)
+      return { success: false, error: error.message }
+    }
+    
+    revalidatePath("/workspace/meetings")
+    // Revalidate individual meeting pages
+    meetingIds.forEach(id => revalidatePath(`/workspace/meetings/${id}`))
+    
+    return { success: true, updatedCount: meetingIds.length }
+  } catch (error) {
+    console.error("Unexpected error multi updating meetings:", error)
+    return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
 export async function deleteMeetings(meetingIds: string[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -2,7 +2,7 @@ import { columns } from "./meetings-columns"
 import { DataTable } from "@/components/data-table/data-table"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
 import { getMeetingsList } from "../_lib/queries"
-import { createMeeting, deleteMeetings, updateMeeting } from "../_lib/actions"
+import { createMeeting, deleteMeetings, updateMeeting, multiUpdateMeetings } from "../_lib/actions"
 
 interface DataTableMeetingsProps {
   searchParams?: SearchParams
@@ -40,7 +40,8 @@ export default async function DataTableMeetings({
         pageCount={pageCount}
         initialState={initialState}
         createAction={createMeeting}
-        updateAction={updateMeeting}
+        updateActionSingle={updateMeeting}
+        updateActionMulti={multiUpdateMeetings}
         deleteAction={deleteMeetings}
       />
     </div>

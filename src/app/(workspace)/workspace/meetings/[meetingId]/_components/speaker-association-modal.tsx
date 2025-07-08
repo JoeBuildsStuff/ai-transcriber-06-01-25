@@ -21,7 +21,10 @@ import {
 import { Check, X, PlusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { createContact, updateSpeakerContacts } from "@/actions/contacts"
+// TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
+import { updateSpeakerContacts } from "@/actions/contacts"
+import { createContact } from "../../../contacts/_lib/actions"
+
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"

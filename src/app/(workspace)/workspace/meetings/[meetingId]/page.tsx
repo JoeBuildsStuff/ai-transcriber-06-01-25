@@ -68,7 +68,8 @@ export default function MeetingDetailPage() {
 
   const fetchContacts = async () => {
     try {
-      const { getAllContacts } = await import('@/actions/contacts')
+      // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
+      const { getAllContacts } = await import('../../contacts/_lib/queries')
       const contactsData = await getAllContacts()
       setContacts(contactsData as Contact[])
     } catch (error) {
