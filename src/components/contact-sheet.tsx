@@ -25,7 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { createContact, updateContact } from "@/actions/contacts"
+import { createContact, updatePerson } from "@/app/(workspace)/workspace/contacts/_lib/actions"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -103,18 +103,25 @@ export function ContactSheet({
   }, [open, contact, isEditMode, form])
 
   async function onSubmit(values: ContactFormValues) {
-    const formData = new FormData()
+    let result
+
     if (isEditMode && contact?.id) {
-      formData.append("id", contact.id)
+      // For updates, call updatePerson with id and data object
+      const updateData: Record<string, unknown> = {}
+      Object.entries(values).forEach(([key, value]) => {
+        if (key !== 'id') { // Don't include id in the data object
+          updateData[key] = value || ""
+        }
+      })
+      result = await updatePerson(contact.id, updateData)
+    } else {
+      // For creates, convert to FormData as expected by createContact
+      const formData = new FormData()
+      Object.entries(values).forEach(([key, value]) => {
+        formData.append(key, value ? String(value) : "")
+      })
+      result = await createContact(formData)
     }
-
-    Object.entries(values).forEach(([key, value]) => {
-      formData.append(key, value ? String(value) : "")
-    })
-
-    const result = isEditMode
-      ? await updateContact(formData)
-      : await createContact(formData)
 
     if (result?.error) {
       toast.error(result.error)

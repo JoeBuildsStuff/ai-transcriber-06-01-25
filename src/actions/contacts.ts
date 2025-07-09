@@ -15,8 +15,7 @@ export async function updateSpeakerContacts(meetingId: string, speakerContacts: 
   const contactIds = Object.values(speakerContacts).filter(Boolean) as string[]
   if (contactIds.length > 0) {
     const { data: contacts, error: contactsError } = await supabase
-      .schema('ai_transcriber')
-      .from('contacts')
+      .from('new_contacts')
       .select('id')
       .in('id', contactIds)
       .eq('user_id', userData.user.id)

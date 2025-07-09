@@ -69,11 +69,13 @@ export default function MeetingDetailPage() {
   const fetchContacts = async () => {
     try {
       // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
-      const { getAllContacts } = await import('../../contacts/_lib/queries')
+      // TODO: need to rationalize querries and actions
+      const { getAllContacts } = await import('../../contacts/_lib/actions')
+      console.log('getAllContacts', getAllContacts)
       const contactsData = await getAllContacts()
       setContacts(contactsData as Contact[])
     } catch (error) {
-      console.error('Error fetching contacts for transcript:', error)
+      console.error('Error fetching contacts', error)
       // Don't show error to user since this is just for display enhancement
     }
   }

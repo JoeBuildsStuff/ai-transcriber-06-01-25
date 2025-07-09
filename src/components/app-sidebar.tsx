@@ -150,14 +150,6 @@ export function AppSidebar() {
       actionAriaLabel: "Create new meeting",
     },
     {
-      label: "Meetings",
-      href: "/workspace/meetings2",
-      icon: Calendar,
-      action: handleCreateMeeting,
-      isActionLoading: isCreatingMeeting,
-      actionAriaLabel: "Create new meeting",
-    },
-    {
       label: "Contacts",
       href: "/workspace/contacts",
       icon: Users,

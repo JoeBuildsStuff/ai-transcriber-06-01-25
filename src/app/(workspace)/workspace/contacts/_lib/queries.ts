@@ -249,45 +249,4 @@ export async function getContactById(contactId: string) {
   }
 }
 
-export async function getAllContacts() {
-  const supabase = await createClient()
 
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
-    throw new Error("You must be logged in to view contacts.")
-  }
-
-  const { data: contacts, error } = await supabase
-    .from("new_contacts")
-    .select(`
-      id,
-      first_name,
-      last_name, 
-      display_name,
-      company_name:new_companies(name),
-      emails:new_contact_emails(email, display_order),
-      notes
-    `)
-    .eq('user_id', userData.user.id)
-    .order('first_name', { ascending: true })
-
-  if (error) {
-    throw new Error(`Failed to fetch contacts: ${error.message}`)
-  }
-
-  return contacts.map(contact => {
-    // Sort emails by display_order and get the primary email
-    const sortedEmails = contact.emails?.sort((a, b) => a.display_order - b.display_order) || []
-    const primaryEmail = sortedEmails[0]?.email || ''
-
-    return {
-      id: contact.id,
-      first_name: contact.first_name || '',
-      last_name: contact.last_name || '',
-      display_name: contact.display_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
-      primary_email: primaryEmail,
-      company: contact.company_name?.[0]?.name || '',
-      notes: contact.notes || '',
-    }
-  })
-}

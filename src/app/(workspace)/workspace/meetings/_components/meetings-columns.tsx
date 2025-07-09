@@ -1,12 +1,13 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { CheckCircle, Circle } from "lucide-react"
+import { ArrowUpRight, CheckCircle, Circle } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { MeetingsList } from "../_lib/validations"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 export const columns: ColumnDef<MeetingsList>[] = [
   {
@@ -41,12 +42,16 @@ export const columns: ColumnDef<MeetingsList>[] = [
     cell: ({ row }) => {
       const title = row.getValue("title") as string
       return (
-
-          <div className="flex items-center gap-1 justify-start">
-            <span className="font-medium">
-              {title || "Untitled Meeting"}
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+        <Link 
+          href={`/workspace/meetings/${row.original.id}`}
+          className="hover:underline cursor-pointer"
+        >
+          <span className="flex items-center gap-1">
+            {title || "Untitled Meeting"} <ArrowUpRight className="size-4" strokeWidth={1.5} />
+          </span>
+        </Link>
+      </div>
       )
     },
     meta: {
