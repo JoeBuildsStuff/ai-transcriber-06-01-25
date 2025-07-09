@@ -129,8 +129,8 @@ const Transcript: React.FC<TranscriptProps> = ({
     <div className="mx-2 h-full">
 
       {/* Speaker badges row */}
-      <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-4 mb-4">
-      <div className="text-sm font-medium mb-2">Speakers:</div>
+      <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-4 mb-4">
+      <div className="text-sm font-medium">Speakers:</div>
         <div className="flex flex-wrap gap-2">
           {uniqueSpeakers.map((speakerNumber) => (
             <ContextMenu key={speakerNumber}>

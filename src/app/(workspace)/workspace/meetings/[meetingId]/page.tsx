@@ -968,7 +968,7 @@ export default function MeetingDetailPage() {
       </Dialog>
 
       {meeting.hasAudio && meeting.transcription?.metadata?.duration ? (
-        <div className="pt-4">
+        <div className="">
             <LazyAudioPlayer
                 ref={audioPlayerRef}
                 meetingId={meetingId}
@@ -980,7 +980,7 @@ export default function MeetingDetailPage() {
 
       {/* Meeting Tabs */}
       <Tabs defaultValue="transcript" className="w-full grow" onValueChange={setActiveTab}>
-        <div className='flex justify-between items-center mb-2'>
+        <div className='flex justify-between items-center'>
           <TabsList>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>

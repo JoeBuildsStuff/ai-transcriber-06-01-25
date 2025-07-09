@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import {  X, Copy, Check, PlusIcon, Users, CalendarIcon } from "lucide-react"
+import {  X, Users, CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,16 +13,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
-import * as AccordionPrimitive from "@radix-ui/react-accordion"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-} from "@/components/ui/accordion"
 import { MeetingEditModalProps, Contact, MeetingAttendeeWithContact, MeetingAttendeeFromDB, NewContactFromDB, NewContactEmail } from "@/types"
 import MultipleSelector, { Option } from "@/components/ui/multiselect"
 // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
@@ -56,7 +49,6 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [month, setMonth] = useState<Date | undefined>()
   const [dateValue, setDateValue] = useState("")
-  const [copiedField, setCopiedField] = useState<string | null>(null)
   
   // Attendee management state
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -162,16 +154,6 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
     }))
   }
 
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedField(field)
-      setTimeout(() => setCopiedField(null), 2000)
-    } catch (err) {
-      console.error("Failed to copy text: ", err)
-    }
-  }
-
   const handleSave = async () => {
     if (!selectedDate || !selectedTime) {
       toast.error('Please select both date and time')
@@ -235,7 +217,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="flex max-h-[90vh] w-full max-w-2xl flex-col relative">
+      <Card className="flex max-h-[90vh] w-full max-w-2xl flex-col relative rounded-2xl">
         <CardHeader className="">
    
             <CardTitle>Edit Meeting Details</CardTitle>
@@ -398,86 +380,6 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
                 )}
               </div>
             </div>
-
-            {/* Meeting Details */}
-            <Accordion type="single" collapsible className="w-full border border-border rounded-md p-4">
-              <AccordionItem
-                value="item-1"
-              >
-                <AccordionPrimitive.Header className="flex">
-                <AccordionPrimitive.Trigger className="ocus-visible:ring-0 flex flex-1 items-center justify-between rounded-md py-2 text-left text-[15px] leading-6 font-semibold transition-all outline-none [&>svg>path:last-child]:origin-center [&>svg>path:last-child]:transition-all [&>svg>path:last-child]:duration-200 [&[data-state=open]>svg]:rotate-180 [&[data-state=open]>svg>path:last-child]:rotate-90 [&[data-state=open]>svg>path:last-child]:opacity-0">
-                <span>Additional Details</span>
-                <PlusIcon
-                  size={16}
-                  className="pointer-events-none shrink-0 opacity-60 transition-transform duration-200"
-                  aria-hidden="true"
-                />
-                  </AccordionPrimitive.Trigger>
-                </AccordionPrimitive.Header>
-                <AccordionContent className="text-muted-foreground pb-2">
-                  <div className="grid gap-4 pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium text-muted-foreground">
-                          Meeting ID
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
-                            {meeting.id}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(meeting.id, "id")}
-                            className="h-6 w-6 p-0"
-                          >
-                            {copiedField === "id" ? (
-                              <Check className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium text-muted-foreground">
-                        Original File
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="font-mono text-xs">
-                          {meeting.original_file_name}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Current Attendees Display */}
-                    {currentAttendees.length > 0 && (
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium text-muted-foreground">
-                          Current Attendees ({currentAttendees.length})
-                        </Label>
-                        <div className="flex flex-wrap gap-2">
-                          {currentAttendees.map((attendee) => (
-                            <Badge 
-                              key={attendee.id} 
-                              variant="outline" 
-                              className="text-xs"
-                            >
-                              {getAttendeeContactDisplayName((attendee as unknown as MeetingAttendeeFromDB).new_contacts)}
-                              {attendee.role === 'organizer' && (
-                                <span className="ml-1 text-blue-600">👑</span>
-                              )}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </CardContent>
         </div>
         <CardFooter className="flex justify-end gap-3 border-t h-10">
