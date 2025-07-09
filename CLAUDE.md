@@ -57,7 +57,6 @@ The app uses PostgreSQL with custom `ai_transcriber` schema containing:
 ### Key Implementation Patterns
 - **State Management**: React Query (TanStack Query) for server state
 - **Form Handling**: React Hook Form with Zod validation schemas
-- **Infinite Scrolling**: Custom `use-infinite-query.ts` hook for pagination
 - **File Uploads**: react-dropzone integration in `use-supabase-upload.ts`
 - **Real-time Updates**: Server-Sent Events for live transcription progress
 - **Type Safety**: Full TypeScript coverage with strict mode enabled
