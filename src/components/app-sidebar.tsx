@@ -5,7 +5,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
@@ -244,17 +243,6 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          
-          {/* Contacts */}
-          <SidebarGroup>
-            <SidebarGroupLabel><span>Contacts</span></SidebarGroupLabel>
-            <SidebarGroupAction title="Add Contact" onClick={handleCreateContact}>
-              <Plus /> <span className="sr-only">Add Contact</span>
-            </SidebarGroupAction>
-            <SidebarGroupContent>
-              <p className="text-xs text-muted-foreground px-3">No contacts found.</p>
             </SidebarGroupContent>
           </SidebarGroup>
 

@@ -23,7 +23,7 @@ import {
   AccordionContent,
   AccordionItem,
 } from "@/components/ui/accordion"
-import { MeetingEditModalProps, Contact, MeetingAttendeeWithContact } from "@/types"
+import { MeetingEditModalProps, Contact, MeetingAttendeeWithContact, MeetingAttendeeFromDB, NewContactFromDB, NewContactEmail } from "@/types"
 import MultipleSelector, { Option } from "@/components/ui/multiselect"
 // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
 import { getAllContacts } from "../../../contacts/_lib/actions"
@@ -101,13 +101,13 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
         throw new Error(result.error)
       }
       
-      const attendees = result.data as MeetingAttendeeWithContact[]
-      setCurrentAttendees(attendees)
+      const attendees = result.data as unknown as MeetingAttendeeFromDB[]
+      setCurrentAttendees(attendees as unknown as MeetingAttendeeWithContact[])
       
       // Convert current attendees to selected options
       const attendeeOptions = attendees.map(attendee => ({
         value: attendee.contact_id,
-        label: getContactDisplayName(attendee.contacts),
+        label: getAttendeeContactDisplayName(attendee.new_contacts),
         fixed: false
       }))
       setSelectedAttendees(attendeeOptions)
@@ -133,6 +133,24 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
     return contact.display_name || 
            `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 
            contact.primary_email || 
+           'Unknown Contact'
+  }
+
+  const getAttendeeContactDisplayName = (attendeeContact: NewContactFromDB): string => {
+    if (!attendeeContact) return 'Unknown Contact'
+    
+    // Handle new contact structure
+    if (attendeeContact.new_contact_emails) {
+      const primaryEmail = attendeeContact.new_contact_emails
+        ?.sort((a: NewContactEmail, b: NewContactEmail) => a.display_order - b.display_order)[0]?.email || ''
+      
+      return `${attendeeContact.first_name || ''} ${attendeeContact.last_name || ''}`.trim() || 
+             primaryEmail || 
+             'Unknown Contact'
+    }
+    
+    // Handle fallback case
+    return `${attendeeContact.first_name || ''} ${attendeeContact.last_name || ''}`.trim() || 
            'Unknown Contact'
   }
 
@@ -447,7 +465,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
                               variant="outline" 
                               className="text-xs"
                             >
-                              {getContactDisplayName(attendee.contacts)}
+                              {getAttendeeContactDisplayName((attendee as unknown as MeetingAttendeeFromDB).new_contacts)}
                               {attendee.role === 'organizer' && (
                                 <span className="ml-1 text-blue-600">👑</span>
                               )}

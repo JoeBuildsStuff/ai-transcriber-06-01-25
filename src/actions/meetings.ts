@@ -63,7 +63,6 @@ export async function updateMeetingNotes(meetingId: string, notes: string) {
         updated_at: new Date().toISOString()
       })
       .eq("id", meetingId)
-      .eq("user_id", user.id)
 
     if (error) {
       return { error: error.message }
@@ -99,18 +98,21 @@ export async function getMeetingAttendees(meetingId: string) {
         invited_at,
         responded_at,
         notes,
-        contacts (
+        new_contacts (
           id,
           first_name,
           last_name,
-          display_name,
-          primary_email,
-          company,
-          job_title
+          job_title,
+          new_companies (
+            name
+          ),
+          new_contact_emails (
+            email,
+            display_order
+          )
         )
       `)
       .eq("meeting_id", meetingId)
-      .eq("user_id", user.id)
 
     if (error) {
       return { error: error.message }
@@ -132,37 +134,8 @@ export async function addMeetingAttendees(meetingId: string, contactIds: string[
   }
 
   try {
-    // First verify the meeting belongs to the user
-    const { data: meeting, error: meetingError } = await supabase
-      .schema("ai_transcriber")
-      .from("meetings")
-      .select("id")
-      .eq("id", meetingId)
-      .eq("user_id", user.id)
-      .single()
-
-    if (meetingError || !meeting) {
-      return { error: "Meeting not found or access denied." }
-    }
-
-    // Verify all contacts belong to the user
-    const { data: contacts, error: contactsError } = await supabase
-      .schema("ai_transcriber")
-      .from("contacts")
-      .select("id")
-      .in("id", contactIds)
-      .eq("user_id", user.id)
-
-    if (contactsError) {
-      return { error: "Error validating contacts." }
-    }
-
-    const validContactIds = contacts.map(c => c.id)
-    const invalidContactIds = contactIds.filter(id => !validContactIds.includes(id))
-    
-    if (invalidContactIds.length > 0) {
-      return { error: "Some contacts do not exist or do not belong to you." }
-    }
+    // RLS policies will automatically ensure the user can only access their own data
+    // No need for manual user_id checks since the database enforces this
 
     // Check for existing attendees to avoid duplicates
     const { data: existingAttendees, error: existingError } = await supabase
@@ -170,7 +143,6 @@ export async function addMeetingAttendees(meetingId: string, contactIds: string[
       .from("meeting_attendees")
       .select("contact_id")
       .eq("meeting_id", meetingId)
-      .eq("user_id", user.id)
       .in("contact_id", contactIds)
 
     if (existingError) {
@@ -230,7 +202,6 @@ export async function removeMeetingAttendees(meetingId: string, attendeeIds: str
       .delete()
       .in("id", attendeeIds)
       .eq("meeting_id", meetingId)
-      .eq("user_id", user.id)
 
     if (error) {
       return { error: error.message }
@@ -272,7 +243,6 @@ export async function updateAttendeeStatus(
         updated_at: new Date().toISOString()
       })
       .eq("id", attendeeId)
-      .eq("user_id", user.id)
       .select()
       .single()
 

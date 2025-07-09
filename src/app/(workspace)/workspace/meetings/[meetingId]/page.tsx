@@ -36,7 +36,7 @@ import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
 import LazyAudioPlayer from '@/components/lazy-audio-player';
-import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails } from '@/types';
+import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails, MeetingAttendeeFromDB } from '@/types';
 import UploadAudio from './_components/upload-audio';
 import UserNotes from './_components/user-notes';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +71,6 @@ export default function MeetingDetailPage() {
       // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
       // TODO: need to rationalize querries and actions
       const { getAllContacts } = await import('../../contacts/_lib/actions')
-      console.log('getAllContacts', getAllContacts)
       const contactsData = await getAllContacts()
       setContacts(contactsData as Contact[])
     } catch (error) {
@@ -148,6 +147,19 @@ export default function MeetingDetailPage() {
            `${contact.first_name} ${contact.last_name}`.trim() || 
            contact.primary_email || 
            `Speaker ${speakerNumber}`;
+  };
+
+  const getAttendeeDisplayName = (attendee: MeetingAttendeeFromDB): string => {
+    const contact = attendee.new_contacts;
+    if (!contact) return 'Unknown';
+    
+    const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+    if (fullName) return fullName;
+    
+    const primaryEmail = contact.new_contact_emails
+      ?.sort((a, b) => a.display_order - b.display_order)[0]?.email;
+    
+    return primaryEmail || 'Unknown';
   };
   
   const handleCopyToClipboard = async () => {
@@ -843,10 +855,7 @@ export default function MeetingDetailPage() {
                         }`}
                         onClick={() => handleAttendanceStatusChange(attendee.id, attendee.attendance_status)}
                       >
-                        {attendee.contacts?.display_name || 
-                         `${attendee.contacts?.first_name || ''} ${attendee.contacts?.last_name || ''}`.trim() ||
-                         attendee.contacts?.primary_email ||
-                         'Unknown'}
+                        {getAttendeeDisplayName(attendee as unknown as MeetingAttendeeFromDB)}
                         {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
                       </Badge>
                     ))

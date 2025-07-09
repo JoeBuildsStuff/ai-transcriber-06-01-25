@@ -58,14 +58,18 @@ export async function GET(_req: Request, { params }: { params: Promise<Params> }
         invited_at,
         responded_at,
         notes,
-        contacts (
+        new_contacts (
           id,
           first_name,
           last_name,
-          display_name,
-          primary_email,
-          company,
-          job_title
+          job_title,
+          new_companies (
+            name
+          ),
+          new_contact_emails (
+            email,
+            display_order
+          )
         )
       `)
       .eq('meeting_id', meetingId)

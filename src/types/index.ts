@@ -20,6 +20,25 @@ export type Contact = {
   tags?: string[] | null
 }
 
+// New contact structure from database
+export interface NewContactEmail {
+  email: string;
+  display_order: number;
+}
+
+export interface NewCompany {
+  name: string;
+}
+
+export interface NewContactFromDB {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  job_title: string | null;
+  new_companies: NewCompany | null;
+  new_contact_emails: NewContactEmail[];
+}
+
 // ===== MEETING TYPES =====
 export interface Meeting {
     id: string;
@@ -78,6 +97,23 @@ export interface MeetingAttendee {
 
 export interface MeetingAttendeeWithContact extends MeetingAttendee {
   contacts: Contact;
+}
+
+// New meeting attendee structure from database
+export interface MeetingAttendeeFromDB {
+  id: string;
+  meeting_id: string;
+  contact_id: string;
+  user_id: string;
+  invitation_status: string | null;
+  attendance_status: string | null;
+  role: string | null;
+  invited_at: string | null;
+  responded_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  notes: string | null;
+  new_contacts: NewContactFromDB;
 }
 
 // ===== TRANSCRIPTION TYPES =====

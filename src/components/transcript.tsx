@@ -134,23 +134,23 @@ const Transcript: React.FC<TranscriptProps> = ({
         <div className="flex flex-wrap gap-2">
           {uniqueSpeakers.map((speakerNumber) => (
             <ContextMenu key={speakerNumber}>
-  <ContextMenuTrigger>
-            <button
-              key={speakerNumber}
-              onClick={() => handleOpenModal(speakerNumber)}
-              className={`${getSpeakerColor(speakerNumber)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
-            >
-              {getSpeakerDisplayName(speakerNumber)}
-            </button>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem 
-                onSelect={() => handleEditContact(speakerNumber)}
-                disabled={!speakerContacts?.[speakerNumber]}
+              <ContextMenuTrigger>
+              <button
+                key={speakerNumber}
+                onClick={() => handleOpenModal(speakerNumber)}
+                className={`${getSpeakerColor(speakerNumber)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
               >
-                Edit Contact
-              </ContextMenuItem>
-            </ContextMenuContent>
+                {getSpeakerDisplayName(speakerNumber)}
+              </button>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem 
+                  onSelect={() => handleEditContact(speakerNumber)}
+                  disabled={!speakerContacts?.[speakerNumber]}
+                >
+                  Edit Contact
+                </ContextMenuItem>
+              </ContextMenuContent>
             </ContextMenu>
           ))}
         </div>
