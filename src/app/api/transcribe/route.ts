@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as deepgramClient } from "@deepgram/sdk";
 import { createClient as supabaseClient } from "@/lib/supabase/server";
 
-export const runtime = 'edge';
-
 const deepgram = deepgramClient(process.env.DEEPGRAM_API_KEY!);
 const encoder = new TextEncoder();
 
