@@ -22,7 +22,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AudioLines, Calendar, ChevronRight, Loader2, Plus, Users } from "lucide-react"
+import { AudioLines, Calendar, ChevronRight, Loader2, Plus, Presentation, Users } from "lucide-react"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -139,6 +139,12 @@ export function AppSidebar() {
     setIsContactSheetOpen(false)
   }
 
+  const handleCreateSlide = () => {
+    toast.success("Slide created", {
+      description: "The new slide has been successfully added.",
+    })
+  }
+
   const navigationItems = [
     {
       label: "Meetings",
@@ -155,6 +161,14 @@ export function AppSidebar() {
       action: handleCreateContact,
       isActionLoading: false,
       actionAriaLabel: "Create new contact",
+    },
+    {
+      label: "Slide",
+      href: "/workspace/slide",
+      icon: Presentation,
+      action: handleCreateSlide,
+      isActionLoading: false,
+      actionAriaLabel: "Create new slide",
     },
   ]
 
