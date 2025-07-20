@@ -56,6 +56,7 @@ interface ChatStore {
   isLoading: boolean
   showHistory: boolean
   currentContext: PageContext | null
+  layoutMode: 'floating' | 'inset'
   
   // Computed properties (will be updated whenever state changes)
   currentSession: ChatSession | null
@@ -81,6 +82,7 @@ interface ChatStore {
   setLoading: (loading: boolean) => void
   toggleChat: () => void
   setShowHistory: (show: boolean) => void
+  setLayoutMode: (mode: 'floating' | 'inset') => void
   
   // Context management
   updatePageContext: (context: PageContext) => void
@@ -124,6 +126,7 @@ export const useChatStore = create<ChatStore>()(
       currentContext: null,
       currentSession: null,
       messages: [],
+      layoutMode: 'floating',
       
       // Session CRUD operations
       createSession: (title?: string) => {
@@ -372,6 +375,15 @@ export const useChatStore = create<ChatStore>()(
         set({ showHistory: show })
       },
       
+      setLayoutMode: (mode) => {
+        set({ 
+          layoutMode: mode,
+          isMaximized: mode === 'inset',
+          isMinimized: false,
+          isOpen: true
+        })
+      },
+      
       // Context management
       updatePageContext: (context) => {
         set({ currentContext: context })
@@ -398,6 +410,7 @@ export const useChatStore = create<ChatStore>()(
           updatedAt: session.updatedAt.toISOString(),
         })), // Keep last 10 sessions
         currentSessionId: state.currentSessionId,
+        layoutMode: state.layoutMode,
       }),
       // Transform dates back when loading from storage
       onRehydrateStorage: () => (state) => {

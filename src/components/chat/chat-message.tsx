@@ -54,7 +54,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             "rounded-br-sm"
           ],
           !isUser && !isSystem && [
-            "bg-muted text-foreground",
+            "bg-background text-foreground border border-border",
             "rounded-bl-sm"
           ],
           isSystem && [

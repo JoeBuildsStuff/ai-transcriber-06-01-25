@@ -6,21 +6,29 @@ import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
 
 export function ChatBubble() {
-  const { isOpen, isMinimized, isMaximized, setOpen, setMinimized, setMaximized } = useChatStore()
+  const { isOpen, isMinimized, isMaximized, setOpen, setMinimized, setMaximized, layoutMode, setLayoutMode } = useChatStore()
   
   const handleToggle = () => {
     if (!isOpen) {
-      // Open in normal mode
-      setOpen(true)
-      setMinimized(false)
-      setMaximized(false)
+      // Open in the previously saved layout mode
+      if (layoutMode === 'inset') {
+        setLayoutMode('inset') // This will set isMaximized=true, isMinimized=false, isOpen=true
+      } else {
+        setOpen(true)
+        setMinimized(false)
+        setMaximized(false)
+      }
     } else if (isMinimized) {
-      // Restore to normal mode
-      setMinimized(false)
-      setMaximized(false)
+      // Restore to the current layout mode
+      if (layoutMode === 'inset') {
+        setLayoutMode('inset')
+      } else {
+        setMinimized(false)
+        setMaximized(false)
+      }
     } else if (!isMaximized) {
-      // Maximize
-      setMaximized(true)
+      // Maximize (switch to inset mode)
+      setLayoutMode('inset')
     } else {
       // Minimize when maximized
       setMinimized(true)

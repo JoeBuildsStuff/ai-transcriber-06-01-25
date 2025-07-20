@@ -1,7 +1,9 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import PhoneInputComponent from "@/components/ui/input-phone";
 import { AtSign, BriefcaseBusiness, Building2, GripVertical, IdCard, MapPin, Phone, Pilcrow, Plus, X, Check } from "lucide-react";
+import { formatPhoneNumber } from "react-phone-number-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useEffect, forwardRef, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -165,7 +167,7 @@ interface SortablePhoneItemProps {
     onRemove: (index: number) => void;
 }
 
-const SortablePhoneItem = forwardRef<HTMLInputElement, SortablePhoneItemProps>(({ id, phone, index, onUpdate, onRemove }, ref) => {
+const SortablePhoneItem = ({ id, phone, index, onUpdate, onRemove }: SortablePhoneItemProps) => {
     const {
         attributes,
         listeners,
@@ -194,12 +196,11 @@ const SortablePhoneItem = forwardRef<HTMLInputElement, SortablePhoneItemProps>((
             >
                 <GripVertical className="size-4 shrink-0" strokeWidth={1.5} />
             </div>
-            <Input 
-                ref={ref}
-                className="text-xs flex-1" 
-                placeholder="+1 (555) 123-4567" 
+            <PhoneInputComponent 
                 value={phone}
-                onChange={(e) => onUpdate(index, e.target.value)}
+                onChange={(value) => onUpdate(index, value)}
+                placeholder="+1 (555) 123-4567"
+                className="text-xs flex-1"
             />
             <Button
                 variant="ghost"
@@ -211,7 +212,7 @@ const SortablePhoneItem = forwardRef<HTMLInputElement, SortablePhoneItemProps>((
             </Button>
         </div>
     );
-});
+};
 SortablePhoneItem.displayName = 'SortablePhoneItem';
 
 export default function PersonForm({
@@ -237,8 +238,6 @@ export default function PersonForm({
     const lastEmailInputRef = useRef<HTMLInputElement>(null);
     const [phones, setPhones] = useState<string[]>(initialPhones);
     const [phonePopoverOpen, setPhonePopoverOpen] = useState(false);
-    const [focusLastPhone, setFocusLastPhone] = useState(false);
-    const lastPhoneInputRef = useRef<HTMLInputElement>(null);
     const [city, setCity] = useState(initialCity);
     const [state, setState] = useState(initialState);
     const [company, setCompany] = useState(initialCompany);
@@ -265,14 +264,7 @@ export default function PersonForm({
         }
     }, [focusLastEmail]);
 
-    useEffect(() => {
-        if (focusLastPhone) {
-            setTimeout(() => {
-                lastPhoneInputRef.current?.focus();
-            }, 100); // Delay to allow popover animation to complete
-            setFocusLastPhone(false);
-        }
-    }, [focusLastPhone]);
+
 
     useEffect(() => {
         setCompanies(availableCompanies || [])
@@ -343,10 +335,23 @@ export default function PersonForm({
     const getDisplayPhones = () => {
         const nonEmptyPhones = phones.filter(phone => phone.trim() !== "");
         if (nonEmptyPhones.length === 0) return "Set Phone numbers...";
-        if (nonEmptyPhones.length === 1) return <Badge variant="blue" className="text-sm">{nonEmptyPhones[0]}</Badge>;
+        
+        const formatPhone = (phone: string) => {
+            try {
+                return formatPhoneNumber(phone) || phone;
+            } catch {
+                return phone;
+            }
+        };
+        
+        if (nonEmptyPhones.length === 1) {
+            const formattedPhone = formatPhone(nonEmptyPhones[0]);
+            return <Badge variant="blue" className="text-sm">{formattedPhone}</Badge>;
+        }
+        
         return (
             <div className="flex items-center gap-2">
-                <Badge variant="blue" className="text-sm">{nonEmptyPhones[0]}</Badge>
+                <Badge variant="blue" className="text-sm">{formatPhone(nonEmptyPhones[0])}</Badge>
                 <Badge variant="gray" className="text-xs">
                     +{nonEmptyPhones.length - 1}
                 </Badge>
@@ -379,7 +384,6 @@ export default function PersonForm({
 
     const addPhone = () => {
         setPhones([...phones, ""]);
-        setFocusLastPhone(true);
     };
 
     const updatePhone = (index: number, value: string) => {
@@ -714,7 +718,6 @@ export default function PersonForm({
                                             index={index}
                                             onUpdate={updatePhone}
                                             onRemove={removePhone}
-                                            ref={index === phones.length - 1 ? lastPhoneInputRef : null}
                                         />
                                     ))}
                                 </SortableContext>

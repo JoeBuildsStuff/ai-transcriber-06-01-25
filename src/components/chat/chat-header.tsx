@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuGroup, 
-  DropdownMenuTrigger, 
-  DropdownMenuSeparator, 
-  DropdownMenuShortcut, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuGroup,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -34,10 +34,9 @@ import {
 import { useState, useRef, useEffect } from 'react'
 
 export function ChatHeader() {
-  const { setOpen, setMinimized, setMaximized, isMaximized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle } = useChatStore()
+  const { setOpen, setMinimized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle, layoutMode, setLayoutMode } = useChatStore()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitle, setEditTitle] = useState('')
-  const [layoutMode, setLayoutMode] = useState<'floating' | 'inset'>(isMaximized ? 'inset' : 'floating')
   const [showClearDialog, setShowClearDialog] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -71,15 +70,6 @@ export function ChatHeader() {
 
   const handleLayoutChange = (mode: 'floating' | 'inset') => {
     setLayoutMode(mode)
-    if (mode === 'inset') {
-      setMaximized(true)
-      setMinimized(false)
-    } else {
-      // For floating mode, keep it open but not maximized and not minimized
-      setMaximized(false)
-      setMinimized(false)
-      setOpen(true)
-    }
   }
 
   const handleTitleClick = () => {
@@ -208,7 +198,7 @@ export function ChatHeader() {
                         <DropdownMenuShortcut>⌘↑</DropdownMenuShortcut>
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="floating">
-                        <PictureInPicture2 className="size-4 shrink-0 text-muted-foreground"  />
+                        <PictureInPicture2 className="size-4 shrink-0 text-muted-foreground" />
                         Floating
                         <DropdownMenuShortcut>⌘↓</DropdownMenuShortcut>
                       </DropdownMenuRadioItem>
