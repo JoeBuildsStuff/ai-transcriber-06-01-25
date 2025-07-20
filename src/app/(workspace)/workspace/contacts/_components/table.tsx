@@ -5,6 +5,7 @@ import { getPersons } from "../_lib/queries"
 import { deletePersons, createPerson, updatePerson, multiUpdatePersons } from "../_lib/actions"
 import { ContactAddForm, ContactEditForm, ContactMultiEditForm } from "./form-wrapper"
 import { ColumnDef } from "@tanstack/react-table"
+import { TableWithPageContext } from "@/components/chat/table-with-context"
 
 interface DataTablePersonProps {
   searchParams?: SearchParams
@@ -61,6 +62,7 @@ export default async function DataTablePerson({
   }>
 
   return (
+    <TableWithPageContext data={tableData} count={count ?? 0}>
       <DataTable 
         columns={tableColumns} 
         data={tableData} 
@@ -74,5 +76,6 @@ export default async function DataTablePerson({
         customEditFormSingle={EditFormSingle}
         customEditFormMulti={EditFormMulti}
       />
+    </TableWithPageContext>
   )
 }
