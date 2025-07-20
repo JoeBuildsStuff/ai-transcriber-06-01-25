@@ -5,8 +5,13 @@ import { useChatStore } from '@/lib/chat/chat-store'
 import { ChatMessage, ChatMessageLoading } from './chat-message'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessagesSquare } from 'lucide-react'
+import type { ChatAction } from '@/types/chat'
 
-export function ChatMessagesList() {
+interface ChatMessagesListProps {
+  onActionClick?: (action: ChatAction) => void
+}
+
+export function ChatMessagesList({ onActionClick }: ChatMessagesListProps = {}) {
   const { messages, isLoading } = useChatStore()
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -39,6 +44,7 @@ export function ChatMessagesList() {
           <ChatMessage 
             key={message.id} 
             message={message}
+            onActionClick={onActionClick}
           />
         ))}
         

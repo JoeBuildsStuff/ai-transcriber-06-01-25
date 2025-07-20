@@ -62,7 +62,7 @@ export function ChatInput() {
             placeholder="Ask me about your data..."
             disabled={isLoading}
             rows={1}
-            className="resize-none rounded-xl border-none pb-12"
+            className="resize-none rounded-xl border-none pb-12 bg-muted/50"
             // pr-20 and pb-8 add right and bottom padding to avoid overlap with floating buttons
           />
           {/* Actions */}

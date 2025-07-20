@@ -52,7 +52,7 @@ export function ChatBubble() {
 
   return (
     <div className={cn(
-      "fixed bottom-6 right-6 z-50",
+      "fixed bottom-6 right-6 z-50 bg-background rounded-full",
       // Adjust position when maximized to avoid overlap
       isMaximized && "right-[25rem]"
     )}>
@@ -61,13 +61,14 @@ export function ChatBubble() {
         className={cn(
           "relative group cursor-pointer",
           "transition-all duration-300 ease-in-out",
-          "hover:scale-110"
+          "hover:scale-110",
+          "bg-background rounded-full"
         )}
         onClick={handleToggle}
       >
         <Button
           variant="outline"
-          className="rounded-full size-12"
+          className="rounded-full size-12 bg-background"
         >
           <MessageSquare className="size-6 shrink-0" strokeWidth={1.5}/>
         </Button>
