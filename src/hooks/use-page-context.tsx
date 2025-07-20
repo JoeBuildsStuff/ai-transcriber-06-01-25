@@ -37,7 +37,7 @@ export function usePageContext({
   }, [searchParams])
 
   // Parse current filters and sorting
-  const { pagination, sorting, columnFilters } = useMemo(() => {
+  const { sorting, columnFilters } = useMemo(() => {
     return parseSearchParams(searchParamsObj)
   }, [searchParamsObj])
 
