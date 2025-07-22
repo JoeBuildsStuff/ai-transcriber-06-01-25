@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { updateMeetingNotes } from "@/actions/meetings"
 import { toast } from "sonner"
 import { Loader2, Save, RotateCcw, Check } from "lucide-react"
-import Tiptap from "@/components/tiptap"
+import Tiptap from "@/components/tiptap/tiptap"
 import { Badge } from "@/components/ui/badge"
 
 interface UserNotesProps {

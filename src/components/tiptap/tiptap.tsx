@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortc
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Underline as UnderlineIcon, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Type, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Code, Copy, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CodeBlock } from '@/components/code-block'
+import { CodeBlock } from '@/components/tiptap/code-block'
 
 const lowlight = createLowlight(common)
 

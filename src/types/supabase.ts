@@ -14,6 +14,45 @@ export type Database = {
   }
   ai_transcriber: {
     Tables: {
+      contact_notes: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: string
+          note_id: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          note_id: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          note_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           company: string | null
@@ -86,7 +125,7 @@ export type Database = {
           responded_at?: string | null
           role?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           attendance_status?: string | null
@@ -107,7 +146,7 @@ export type Database = {
             foreignKeyName: "meeting_attendees_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "contacts"
+            referencedRelation: "new_contacts"
             referencedColumns: ["id"]
           },
           {
@@ -122,6 +161,52 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_notes: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_id: string
+          note_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_id: string
+          note_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_id?: string
+          note_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +370,7 @@ export type Database = {
           description: string | null
           first_name: string | null
           id: string
+          is_favorite: boolean | null
           job_title: string | null
           last_name: string | null
           linkedin: string | null
@@ -299,6 +385,7 @@ export type Database = {
           description?: string | null
           first_name?: string | null
           id?: string
+          is_favorite?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin?: string | null
@@ -313,6 +400,7 @@ export type Database = {
           description?: string | null
           first_name?: string | null
           id?: string
+          is_favorite?: boolean | null
           job_title?: string | null
           last_name?: string | null
           linkedin?: string | null
@@ -329,6 +417,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -359,7 +471,7 @@ export type Database = {
             foreignKeyName: "meeting_attendees_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "contacts"
+            referencedRelation: "new_contacts"
             referencedColumns: ["id"]
           },
           {

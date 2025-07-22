@@ -2,7 +2,7 @@
 
 import React from "react";
 import { marked } from "marked";
-import Tiptap from "./tiptap";
+import Tiptap from "./tiptap/tiptap";
 
 interface SummaryProps {
   summary: Record<string, string>;
