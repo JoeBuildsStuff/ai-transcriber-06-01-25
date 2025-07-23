@@ -34,6 +34,8 @@ import Link from "next/link"
 import { createMeeting } from "@/actions/meetings"
 import { createPerson } from "@/app/(workspace)/workspace/contacts/_lib/actions"
 import { ContactAddForm } from "@/app/(workspace)/workspace/contacts/_components/form-wrapper"
+import { createNote } from "@/app/(workspace)/workspace/notes/_lib/actions"
+import { NoteAddForm } from "@/app/(workspace)/workspace/notes/_components/form-wrapper"
 import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
@@ -57,6 +59,7 @@ export function AppSidebar() {
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isContactSheetOpen, setIsContactSheetOpen] = useState(false)
+  const [isNoteSheetOpen, setIsNoteSheetOpen] = useState(false)
 
   useEffect(() => {
     const fetchMeetings = async () => {
@@ -140,10 +143,22 @@ export function AppSidebar() {
   }
 
   const handleCreateNote = () => {
+    setIsNoteSheetOpen(true)
+  }
+
+  const handleNoteSuccess = () => {
+    setIsNoteSheetOpen(false)
     toast.success("Note created", {
       description: "The new note has been successfully added.",
     })
+    router.refresh()
   }
+
+  const handleNoteCancel = () => {
+    setIsNoteSheetOpen(false)
+  }
+
+
 
   const handleCreateSlide = () => {
     toast.success("Slide created", {
@@ -375,6 +390,24 @@ export function AppSidebar() {
               onSuccess={handleContactSuccess}
               onCancel={handleContactCancel}
               createAction={createPerson}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Note Creation Sheet */}
+      <Sheet open={isNoteSheetOpen} onOpenChange={setIsNoteSheetOpen}>
+        <SheetContent className="flex flex-col sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Add New Note</SheetTitle>
+            <SheetDescription>Create a new note and associate it with contacts or meetings.</SheetDescription>
+          </SheetHeader>
+          
+          <div className="flex-1 overflow-hidden">
+            <NoteAddForm
+              onSuccess={handleNoteSuccess}
+              onCancel={handleNoteCancel}
+              createAction={createNote}
             />
           </div>
         </SheetContent>
