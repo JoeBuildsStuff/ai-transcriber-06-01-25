@@ -439,7 +439,7 @@ export async function updateContactNotes(contactId: string, notes: string) {
 
     const { error } = await supabase
       .from("new_contacts")
-      .update({ notes })
+      .update({ description: notes })
       .eq("id", contactId)
       .eq("user_id", userData.user.id)
 

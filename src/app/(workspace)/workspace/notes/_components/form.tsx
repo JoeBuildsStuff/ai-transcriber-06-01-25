@@ -14,9 +14,13 @@ import PersonForm from "../../contacts/_components/form";
 import { createPerson } from "../../contacts/_lib/actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import Tiptap from "@/components/tiptap/tiptap";
+import NotesContent from "../../notes/[id]/_components/notes-content";
 
 export interface NoteFormProps {
+  /**
+   * Initial note ID
+   */
+  initialNoteId?: string;
   /**
    * Initial title value
    */
@@ -61,6 +65,7 @@ export interface NoteFormProps {
 }
 
 export default function NoteForm({
+  initialNoteId,
   initialTitle = "",
   initialContent = "",
   initialContactIds = [],
@@ -73,7 +78,7 @@ export default function NoteForm({
 }: NoteFormProps = {}) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
+  const [content] = useState(initialContent);
   const [contactIds, setContactIds] = useState<string[]>(initialContactIds);
   const [meetingIds, setMeetingIds] = useState<string[]>(initialMeetingIds);
   const [contactsOpen, setContactsOpen] = useState(false);
@@ -381,32 +386,10 @@ export default function NoteForm({
           <File className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Content</span>
         </div>
-        {/* <textarea 
-          className={cn(
-            "w-full min-w-0 text-left hover:bg-secondary rounded-md py-2 px-2 resize-none focus:outline-none focus:ring-1 focus:ring-ring min-h-20",
-            "overflow-hidden"
-          )}
-          placeholder="Add note content..."
-          rows={4}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{
-            height: 'auto',
-            minHeight: '80px'
-          }}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = 'auto';
-            target.style.height = Math.max(80, target.scrollHeight) + 'px';
-          }}
-        /> */}
         <div className="w-full min-w-0">
-        <Tiptap
-          content={content}
-          onChange={setContent}
-          showFixedMenu={true}
-          showBubbleMenu={true}
-          editable={true}
+        <NotesContent
+          noteId={initialNoteId || ""}
+          noteContent={content}
         />
         </div>
       </div>

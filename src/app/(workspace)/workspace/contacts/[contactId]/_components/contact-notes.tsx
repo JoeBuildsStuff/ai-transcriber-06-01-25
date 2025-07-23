@@ -112,7 +112,7 @@ export default function ContactNotes({ contactNotes, contactId }: ContactNotesPr
   }, [hasUnsavedChanges])
 
   return (
-    <div className="relative h-full bg-card rounded-md border border-border">
+    <div className="relative h-full ">
         <div onKeyDown={handleKeyDown} className="h-full">
           <Tiptap
             content={notes}
@@ -131,7 +131,7 @@ export default function ContactNotes({ contactNotes, contactId }: ContactNotesPr
                 onClick={handleReset}
                 disabled={saveStatus === 'saving'}
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
+                <RotateCcw className="size-4 shrink-0" />
                 Discard
               </Button>
             )}
@@ -143,11 +143,11 @@ export default function ContactNotes({ contactNotes, contactId }: ContactNotesPr
               variant={saveStatus === 'saved' ? 'blue' : 'green'}
             >
               {saveStatus === 'saving' ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 shrink-0 animate-spin" />
               ) : saveStatus === 'saved' ? (
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="size-4 shrink-0" />
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="size-4 shrink-0" />
               )}
               {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Notes'}
             </Button>

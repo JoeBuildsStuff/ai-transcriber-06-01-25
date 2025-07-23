@@ -12,11 +12,11 @@ import { useState, useEffect } from 'react'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/dropdown-menu-tiptap'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from './tiptap-dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { ChevronDown, Underline as UnderlineIcon, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Type, AlignLeft, AlignCenter, AlignRight, List, ListOrdered, Code, Copy, Check } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CodeBlock } from '@/components/tiptap/code-block'
+import { CodeBlock } from './tiptap-code-block'
 
 const lowlight = createLowlight(common)
 
@@ -26,18 +26,31 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   },
 })
 
-interface TiptapProps {
+export interface TiptapProps {
+    /** 
+     * Initial HTML content for the editor
+     * @default ""
+     */
     content?: string
+    /** 
+     * Whether to show the fixed toolbar menu
+     * @default true
+     */
     showFixedMenu?: boolean
+    /** 
+     * Whether to show the bubble menu on text selection
+     * @default true
+     */
     showBubbleMenu?: boolean
-    editable?: boolean
+    /** 
+     * Callback fired when content changes
+     */
     onChange?: (content: string) => void
 }
 
-const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, editable = true, onChange }: TiptapProps) => {
+const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, onChange }: TiptapProps) => {
   const [isCopied, setIsCopied] = useState(false)
   const editor = useEditor({
-    editable,
     extensions: [
         StarterKit,
         Underline,
@@ -106,7 +119,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, editable
     return (
         <div className='relative border border-border rounded-md bg-card'>
             {showFixedMenu && (
-                <div className='sticky top-0 z-10 bg-card rounded-t-md border-b border-border' >
+                <div className='bg-card rounded-t-md border-b border-border' >
                     <div className='flex flex-row gap-1 p-2'>
                         <div className='flex flex-row gap-0.5 w-fit'>
                             <Button size='sm' variant='secondary' disabled>
@@ -151,12 +164,12 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, editable
 
   // Editor
   return (
-    <div className='relative '>
+    <div className='relative border border-border rounded-md bg-card'>
       <TooltipProvider>
 
         {/* start fixed menu */}
-        {editor && showFixedMenu && editable &&
-        <div className='sticky top-0 z-10 bg-card rounded-t-md border-b border-border' >
+        {editor && showFixedMenu && 
+        <div className='bg-card rounded-t-md border-b border-border' >
           <div className='flex flex-row p-2 justify-between'>
             <div className='flex flex-row gap-1'>
                 {/* type of node */}
@@ -345,7 +358,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, editable
         {/* end fixed menu */}
 
         {/* start bubble menu */}
-        {editor && showBubbleMenu && editable && (
+        {editor && showBubbleMenu && (
             <BubbleMenu
             className=""
             tippyOptions={{ duration: 100 }}
@@ -526,8 +539,8 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, editable
         {/* end bubble menu */}
 
         {/* start editor */}
-        <div className='py-2 px-3 h-full'>
-            <EditorContent editor={editor} className='prose prose-base dark:prose-invert max-w-none' />
+        <div className='py-2 px-3 prose prose-base dark:prose-invert max-w-none'>
+            <EditorContent editor={editor} className='' />
         </div>
         {/* end editor */}
 

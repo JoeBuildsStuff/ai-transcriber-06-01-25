@@ -22,6 +22,7 @@ export default async function Page({
     return (
       <div className="container mx-auto">
         <NoteForm
+          initialNoteId={id}
           initialTitle={note.title || ""}
           initialContent={note.content || ""}
           initialContactIds={note.contacts?.map((contact: Contact) => contact.id) || []}
