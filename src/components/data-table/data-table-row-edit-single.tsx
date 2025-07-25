@@ -50,7 +50,7 @@ export default function DataTableRowEditSingle<TData>({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size="sm">
           <PencilRuler className="size-4 shrink-0" />
           <Badge variant="secondary">{selectedRows.length}</Badge>
         </Button>

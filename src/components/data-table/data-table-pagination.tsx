@@ -45,7 +45,7 @@ export function DataTablePagination<TData>({
             table.setPageSize(Number(value))
           }}
         >
-          <SelectTrigger className="h-8 w-[70px]">
+          <SelectTrigger className="h-8 w-fit" size="sm">
             <SelectValue placeholder={table.getState().pagination.pageSize} />
           </SelectTrigger>
           <SelectContent side="top">
@@ -60,15 +60,15 @@ export function DataTablePagination<TData>({
 
       {/* pagination */}
       <div className="flex items-center justify-end gap-4 flex-1">
-                 <div className="flex w-[fit] items-center justify-center text-sm font-medium">
-           <span className="hidden sm:inline">
-             Page {table.getState().pagination.pageIndex + 1} of{" "}
-             {table.getPageCount()}
-           </span>
-           <span className="sm:hidden">
-             Page {table.getState().pagination.pageIndex + 1}
-           </span>
-         </div>
+        <div className="flex w-[fit] items-center justify-center text-sm font-medium">
+          <span className="hidden sm:inline">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </span>
+          <span className="sm:hidden">
+            Page {table.getState().pagination.pageIndex + 1}
+          </span>
+        </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="secondary"

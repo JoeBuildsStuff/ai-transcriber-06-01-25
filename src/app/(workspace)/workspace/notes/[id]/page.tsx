@@ -20,7 +20,7 @@ export default async function Page({
 
 
     return (
-      <div className="container mx-auto">
+      <div className="container mx-auto p-1">
         <NoteForm
           initialNoteId={id}
           initialTitle={note.title || ""}

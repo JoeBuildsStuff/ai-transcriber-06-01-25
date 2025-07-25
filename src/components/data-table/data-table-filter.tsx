@@ -143,7 +143,7 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size="sm">
           <ListFilter className="h-4 w-4" />
           <div>Filter</div>
           <Badge variant="secondary">

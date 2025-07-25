@@ -36,13 +36,15 @@ export function NoteAddForm({
 }: {
   onSuccess?: () => void
   onCancel?: () => void
-  createAction?: (data: Partial<NoteWithAssociations>) => Promise<{ success: boolean; error?: string }>
+  createAction?: (data: Partial<NoteWithAssociations>) => Promise<{ success: boolean; error?: string; data?: { id: string } }>
 }) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<NoteFormData | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [tempNoteId] = useState<string>(`temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`)
+  const [realNoteId, setRealNoteId] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -72,21 +74,56 @@ export function NoteAddForm({
     setFormData(data)
   }, [])
 
+  // Function to create the note when user first interacts with title
+  const createNoteIfNeeded = useCallback(async (title: string) => {
+    if (realNoteId || !createAction) return realNoteId
+
+    try {
+      const noteData = {
+        title,
+        content: formData?.content || "",
+        contactIds: formData?.contactIds || [],
+        meetingIds: formData?.meetingIds || []
+      }
+      
+      const result = await createAction(noteData)
+      
+      if (result.success && result.data?.id) {
+        setRealNoteId(result.data.id)
+        return result.data.id
+      } else {
+        console.error("Failed to create note:", result.error)
+        toast.error("Failed to create note", { description: result.error })
+        return null
+      }
+    } catch (error) {
+      console.error("Error creating note:", error)
+      toast.error("An unexpected error occurred while creating the note.")
+      return null
+    }
+  }, [realNoteId, createAction, formData])
+
+  // Handle when the note is created via InputSupabase
+  const handleNoteCreated = useCallback((noteId: string) => {
+    setRealNoteId(noteId)
+  }, [])
+
   const handleSubmit = async () => {
     if (!formData || !createAction) return
 
     setIsSubmitting(true)
     try {
-      const noteData = transformFormDataToNote(formData)
-      const result = await createAction(noteData)
-      
-      if (result.success) {
-        router.refresh()
-        onSuccess?.()
-      } else {
-        console.error("Failed to create note:", result.error)
-        toast.error("Failed to create note", { description: result.error })
+      // If we haven't created the note yet, create it now
+      if (!realNoteId) {
+        const noteId = await createNoteIfNeeded(formData.title)
+        if (!noteId) {
+          setIsSubmitting(false)
+          return
+        }
       }
+
+      router.refresh()
+      onSuccess?.()
     } catch (error) {
       console.error("Error creating note:", error)
       toast.error("An unexpected error occurred while creating the note.")
@@ -99,9 +136,11 @@ export function NoteAddForm({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         <NoteForm
+          initialNoteId={realNoteId || tempNoteId}
           onChange={handleFormDataChange}
           availableContacts={contacts}
           availableMeetings={meetings}
+          onNoteCreated={handleNoteCreated}
         />
       </div>
       
@@ -182,7 +221,7 @@ export function NoteEditForm({
 
     setIsSubmitting(true)
     try {
-      const noteData = transformFormDataToNote(formData)
+      const noteData = transformFormDataToNote(formData) // No initialNoteId for update
       const result = await updateAction(data.id, noteData)
       
       if (result.success) {
@@ -204,6 +243,7 @@ export function NoteEditForm({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         <NoteForm
+          initialNoteId={data.id}
           initialTitle={data.title || ""}
           initialContent={data.content || ""}
           initialContactIds={initialContactIds}
@@ -287,7 +327,7 @@ export function NoteMultiEditForm({
 
     setIsSubmitting(true)
     try {
-      const noteData = transformFormDataToNote(formData)
+      const noteData = transformFormDataToNote(formData) // No initialNoteId for multi edit
       
       // Filter out undefined values for multi edit - only update fields that were actually modified
       const filteredData = Object.fromEntries(
@@ -336,6 +376,7 @@ export function NoteMultiEditForm({
         />
       </div>
       
+      {/* TODO: trying to use componnes that auto save but builk update isnt working  */}
       <div className="flex justify-between gap-2 p-4 border-t bg-background">
         <Button
           type="button"

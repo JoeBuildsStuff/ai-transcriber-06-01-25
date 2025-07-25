@@ -1,13 +1,11 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, File, Users, Calendar, Type, X, Plus, ArrowUpRight } from "lucide-react";
+import { File, Users, Calendar, Type, X, ArrowUpRight } from "lucide-react";
 import { Contact, Meeting } from '../_lib/validations';
 import { Button } from "@/components/ui/button";
 import PersonForm from "../../contacts/_components/form";
@@ -15,10 +13,12 @@ import { createPerson } from "../../contacts/_lib/actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import NotesContent from "../../notes/[id]/_components/notes-content";
+import InputSupabase from "@/components/supabase/_components/input-supabase";
+import ComboboxSupabase from "@/components/supabase/_components/combobox-supabase";
 
 export interface NoteFormProps {
   /**
-   * Initial note ID
+   * Initial note ID (can be temporary for new notes)
    */
   initialNoteId?: string;
   /**
@@ -59,6 +59,10 @@ export interface NoteFormProps {
    */
   onContactCreated?: (contactId: string) => void;
   /**
+   * Callback fired when a note is created via InputSupabase
+   */
+  onNoteCreated?: (noteId: string) => void;
+  /**
    * Custom CSS class name
    */
   className?: string;
@@ -74,15 +78,14 @@ export default function NoteForm({
   availableMeetings = [],
   onChange,
   onContactCreated,
+  onNoteCreated,
   className
 }: NoteFormProps = {}) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [content] = useState(initialContent);
-  const [contactIds, setContactIds] = useState<string[]>(initialContactIds);
-  const [meetingIds, setMeetingIds] = useState<string[]>(initialMeetingIds);
-  const [contactsOpen, setContactsOpen] = useState(false);
-  const [meetingsOpen, setMeetingsOpen] = useState(false);
+  const [contactIds] = useState<string[]>(initialContactIds);
+  const [meetingIds] = useState<string[]>(initialMeetingIds);
   const [addContactDialogOpen, setAddContactDialogOpen] = useState(false);
   const [isCreatingContact, setIsCreatingContact] = useState(false);
   const [contactFormData, setContactFormData] = useState<{
@@ -98,6 +101,9 @@ export default function NoteForm({
     jobTitle: string;
   } | null>(null);
 
+  // Generate a temporary ID for new notes if none provided
+  const noteId = initialNoteId || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
   // Call onChange callback when form data changes
   useEffect(() => {
     if (onChange) {
@@ -110,100 +116,12 @@ export default function NoteForm({
     }
   }, [title, content, contactIds, meetingIds, onChange]);
 
-  const getDisplayContacts = () => {
-    if (contactIds.length === 0) return "Associate with contacts...";
-    const selectedContacts = availableContacts.filter(contact => contactIds.includes(contact.id));
-    return (
-      <div className="flex items-center gap-1 flex-wrap">
-        {selectedContacts.map((contact) => {
-          const name = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact';
-          return (
-            <ContextMenu key={contact.id}>
-              <ContextMenuTrigger>
-                <Badge variant="blue" className="text-sm cursor-pointer">
-                  {name}
-                  <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
-                    e.stopPropagation();
-                    toggleContact(contact.id);
-                  }}>
-                    <X className="size-4" />
-                  </Button>
-                </Badge>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem onClick={() => router.push(`/workspace/contacts/${contact.id}`)}>
-                  View Contact
-                  <ArrowUpRight className="size-4 shrink-0" />
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const getDisplayMeetings = () => {
-    if (meetingIds.length === 0) return "Associate with meetings...";
-    const selectedMeetings = availableMeetings.filter(meeting => meetingIds.includes(meeting.id));
-    return (
-      <div className="flex items-center gap-1 flex-wrap">
-        {selectedMeetings.map((meeting) => {
-          const title = meeting.title || 'Untitled Meeting';
-          return (
-            <ContextMenu key={meeting.id}>
-              <ContextMenuTrigger>
-                <Badge variant="green" className="text-sm cursor-pointer">
-                  {title}
-                  <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
-                    e.stopPropagation();
-                    toggleMeeting(meeting.id);
-                  }}>
-                    <X className="size-4" />
-                  </Button>
-                </Badge>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem onClick={() => router.push(`/workspace/meetings/${meeting.id}`)}>
-                  View Meeting
-                  <ArrowUpRight className="size-4 shrink-0" />
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const toggleContact = (contactId: string) => {
-    setContactIds(prev => 
-      prev.includes(contactId) 
-        ? prev.filter(id => id !== contactId)
-        : [...prev, contactId]
-    );
-  };
-
-  const toggleMeeting = (meetingId: string) => {
-    setMeetingIds(prev => 
-      prev.includes(meetingId) 
-        ? prev.filter(id => id !== meetingId)
-        : [...prev, meetingId]
-    );
-  };
-
-  const handlePopoverKeyDown = (e: React.KeyboardEvent, closePopover: () => void) => {
-    if (e.key === "Enter") {
-      const activeElement = document.activeElement;
-      if (activeElement && activeElement.tagName === "BUTTON") {
-        // If a button is focused, click it
-        (activeElement as HTMLButtonElement).click();
-      } else {
-        // Otherwise, close the popover
-        closePopover();
-      }
+  // Update title when initialTitle changes
+  useEffect(() => {
+    if (initialTitle !== title) {
+      setTitle(initialTitle);
     }
-  };
+  }, [initialTitle, title]);
 
   const handleCreateContact = async () => {
     if (!contactFormData) return;
@@ -227,14 +145,16 @@ export default function NoteForm({
       const result = await createPerson(contactData);
       
       if (result.success && result.data) {
-        // Add the newly created contact to the selected contacts
-        setContactIds(prev => [...prev, result.data.id]);
+        // Close the dialog and reset form
         setAddContactDialogOpen(false);
         setContactFormData(null);
         toast.success("Contact created successfully!");
         
         // Notify parent component about the new contact
         onContactCreated?.(result.data.id);
+        
+        // The ComboboxSupabase will handle adding the new contact to selected items
+        // when the availableContacts prop is updated
       } else {
         toast.error("Failed to create contact", { description: result.error });
       }
@@ -253,12 +173,17 @@ export default function NoteForm({
           <Type className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Title</span>
         </div>
-        <input 
-          className="w-full min-w-0 text-left hover:bg-secondary rounded-md py-2 px-2 truncate" 
-          placeholder="Add note title..." 
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        <div className="w-full min-w-0">
+          <InputSupabase
+            table="notes"
+            field="title"
+            id={noteId}
+            initialValue={initialTitle}
+            placeholder="Add note title..."
+            onNoteCreated={onNoteCreated}
+            className="border-none hover:bg-input/50"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-2 justify-between">
@@ -267,67 +192,48 @@ export default function NoteForm({
           <span className="whitespace-nowrap @max-sm:hidden">Contacts</span>
         </div>
         <div className="w-full min-w-0">
-          <Popover open={contactsOpen} onOpenChange={setContactsOpen}>
-            <PopoverTrigger className={cn(
-              "w-full text-left hover:bg-secondary rounded-md py-2 px-2 truncate",
-              contactIds.length === 0 && "text-muted-foreground/80"
-            )}>
-              {getDisplayContacts()}
-            </PopoverTrigger>
-            <PopoverContent 
-              className="p-0 rounded-xl" 
-              align="start"
-              onKeyDown={(e) => handlePopoverKeyDown(e, () => setContactsOpen(false))}
-            >
-              <Command className="w-full rounded-xl">
-                <CommandInput placeholder="Search contacts..." />
-                <CommandList className="max-h-60">
-                  <CommandEmpty>No contacts found.</CommandEmpty>
-                  <CommandGroup>
-                    {availableContacts.map((contact) => {
-                      const name = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact';
-                      const isSelected = contactIds.includes(contact.id);
-                      return (
-                        <CommandItem
-                          key={contact.id}
-                          value={name}
-                          onSelect={() => toggleContact(contact.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              isSelected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {name}
-                          {contact.company && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              ({contact.company.name})
-                            </span>
-                          )}
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                </CommandList>
-                <CommandSeparator />
-                <div className="p-1 h-9">
-                  <Button 
-                      variant="secondary" 
-                      size="sm"
-                      className="w-full h-full justify-start rounded-t-none text-muted-foreground"
-                      onClick={() => {
-                          setContactsOpen(false);
-                          setAddContactDialogOpen(true);
-                      }}
-                  >
-                      <Plus className="size-4 shrink-0" strokeWidth={1.5} />
-                      <span className="text-xs">Add Contact</span>
-                  </Button>
-                </div>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <ComboboxSupabase
+            table="contact_notes"
+            field="contact_id"
+            id={noteId}
+            initialValue={contactIds}
+            options={availableContacts.map(contact => ({
+              value: contact.id,
+              label: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
+              subLabel: contact.company?.name
+            }))}
+            placeholder="Associate with contacts..."
+            searchPlaceholder="Search contacts..."
+            emptyText="No contacts found."
+            onNoteCreated={onNoteCreated}
+            noteIdField="note_id"
+            targetIdField="contact_id"
+            actionButton={{
+              label: "Add Contact",
+              onClick: () => setAddContactDialogOpen(true)
+            }}
+            renderBadge={(option, onRemove) => (
+              <ContextMenu key={option.value}>
+                <ContextMenuTrigger>
+                  <Badge variant="blue" className="text-sm cursor-pointer">
+                    {option.label}
+                    <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}>
+                      <X className="size-4" />
+                    </Button>
+                  </Badge>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => router.push(`/workspace/contacts/${option.value}`)}>
+                    View Contact
+                    <ArrowUpRight className="size-4 shrink-0" />
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            )}
+          />
         </div>
       </div>
 
@@ -337,47 +243,43 @@ export default function NoteForm({
           <span className="whitespace-nowrap @max-sm:hidden">Meetings</span>
         </div>
         <div className="w-full min-w-0">
-          <Popover open={meetingsOpen} onOpenChange={setMeetingsOpen}>
-            <PopoverTrigger className={cn(
-              "w-full text-left hover:bg-secondary rounded-md py-2 px-2 truncate",
-              meetingIds.length === 0 && "text-muted-foreground/80"
-            )}>
-              {getDisplayMeetings()}
-            </PopoverTrigger>
-            <PopoverContent 
-              className="p-0 rounded-xl" 
-              align="start"
-              onKeyDown={(e) => handlePopoverKeyDown(e, () => setMeetingsOpen(false))}
-            >
-              <Command className="w-full rounded-xl">
-                <CommandInput placeholder="Search meetings..." />
-                <CommandList className="max-h-60">
-                  <CommandEmpty>No meetings found.</CommandEmpty>
-                  <CommandGroup>
-                    {availableMeetings.map((meeting) => {
-                      const title = meeting.title || 'Untitled Meeting';
-                      const isSelected = meetingIds.includes(meeting.id);
-                      return (
-                        <CommandItem
-                          key={meeting.id}
-                          value={title}
-                          onSelect={() => toggleMeeting(meeting.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              isSelected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {title}
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <ComboboxSupabase
+            table="meeting_notes"
+            field="meeting_id"
+            id={noteId}
+            initialValue={meetingIds}
+            options={availableMeetings.map(meeting => ({
+              value: meeting.id,
+              label: meeting.title || 'Untitled Meeting'
+            }))}
+            placeholder="Associate with meetings..."
+            searchPlaceholder="Search meetings..."
+            emptyText="No meetings found."
+            onNoteCreated={onNoteCreated}
+            noteIdField="note_id"
+            targetIdField="meeting_id"
+            renderBadge={(option, onRemove) => (
+              <ContextMenu key={option.value}>
+                <ContextMenuTrigger>
+                  <Badge variant="green" className="text-sm cursor-pointer">
+                    {option.label}
+                    <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}>
+                      <X className="size-4" />
+                    </Button>
+                  </Badge>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => router.push(`/workspace/meetings/${option.value}`)}>
+                    View Meeting
+                    <ArrowUpRight className="size-4 shrink-0" />
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            )}
+          />
         </div>
       </div>
 

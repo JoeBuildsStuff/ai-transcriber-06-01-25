@@ -49,7 +49,7 @@ export default function DataTableRowEdit<TData>({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="sm">
           <PencilRuler className="size-4 shrink-0" />
         </Button>
       </SheetTrigger>

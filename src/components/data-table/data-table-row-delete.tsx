@@ -69,7 +69,7 @@ export default function DataTableRowDelete({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size="sm">
           <Trash2 className="size-4 shrink-0" />
           <Badge variant="secondary">{selectedRowIds.length}</Badge>
         </Button>

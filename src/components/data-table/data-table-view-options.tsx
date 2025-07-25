@@ -156,6 +156,7 @@ export function DataTableViewOptions<TData>({
         <Button
           variant="outline"
           className="flex ml-auto"
+          size="sm"
         >
           <Settings2 className="size-4 shrink-0" />
         </Button>

@@ -117,7 +117,7 @@ export default function DataTableSort<TData>({ table }: DataTableSortProps<TData
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size="sm">
           <ChevronsUpDown className="w-4 h-4" />
           <div>Sort</div>
           <Badge variant="secondary">

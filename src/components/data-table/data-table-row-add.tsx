@@ -39,7 +39,7 @@ export default function DataTableRowAdd<TData>({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="sm">
           <Plus className="size-4 shrink-0" />
         </Button>
       </SheetTrigger>
