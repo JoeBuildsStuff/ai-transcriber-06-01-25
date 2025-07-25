@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useSupabaseCombobox } from "@/components/supabase/_hooks/use-supabase-combobox"
+import { useSupabaseComboboxBulk } from "@/components/supabase/_hooks/use-supabase-combobox-bulk"
 import { cn } from "@/lib/utils"
 import { Check, X, Plus } from "lucide-react"
 import { ReactNode } from "react"
@@ -15,20 +15,24 @@ export interface ComboboxOption {
   subLabel?: string
 }
 
-interface ComboboxSupabaseProps {
+interface ComboboxSupabaseBulkProps {
   table: string
   field: string
-  id: string
+  noteIds: string[]
   initialValue: string[]
   options: ComboboxOption[]
   placeholder?: string
   searchPlaceholder?: string
   emptyText?: string
-  onNoteCreated?: (id: string) => void
   className?: string
   // For junction tables
-  noteIdField?: string
   targetIdField?: string
+  // Bulk update action
+  bulkUpdateAction: (ids: string[], data: { 
+    contactIds?: string[]
+    meetingIds?: string[]
+    [key: string]: unknown
+  }) => Promise<{ success: boolean; error?: string }>
   // Action button props
   actionButton?: {
     label: ReactNode
@@ -40,31 +44,29 @@ interface ComboboxSupabaseProps {
   renderOption?: (option: ComboboxOption, isSelected: boolean) => ReactNode
 }
 
-export default function ComboboxSupabase({
+export default function ComboboxSupabaseBulk({
   table,
   field,
-  id,
+  noteIds,
   initialValue,
   options,
   placeholder = "Select items...",
   searchPlaceholder = "Search...",
   emptyText = "No items found.",
-  onNoteCreated,
   className,
-  noteIdField,
   targetIdField,
+  bulkUpdateAction,
   actionButton,
   renderBadge,
   renderOption
-}: ComboboxSupabaseProps) {
-  const { value, toggleValue, updating } = useSupabaseCombobox({
+}: ComboboxSupabaseBulkProps) {
+  const { value, toggleValue, updating } = useSupabaseComboboxBulk({
     table,
     field,
-    id,
+    noteIds,
     initialValue,
-    onCreateSuccess: onNoteCreated,
-    noteIdField,
-    targetIdField
+    targetIdField,
+    bulkUpdateAction
   })
 
   // Get display text for selected items
@@ -179,4 +181,4 @@ export default function ComboboxSupabase({
       </PopoverContent>
     </Popover>
   )
-}
+} 

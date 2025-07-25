@@ -55,6 +55,7 @@ export default async function DataTableNote({
 
   const EditFormMulti = NoteMultiEditForm as React.ComponentType<{
     selectedCount: number
+    selectedNoteIds?: string[]
     onSuccess?: () => void
     onCancel?: () => void
     updateActionMulti?: (ids: string[], data: Record<string, unknown>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>

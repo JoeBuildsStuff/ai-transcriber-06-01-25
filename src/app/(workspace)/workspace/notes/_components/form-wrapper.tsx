@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { X, Plus, Save } from "lucide-react"
 import { toast } from "sonner"
 import { getContacts, getMeetings } from "../_lib/actions"
+import BulkNoteForm from "./bulk-form"
 
 interface NoteFormData {
   title: string
@@ -27,6 +28,11 @@ function transformFormDataToNote(formData: NoteFormData): Partial<NoteWithAssoci
 
   return noteData
 }
+
+// Helper function to check if an ID is temporary (for future use)
+// function isTemporaryId(id: string): boolean {
+//   return id.startsWith('temp-');
+// }
 
 // Add Form Wrapper
 export function NoteAddForm({
@@ -279,18 +285,18 @@ export function NoteEditForm({
 // multi Edit Form Wrapper
 export function NoteMultiEditForm({
   selectedCount,
+  selectedNoteIds,
   onSuccess,
   onCancel,
   updateActionMulti
 }: {
   selectedCount: number
+  selectedNoteIds?: string[]
   onSuccess?: () => void
   onCancel?: () => void
   updateActionMulti?: (ids: string[], data: Partial<NoteWithAssociations>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
 }) {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState<NoteFormData | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [meetings, setMeetings] = useState<Meeting[]>([])
 
@@ -318,83 +324,65 @@ export function NoteMultiEditForm({
     fetchData()
   }, [])
 
-  const handleFormDataChange = useCallback((data: NoteFormData) => {
-    setFormData(data)
-  }, [])
+  // If we have selectedNoteIds and updateActionMulti, we can use auto-saving bulk components
+  const useAutoSave = selectedNoteIds && selectedNoteIds.length > 0 && !!updateActionMulti
 
-  const handleSubmit = async () => {
-    if (!formData || !updateActionMulti) return
-
-    setIsSubmitting(true)
-    try {
-      const noteData = transformFormDataToNote(formData) // No initialNoteId for multi edit
-      
-      // Filter out undefined values for multi edit - only update fields that were actually modified
-      const filteredData = Object.fromEntries(
-        Object.entries(noteData).filter(([, value]) => {
-          if (value === undefined || value === null) return false
-          if (typeof value === 'string' && value.trim() === '') return false
-          if (Array.isArray(value) && value.length === 0) return false
-          return true
-        })
-      )
-      
-      // The updateActionMulti function will be called with the selected note IDs
-      // by the DataTableRowEditMulti component
-      const result = await updateActionMulti([], filteredData)
-      
-      if (result.success) {
-        router.refresh()
-        onSuccess?.()
-        toast.success("Notes updated successfully", {
-          description: `${result.updatedCount || selectedCount} note${(result.updatedCount || selectedCount) > 1 ? 's' : ''} updated.`
-        })
-      } else {
-        console.error("Failed to update notes:", result.error)
-        toast.error("Failed to update notes", { description: result.error })
-      }
-    } catch (error) {
-      console.error("Error updating notes:", error)
-      toast.error("An unexpected error occurred while updating the notes.")
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleSuccess = () => {
+    router.refresh()
+    onSuccess?.()
+    toast.success("Notes updated successfully", {
+      description: `${selectedCount} note${selectedCount > 1 ? 's' : ''} updated.`
+    })
   }
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4">
-        <NoteForm
-          onChange={handleFormDataChange}
+        <BulkNoteForm
+          noteIds={selectedNoteIds || []}
           availableContacts={contacts}
           availableMeetings={meetings}
-          // Start with empty values for multi edit
-          initialTitle=""
-          initialContent=""
-          initialContactIds={[]}
-          initialMeetingIds={[]}
+          updateActionMulti={updateActionMulti}
+          useAutoSave={useAutoSave}
+          onSuccess={handleSuccess}
         />
       </div>
       
-      {/* TODO: trying to use componnes that auto save but builk update isnt working  */}
-      <div className="flex justify-between gap-2 p-4 border-t bg-background">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          className="w-1/2"
-        >
-          <X className="size-4 shrink-0" /> Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !formData}
-          className="w-1/2"
-        >
-          <Save className="size-4 shrink-0" />
-          {isSubmitting ? "Updating..." : `Update ${selectedCount} Note${selectedCount > 1 ? 's' : ''}`}
-        </Button>
-      </div>
+      {!useAutoSave && (
+        <div className="flex justify-between gap-2 p-4 border-t bg-background">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-1/2"
+          >
+            <X className="size-4 shrink-0" /> Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              // Manual save logic would go here if needed
+              // But we're moving to auto-save, so this might be removed
+            }}
+            className="w-1/2"
+          >
+            <Save className="size-4 shrink-0" />
+            Update {selectedCount} Note{selectedCount > 1 ? 's' : ''}
+          </Button>
+        </div>
+      )}
+      
+      {useAutoSave && (
+        <div className="flex justify-center p-4 border-t bg-background">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-1/2"
+          >
+            <X className="size-4 shrink-0" /> Done
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

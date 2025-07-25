@@ -16,6 +16,7 @@ interface DataTableRowEditMultiProps<TData> {
   updateActionMulti?: (ids: string[], data: Partial<TData>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
   customForm?: React.ComponentType<{
     selectedCount: number
+    selectedNoteIds?: string[]
     onSuccess?: () => void
     onCancel?: () => void
     updateActionMulti?: (ids: string[], data: Partial<TData>) => Promise<{ success: boolean; error?: string; updatedCount?: number }>
@@ -56,7 +57,7 @@ export default function DataTableRowEditMulti<TData>({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline">
           <PencilRuler className="size-4 shrink-0" />
           <Badge variant="secondary">{selectedRows.length}</Badge>
         </Button>
@@ -73,6 +74,7 @@ export default function DataTableRowEditMulti<TData>({
           {CustomForm ? (
             <CustomForm
               selectedCount={selectedRows.length}
+              selectedNoteIds={selectedRowIds}
               onSuccess={handleSuccess}
               onCancel={handleCancel}
               updateActionMulti={updateActionMulti ? async (ids: string[], data: Partial<TData>) => {

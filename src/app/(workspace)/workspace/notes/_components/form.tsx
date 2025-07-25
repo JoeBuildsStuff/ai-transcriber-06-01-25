@@ -181,7 +181,7 @@ export default function NoteForm({
             initialValue={initialTitle}
             placeholder="Add note title..."
             onNoteCreated={onNoteCreated}
-            className="border-none hover:bg-input/50"
+            className="border-none"
           />
         </div>
       </div>
