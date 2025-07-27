@@ -292,6 +292,7 @@ export default function NoteForm({
         <NotesContent
           noteId={initialNoteId || ""}
           noteContent={content}
+          onNoteIdChange={onNoteCreated}
         />
         </div>
       </div>

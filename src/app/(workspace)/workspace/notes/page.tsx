@@ -8,7 +8,7 @@ export default async function Page({
   const params = await searchParams
 
   return (
-    <main className="">
+    <main className="p-1">
       <DataTableNote searchParams={params} />
     </main>
   )

@@ -62,7 +62,7 @@ export function ChatInput() {
             placeholder="Ask me about your data..."
             disabled={isLoading}
             rows={1}
-            className="resize-none rounded-xl border-none pb-12 bg-muted/50"
+            className="resize-none rounded-xl border-none pb-12 bg-muted/80 shadow-none"
             // pr-20 and pb-8 add right and bottom padding to avoid overlap with floating buttons
           />
           {/* Actions */}
@@ -73,7 +73,7 @@ export function ChatInput() {
               onValueChange={setSelectedModel}
               disabled={isLoading}
             >
-              <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground" >
+              <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none" >
                 <SelectValue placeholder="Model" />
               </SelectTrigger>
               <SelectContent>
