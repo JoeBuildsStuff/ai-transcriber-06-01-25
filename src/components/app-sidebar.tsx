@@ -263,8 +263,8 @@ export function AppSidebar() {
                       )}
                     >
                       <Link href={item.href}>
-                        <item.icon className="w-3.5 h-3.5 mr-2 flex-none" />
-                        <span>{item.label}</span>
+                        <item.icon className="w-3.5 h-3.5 mr-2 flex-none text-muted-foreground" />
+                        <span className="font-normal">{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
                     {item.action && (
@@ -272,13 +272,13 @@ export function AppSidebar() {
                         <button
                           onClick={item.action}
                           disabled={item.isActionLoading}
-                          className="disabled:cursor-not-allowed text-muted-foreground hover:text-foreground"
+                          className="disabled:cursor-not-allowed text-muted-foreground hover:text-muted-foreground"
                           aria-label={item.actionAriaLabel}
                         >
                           {item.isActionLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-4 w-4 text-muted-foreground" />
                           )}
                         </button>
                       </SidebarMenuAction>
