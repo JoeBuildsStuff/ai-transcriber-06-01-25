@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { MeetingSpeaker, MeetingSpeakerWithContact } from "@/types"
+import { Database } from "@/types/supabase"
 
 export async function updateSpeakerContacts(meetingId: string, speakerContacts: Record<number, string>) {
   const supabase = await createClient()
@@ -210,7 +211,11 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
 }
 
 // Helper function to transform speaker data
-async function transformSpeakersData(speakers: any[], userId: string, supabase: any): Promise<MeetingSpeakerWithContact[]> {
+async function transformSpeakersData(
+  speakers: Database['ai_transcriber']['Tables']['meeting_speakers']['Row'][], 
+  userId: string, 
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<MeetingSpeakerWithContact[]> {
   // Get contact details for speakers that have contact_id
   const contactIds = speakers.filter(s => s.contact_id).map(s => s.contact_id)
   let contacts: { id: string; first_name: string; last_name: string; job_title: string; is_favorite: boolean }[] = []

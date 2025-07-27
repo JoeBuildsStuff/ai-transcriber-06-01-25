@@ -211,6 +211,70 @@ export type Database = {
           },
         ]
       }
+      meeting_speakers: {
+        Row: {
+          confidence_score: number | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          identified_at: string | null
+          is_primary_speaker: boolean | null
+          meeting_id: string
+          role: string | null
+          speaker_index: number
+          speaker_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          identified_at?: string | null
+          is_primary_speaker?: boolean | null
+          meeting_id: string
+          role?: string | null
+          speaker_index: number
+          speaker_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          identified_at?: string | null
+          is_primary_speaker?: boolean | null
+          meeting_id?: string
+          role?: string | null
+          speaker_index?: number
+          speaker_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_speakers_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_speakers_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_speakers_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
           audio_file_path: string | null
@@ -420,25 +484,28 @@ export type Database = {
       }
       notes: {
         Row: {
-          content: string
+          content: string | null
           created_at: string | null
           id: string
+          title: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
-          content: string
+          content?: string | null
           created_at?: string | null
           id?: string
+          title?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
-          content?: string
+          content?: string | null
           created_at?: string | null
           id?: string
+          title?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

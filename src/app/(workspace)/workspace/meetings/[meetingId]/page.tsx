@@ -436,15 +436,21 @@ export default function MeetingDetailPage() {
     }
 
     const speakerDetails: Record<number, { displayName: string; notes?: string }> = {};
-    if (meeting?.speaker_names && contacts) {
-        for (const speakerNumStr in meeting.speaker_names) {
-            const speakerNum = parseInt(speakerNumStr, 10);
-            const contactId = meeting.speaker_names[speakerNum];
-            const contact = contacts.find(c => c.id === contactId);
-            if (contact) {
-                speakerDetails[speakerNum] = {
-                    displayName: contact.display_name || `${contact.first_name} ${contact.last_name}`.trim(),
-                    notes: contact.notes || ''
+    if (meetingSpeakers && meetingSpeakers.length > 0) {
+        for (const speaker of meetingSpeakers) {
+            if (speaker.contact) {
+                speakerDetails[speaker.speaker_index] = {
+                    displayName: speaker.contact.display_name || 
+                               `${speaker.contact.first_name} ${speaker.contact.last_name}`.trim() ||
+                               speaker.speaker_name ||
+                               `Speaker ${speaker.speaker_index}`,
+                    notes: speaker.contact.notes || ''
+                };
+            } else {
+                // Use speaker_name from the table if no contact is associated
+                speakerDetails[speaker.speaker_index] = {
+                    displayName: speaker.speaker_name || `Speaker ${speaker.speaker_index}`,
+                    notes: ''
                 };
             }
         }
@@ -1003,7 +1009,7 @@ export default function MeetingDetailPage() {
               {copyButtonText}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleReprocess} disabled={isReprocessing}>
-                {isReprocessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                {isReprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Reprocess
             </Button>
           </div>
