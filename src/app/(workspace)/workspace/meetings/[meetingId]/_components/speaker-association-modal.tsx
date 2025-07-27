@@ -22,7 +22,7 @@ import { Check, X, PlusCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 // TODO: Align approach for actions as either @/actions or @/app/(workspace)/workspace/contacts/_lib/actions
-import { updateSpeakerContacts } from "@/actions/contacts"
+import { updateMeetingSpeaker } from "@/actions/contacts"
 import { createContact } from "../../../contacts/_lib/actions"
 
 import { Input } from "@/components/ui/input"
@@ -37,8 +37,8 @@ export default function SpeakerAssociationModal({
   speakerNumber,
   currentContactId,
   contacts,
-  speakerContacts,
-  onSpeakerContactsUpdate,
+  meetingSpeakers,
+  onSpeakersUpdate,
   formattedTranscript,
   onSeekAndPlay,
   onContactsUpdate,
@@ -76,11 +76,15 @@ export default function SpeakerAssociationModal({
         
         // Now associate the new contact
         const newContactId = result.contact.id
-        const updatedSpeakerContacts = { ...(speakerContacts || {}) }
-        updatedSpeakerContacts[speakerNumber] = newContactId
-        const associationResult = await updateSpeakerContacts(meetingId, updatedSpeakerContacts)
+        await updateMeetingSpeaker(meetingId, speakerNumber, newContactId)
         
-        onSpeakerContactsUpdate(associationResult as Record<number, string>)
+        // Update the speakers list
+        const updatedSpeakers = meetingSpeakers.map(speaker => 
+          speaker.speaker_index === speakerNumber 
+            ? { ...speaker, contact_id: newContactId, contact: { ...result.contact, created_at: '', updated_at: '', user_id: '' } }
+            : speaker
+        )
+        onSpeakersUpdate(updatedSpeakers)
         toast.success('Speaker association updated successfully')
         
         onContactsUpdate()
@@ -102,17 +106,31 @@ export default function SpeakerAssociationModal({
   const handleAssociateContact = (contactId: string | null) => {
     startTransition(async () => {
       try {
-        const updatedSpeakerContacts = { ...(speakerContacts || {}) }
+        await updateMeetingSpeaker(meetingId, speakerNumber, contactId)
         
-        if (contactId) {
-          updatedSpeakerContacts[speakerNumber] = contactId
-        } else {
-          delete updatedSpeakerContacts[speakerNumber]
-        }
-
-        const result = await updateSpeakerContacts(meetingId, updatedSpeakerContacts)
+        // Update the speakers list
+        const updatedSpeakers = meetingSpeakers.map(speaker => {
+          if (speaker.speaker_index === speakerNumber) {
+            if (contactId) {
+              const contact = contacts.find(c => c.id === contactId)
+              return { 
+                ...speaker, 
+                contact_id: contactId, 
+                contact: contact ? {
+                  ...contact,
+                  created_at: contact.created_at || '',
+                  updated_at: contact.updated_at || '',
+                  user_id: contact.user_id || ''
+                } : null
+              }
+            } else {
+              return { ...speaker, contact_id: null, contact: null }
+            }
+          }
+          return speaker
+        })
         
-        onSpeakerContactsUpdate(result as Record<number, string>)
+        onSpeakersUpdate(updatedSpeakers)
         toast.success('Speaker association updated successfully')
         onClose()
       } catch (error) {

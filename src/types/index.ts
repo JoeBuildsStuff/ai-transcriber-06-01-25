@@ -78,6 +78,25 @@ export interface MeetingDetails extends Meeting {
   attendees?: MeetingAttendeeWithContact[];
 }
 
+// ===== MEETING SPEAKER TYPES =====
+export interface MeetingSpeaker {
+  id: string;
+  meeting_id: string;
+  contact_id: string | null;
+  speaker_index: number;
+  speaker_name: string | null;
+  confidence_score: number | null;
+  role: string | null;
+  is_primary_speaker: boolean | null;
+  identified_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface MeetingSpeakerWithContact extends MeetingSpeaker {
+  contact: Contact | null;
+}
+
 // ===== MEETING ATTENDEE TYPES =====
 export interface MeetingAttendee {
   id: string;
@@ -218,9 +237,9 @@ export type UseSupabaseUploadOptions = {
 export interface TranscriptProps {
     meetingId: string;
     formattedTranscript: FormattedTranscriptGroup[];
-    speakerContacts?: Record<number, string> | null;
+    meetingSpeakers?: MeetingSpeakerWithContact[];
     contacts?: Contact[] | null;
-    onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
+    onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
     onSeekAndPlay: (time: number) => void;
     onContactsUpdate: () => void;
     currentTime: number;
@@ -233,8 +252,8 @@ export interface SpeakerAssociationModalProps {
     speakerNumber: number | null;
     currentContactId: string | null;
     contacts: Contact[];
-    speakerContacts: Record<number, string> | null;
-    onSpeakerContactsUpdate: (speakerContacts: Record<number, string>) => void;
+    meetingSpeakers: MeetingSpeakerWithContact[];
+    onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
     formattedTranscript: FormattedTranscriptGroup[];
     onSeekAndPlay: (time: number) => void;
     onContactsUpdate: () => void;

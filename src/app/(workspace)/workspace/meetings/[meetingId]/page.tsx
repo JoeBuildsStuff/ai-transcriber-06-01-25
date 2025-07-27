@@ -36,8 +36,9 @@ import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
 import LazyAudioPlayer from '@/components/lazy-audio-player';
-import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails, MeetingAttendeeFromDB } from '@/types';
+import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails, MeetingAttendeeFromDB, MeetingSpeakerWithContact } from '@/types';
 import UploadAudio from './_components/upload-audio';
+import { getMeetingSpeakers } from '@/actions/contacts';
 import UserNotes from './_components/user-notes';
 import { Badge } from '@/components/ui/badge';
 
@@ -62,6 +63,7 @@ export default function MeetingDetailPage() {
   const [openAICopyIcon, setOpenAICopyIcon] = useState<"copy" | "check">("copy");
   const audioPlayerRef = useRef<AudioPlayerRef>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>([]);
   const [currentAudioTime, setCurrentAudioTime] = useState(0);
   const [isUpdatingReviewed, setIsUpdatingReviewed] = useState(false);
   const [updatingAttendeeId, setUpdatingAttendeeId] = useState<string | null>(null);
@@ -79,13 +81,22 @@ export default function MeetingDetailPage() {
     }
   }
 
+  const fetchMeetingSpeakers = async () => {
+    try {
+      const speakersData = await getMeetingSpeakers(meetingId)
+      setMeetingSpeakers(speakersData)
+    } catch (error) {
+      console.error('Error fetching meeting speakers', error)
+      // Don't show error to user since this is just for display enhancement
+    }
+  }
+
   useEffect(() => {
     fetchContacts()
+    fetchMeetingSpeakers()
   }, [])
 
-  const handleSpeakerContactsUpdate = (speakerContacts: Record<number, string>) => {
-    setMeeting(prev => prev ? { ...prev, speaker_names: speakerContacts } : null);
-  };
+
 
   const handleSeekAndPlay = (time: number) => {
     if (audioPlayerRef.current) {
@@ -1008,9 +1019,9 @@ export default function MeetingDetailPage() {
                   <Transcript 
                     meetingId={meetingId}
                     formattedTranscript={displayableTranscript}
-                    speakerContacts={meeting?.speaker_names}
+                    meetingSpeakers={meetingSpeakers}
                     contacts={contacts}
-                    onSpeakerContactsUpdate={handleSpeakerContactsUpdate}
+                    onSpeakersUpdate={setMeetingSpeakers}
                     onSeekAndPlay={handleSeekAndPlay}
                     onContactsUpdate={fetchContacts}
                     currentTime={currentAudioTime}

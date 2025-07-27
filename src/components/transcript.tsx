@@ -11,9 +11,9 @@ import { ContactSheet, ContactFormValues } from "./contact-sheet";
 const Transcript: React.FC<TranscriptProps> = ({ 
   meetingId,
   formattedTranscript, 
-  speakerContacts = null,
+  meetingSpeakers = [],
   contacts = null,
-  onSpeakerContactsUpdate,
+  onSpeakersUpdate,
   onSeekAndPlay,
   onContactsUpdate,
   currentTime,
@@ -63,14 +63,14 @@ const Transcript: React.FC<TranscriptProps> = ({
   }
 
   const handleEditContact = (speakerNumber: number) => {
-    if (!speakerContacts || !contacts) {
+    if (!meetingSpeakers || !contacts) {
       return;
     }
-    const contactId = speakerContacts[speakerNumber];
-    if (!contactId) {
+    const speaker = meetingSpeakers.find(s => s.speaker_index === speakerNumber);
+    if (!speaker?.contact_id) {
       return;
     }
-    const contact = contacts.find(c => c.id === contactId);
+    const contact = contacts.find(c => c.id === speaker.contact_id);
     if (contact) {
       setEditingContact(contact);
       setIsContactSheetOpen(true);
@@ -98,28 +98,28 @@ const Transcript: React.FC<TranscriptProps> = ({
   };
 
   const getSpeakerDisplayName = (speakerNumber: number) => {
-    // If no speaker contacts or contacts data, fall back to default
-    if (!speakerContacts || !contacts) {
+    // Find the speaker in the meetingSpeakers array
+    const speaker = meetingSpeakers.find(s => s.speaker_index === speakerNumber);
+    
+    if (!speaker) {
       return `Speaker ${speakerNumber}`;
     }
 
-    // Get the contact ID for this speaker
-    const contactId = speakerContacts[speakerNumber];
-    if (!contactId) {
-      return `Speaker ${speakerNumber}`;
+    // If speaker has associated contact, use contact data
+    if (speaker.contact) {
+      return speaker.contact.display_name || 
+             `${speaker.contact.first_name} ${speaker.contact.last_name}`.trim() || 
+             speaker.contact.primary_email || 
+             `Speaker ${speakerNumber}`;
     }
 
-    // Find the contact in the contacts array
-    const contact = contacts.find(c => c.id === contactId);
-    if (!contact) {
-      return `Speaker ${speakerNumber}`;
+    // If speaker has speaker_name, use that
+    if (speaker.speaker_name && speaker.speaker_name !== `Speaker ${speakerNumber}`) {
+      return speaker.speaker_name;
     }
 
-    // Return the best available display name
-    return contact.display_name || 
-           `${contact.first_name} ${contact.last_name}`.trim() || 
-           contact.primary_email || 
-           `Speaker ${speakerNumber}`;
+    // Fall back to default
+    return `Speaker ${speakerNumber}`;
   };
 
   // Get unique speakers from the transcript
@@ -146,7 +146,7 @@ const Transcript: React.FC<TranscriptProps> = ({
               <ContextMenuContent>
                 <ContextMenuItem 
                   onSelect={() => handleEditContact(speakerNumber)}
-                  disabled={!speakerContacts?.[speakerNumber]}
+                  disabled={!meetingSpeakers.find(s => s.speaker_index === speakerNumber)?.contact_id}
                 >
                   Edit Contact
                 </ContextMenuItem>
@@ -199,10 +199,10 @@ const Transcript: React.FC<TranscriptProps> = ({
         onClose={handleCloseModal}
         meetingId={meetingId}
         speakerNumber={selectedSpeaker}
-        currentContactId={selectedSpeaker !== null ? speakerContacts?.[selectedSpeaker] || null : null}
+        currentContactId={selectedSpeaker !== null ? meetingSpeakers.find(s => s.speaker_index === selectedSpeaker)?.contact_id || null : null}
         contacts={contacts || []}
-        speakerContacts={speakerContacts || {}}
-        onSpeakerContactsUpdate={onSpeakerContactsUpdate}
+        meetingSpeakers={meetingSpeakers}
+        onSpeakersUpdate={onSpeakersUpdate}
         formattedTranscript={formattedTranscript}
         onSeekAndPlay={onSeekAndPlay}
         onContactsUpdate={onContactsUpdate}
