@@ -13,7 +13,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
   {
     id: "select",
     header: ({ table }) => (
-      <div className="flex justify-start items-start w-2">
+      <div className="flex justify-start items-start w-5">
       <Checkbox
         checked={
           table.getIsAllPageRowsSelected() ||
@@ -25,7 +25,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <div className="flex justify-start items-start w-2">
+      <div className="flex justify-start items-start w-5">
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -138,90 +138,38 @@ export const columns: ColumnDef<MeetingsList>[] = [
     enableColumnFilter: true,
   },
   {
-    accessorKey: "speaker_names",
+    accessorKey: "speakers",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Speakers" />,
     cell: ({ row }) => {
-      const speakerNames = row.getValue(
-        "speaker_names"
-      ) as { [key: string]: string } | null
+      const speakers = row.getValue("speakers") as Array<{
+        first_name: string | null
+        last_name: string | null
+        speaker_name: string | null
+      }> | null
 
-      if (!speakerNames || Object.keys(speakerNames).length === 0) {
-        return <div className="text-muted-foreground">—</div>
-      }
-
-      const names = Object.values(speakerNames).filter(
-        (name) => name && name.trim() !== ""
-      )
-
-      if (names.length === 0) {
+      if (!speakers || speakers.length === 0) {
         return <div className="text-muted-foreground">—</div>
       }
 
       return (
         <div className="flex flex-wrap gap-1">
-          {names.map((name, index) => (
-            <Badge key={index} variant="outline" className="text-xs">
-              {name}
-            </Badge>
-          ))}
+          {speakers.map((speaker, index) => {
+            // Use contact name if available, otherwise fall back to speaker_name
+            const displayName = speaker.first_name && speaker.last_name 
+              ? `${speaker.first_name} ${speaker.last_name}`.trim()
+              : speaker.speaker_name || "Unknown"
+            
+            return (
+              <Badge key={index} variant="outline" className="text-xs">
+                {displayName}
+              </Badge>
+            )
+          })}
         </div>
       )
     },
     meta: {
       label: "Speakers",
-      variant: "text",
-      readOnly: true,
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "user_notes",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Notes" />,
-    cell: ({ row }) => {
-      const notes = row.getValue("user_notes") as string | null
-      if (!notes) return <div className="text-muted-foreground">—</div>
-      
-      const truncated = notes.length > 50 ? notes.substring(0, 47) + "..." : notes
-      
-      return <div className="max-w-[200px] truncate text-sm" title={notes}>{truncated}</div>
-    },
-    meta: {
-      label: "Notes",
-      variant: "text",
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "summary",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Summary" />,
-    cell: ({ row }) => {
-      const summary = row.getValue("summary") as string | null
-      if (!summary) return <div className="text-muted-foreground">—</div>
-      
-      const truncated = summary.length > 50 ? summary.substring(0, 47) + "..." : summary
-      
-      return <div className="max-w-[200px] truncate text-sm" title={summary}>{truncated}</div>
-    },
-    meta: {
-      label: "Summary",
-      variant: "text",
-      readOnly: true,
-    },
-    enableColumnFilter: true,
-  },
-  {
-    accessorKey: "original_file_name",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Original File" />,
-    cell: ({ row }) => {
-      const fileName = row.getValue("original_file_name") as string | null
-      if (!fileName) return <div className="text-muted-foreground">—</div>
-      
-      const truncated = fileName.length > 30 ? fileName.substring(0, 27) + "..." : fileName
-      
-      return <div className="text-sm" title={fileName}>{truncated}</div>
-    },
-    meta: {
-      label: "Original File",
       variant: "text",
       readOnly: true,
     },

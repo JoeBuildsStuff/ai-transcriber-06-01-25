@@ -26,7 +26,6 @@ export default async function DataTableMeetings({
       user_notes: false,
       created_at: false,
       updated_at: false,
-      speaker_names: false,
       summary: false,
       original_file_name: false,
     },
