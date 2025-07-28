@@ -1,4 +1,4 @@
-import { columns } from "./meetings-columns"
+import { columns } from "./columns"
 import { DataTable } from "@/components/data-table/data-table"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
 import { getMeetingsList } from "../_lib/queries"

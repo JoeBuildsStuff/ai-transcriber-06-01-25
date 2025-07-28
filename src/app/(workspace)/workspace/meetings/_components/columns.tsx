@@ -1,7 +1,7 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { ArrowUpRight, CheckCircle, Circle } from "lucide-react"
+import { ArrowUpRight, Calendar, CheckCircle, Circle, Clock4, Timer, Type, Users } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -38,7 +38,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "title",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Title" 
+      icon={<Type className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const title = row.getValue("title") as string
       return (
@@ -63,7 +68,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "meeting_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Meeting Date" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Meeting Date" 
+      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const meetingAt = row.getValue("meeting_at") as string
       if (!meetingAt) return <div className="text-muted-foreground">—</div>
@@ -81,7 +91,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     id: "meeting_time",
-    header: "Time",
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Time" 
+      icon={<Clock4 className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const meetingAt = row.original.meeting_at
       if (!meetingAt) return <div className="text-muted-foreground">—</div>
@@ -100,7 +115,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     id: "meeting_age",
-    header: "Age",
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Age" 
+      icon={<Timer className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const meetingAt = row.original.meeting_at
       if (!meetingAt) return <div className="text-muted-foreground">—</div>
@@ -118,7 +138,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "meeting_reviewed",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Reviewed" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Reviewed" 
+      icon={<CheckCircle className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const isReviewed = row.getValue("meeting_reviewed") as boolean
       return (
@@ -139,7 +164,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "speakers",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Speakers" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Speakers" 
+      icon={<Users className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const speakers = row.getValue("speakers") as Array<{
         first_name: string | null
@@ -177,7 +207,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "created_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Created" 
+      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const createdAt = row.getValue("created_at") as string
       if (!createdAt) return <div className="text-muted-foreground">—</div>
@@ -200,7 +235,12 @@ export const columns: ColumnDef<MeetingsList>[] = [
   },
   {
     accessorKey: "updated_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    header: ({ column }) => (
+    <DataTableColumnHeader 
+      column={column} 
+      title="Updated" 
+      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+    ),
     cell: ({ row }) => {
       const updatedAt = row.getValue("updated_at") as string
       if (!updatedAt) return <div className="text-muted-foreground">—</div>

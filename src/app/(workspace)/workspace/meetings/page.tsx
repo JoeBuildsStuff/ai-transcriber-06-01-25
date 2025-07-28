@@ -1,4 +1,4 @@
-import DataTableMeetings from "@/app/(workspace)/workspace/meetings/_components/meetings-table";
+import DataTableMeetings from "@/app/(workspace)/workspace/meetings/_components/table";
 
 export default async function DataTableMeetingsPage({
   searchParams,
