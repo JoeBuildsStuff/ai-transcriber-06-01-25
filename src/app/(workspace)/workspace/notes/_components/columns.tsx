@@ -35,12 +35,12 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
     },
   },
   {
-    id: "title",
+    accessorKey: "title",
     header: ({ column }) => (
       <DataTableColumnHeader 
         column={column} 
         title="Title" 
-        icon={<Type className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Type className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -73,7 +73,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Content" 
-        icon={<FileText className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -99,7 +99,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Contacts" 
-        icon={<Users className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Users className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -137,7 +137,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Meetings" 
-        icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -175,7 +175,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Associations" 
-        icon={<Workflow className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Workflow className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -202,7 +202,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
   },
   {
     accessorKey: "created_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />,
     cell: ({ row }) => {
       const createdAt = row.getValue("created_at") as string
       if (!createdAt) return <div className="text-muted-foreground">—</div>
@@ -225,7 +225,7 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
   },
   {
     accessorKey: "updated_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />,
     cell: ({ row }) => {
       const updatedAt = row.getValue("updated_at") as string
       if (!updatedAt) return <div className="text-muted-foreground">—</div>

@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import PhoneInputComponent from "@/components/ui/input-phone";
-import { AtSign, BriefcaseBusiness, Building2, GripVertical, IdCard, MapPin, Phone, Pilcrow, Plus, X, Check } from "lucide-react";
+import { AtSign, BriefcaseBusiness, Building2, GripVertical, IdCard, MapPin, Phone, Pilcrow, Plus, X, Check, ArrowUpRight } from "lucide-react";
 import { formatPhoneNumber } from "react-phone-number-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useEffect, forwardRef, useRef } from "react";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
     DndContext,
     closestCenter,
@@ -35,6 +36,8 @@ import { Label } from "@/components/ui/label";
 import { Company } from '../_lib/validations';
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CopyIcon, type CopyIconHandle } from "@/components/icons/copy";
+import { CheckIcon, type CheckIconHandle } from "@/components/icons/check";
 
 export interface PersonFormProps {
     /**
@@ -252,6 +255,12 @@ export default function PersonForm({
     const [namePopoverOpen, setNamePopoverOpen] = useState(false);
     const [locationPopoverOpen, setLocationPopoverOpen] = useState(false);
     const [linkedinPopoverOpen, setLinkedinPopoverOpen] = useState(false);
+    const [showNameCopied, setShowNameCopied] = useState(false);
+    const copyIconRef = useRef<CopyIconHandle>(null);
+    const checkIconRef = useRef<CheckIconHandle>(null);
+    const emailCopyIconRef = useRef<CopyIconHandle>(null);
+    const emailCheckIconRef = useRef<CheckIconHandle>(null);
+    const [showEmailCopied, setShowEmailCopied] = useState(false);
 
     const [companies, setCompanies] = useState(availableCompanies || []);
 
@@ -300,13 +309,66 @@ export default function PersonForm({
         return fullName || "Set Name...";
     };
 
+    const copyNameToClipboard = async () => {
+        const fullName = `${firstName} ${lastName}`.trim();
+        if (fullName) {
+            try {
+                await navigator.clipboard.writeText(fullName);
+                toast.success("Name copied to clipboard");
+                setShowNameCopied(true);
+                checkIconRef.current?.startAnimation();
+                setTimeout(() => {
+                    setShowNameCopied(false);
+                    checkIconRef.current?.stopAnimation();
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy name to clipboard:', err);
+                toast.error("Failed to copy name to clipboard");
+            }
+        }
+    };
+
+    const copyPrimaryEmailToClipboard = async () => {
+        const nonEmptyEmails = emails.filter(email => email.trim() !== "");
+        if (nonEmptyEmails.length > 0) {
+            const primaryEmail = nonEmptyEmails[0];
+            try {
+                await navigator.clipboard.writeText(primaryEmail);
+                toast.success("Email copied to clipboard");
+                setShowEmailCopied(true);
+                emailCheckIconRef.current?.startAnimation();
+                setTimeout(() => {
+                    setShowEmailCopied(false);
+                    emailCheckIconRef.current?.stopAnimation();
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy email to clipboard:', err);
+                toast.error("Failed to copy email to clipboard");
+            }
+        }
+    };
+
     const getDisplayLinkedin = () => {
         if (!linkedin) return "Set LinkedIn...";
         
         // Extract username from LinkedIn URL
         const match = linkedin.match(/linkedin\.com\/in\/([^\/\?]+)/);
         if (match) {
-            return <Badge variant="blue" className="text-sm">@{match[1]}</Badge>;
+            return (
+                <div className="inline-flex items-center gap-1 group cursor-pointer">
+                    <Badge 
+                        variant="blue" 
+                        className="text-sm transition-all duration-200 group-hover:pr-6"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(linkedin, '_blank');
+                        }}
+                    >
+                        @{match[1]}
+                    </Badge>
+                    <ArrowUpRight className="size-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -ml-7 text-blue-600 dark:text-blue-400" />
+                </div>
+            );
         }
         
         // If it's not a full URL, just display as is
@@ -321,7 +383,9 @@ export default function PersonForm({
     const getDisplayEmails = () => {
         const nonEmptyEmails = emails.filter(email => email.trim() !== "");
         if (nonEmptyEmails.length === 0) return "Set Email addresses...";
-        if (nonEmptyEmails.length === 1) return <Badge variant="blue" className="text-sm">{nonEmptyEmails[0]}</Badge>;
+        if (nonEmptyEmails.length === 1) return (
+            <Badge variant="blue" className="text-sm">{nonEmptyEmails[0]}</Badge>
+        );
         return (
             <div className="flex items-center gap-2">
                 <Badge variant="blue" className="text-sm">{nonEmptyEmails[0]}</Badge>
@@ -477,7 +541,31 @@ export default function PersonForm({
                         "w-full text-left hover:bg-secondary rounded-md py-2 px-2 truncate",
                         !firstName && !lastName && "text-muted-foreground/80"
                     )}>
-                        {getDisplayName()}
+                        <div className="flex items-center gap-2 w-full group">
+                            {getDisplayName()}
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyNameToClipboard();
+                                }}
+                                disabled={!firstName && !lastName}
+                            >
+                                {showNameCopied ? (
+                                    <CheckIcon 
+                                        ref={checkIconRef}
+                                        size={16}
+                                    />
+                                ) : (
+                                    <CopyIcon 
+                                        ref={copyIconRef}
+                                        size={16}
+                                    />
+                                )}
+                            </Button>
+                        </div>
                     </PopoverTrigger>
                     <PopoverContent 
                         className="p-3 rounded-xl" 
@@ -519,7 +607,32 @@ export default function PersonForm({
                         "w-full text-left hover:bg-secondary rounded-md py-2 px-2 truncate",
                         emails.filter(email => email.trim() !== "").length === 0 && "text-muted-foreground/80"
                     )}>
-                        {getDisplayEmails()}
+                        <div className="flex items-center gap-2 w-full group">
+                            {getDisplayEmails()}
+                            {emails.filter(email => email.trim() !== "").length > 0 && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        copyPrimaryEmailToClipboard();
+                                    }}
+                                >
+                                    {showEmailCopied ? (
+                                        <CheckIcon 
+                                            ref={emailCheckIconRef}
+                                            size={16} 
+                                        />
+                                    ) : (
+                                        <CopyIcon 
+                                            ref={emailCopyIconRef}
+                                            size={16}
+                                        />
+                                    )}
+                                </Button>
+                            )}
+                        </div>
                     </PopoverTrigger>
                     <PopoverContent 
                         className="p-2  rounded-xl" 

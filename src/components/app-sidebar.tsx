@@ -41,6 +41,7 @@ import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
 import { Badge } from "./ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
+import { ScrollArea } from "./ui/scroll-area"
 
 interface Meeting {
   id: string;
@@ -225,7 +226,7 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar>
-        <SidebarHeader>
+        <SidebarHeader className="border-b border-border">
           <SidebarLogo />
         </SidebarHeader>
         <SidebarContent className="flex flex-col">
@@ -291,88 +292,93 @@ export function AppSidebar() {
 
           {/* Meetings with Collapsible Groups */}
           {user && (
-            <SidebarGroup className="overflow-y-auto flex-grow">
+            <SidebarGroup className="flex-grow min-h-0">
               <SidebarGroupLabel className="flex items-center justify-between">
                 <span>Meetings</span>
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               </SidebarGroupLabel>
-              <SidebarGroupContent>
-                {meetingsByDate.length > 0 ? (
-                  <SidebarMenu>
-                    {meetingsByDate.map((dateGroup) => (
-                      <Collapsible
-                        key={dateGroup.title}
-                        asChild
-                        defaultOpen={dateGroup.isActive}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton>
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>
-                              </div>
-                              <ChevronRight className="ml-auto flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                            {dateGroup.items.map((meeting) => (
-                              <SidebarMenuSubItem key={meeting.id}>
-                                <SidebarMenuSubButton 
-                                  asChild
-                                  className={cn(
-                                    meeting.isActive && "bg-muted font-semibold"
-                                  )}
-                                >
-                                  <Link href={meeting.url}>
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    {meeting.time && (
-                                      <div className="relative">
-                                        <Badge variant="outline" className="">
-                                          {meeting.time}
-                                        </Badge>
-                                        {!meeting.isReviewed && (
-                                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
-                                        )}
-                                      </div>
+              <SidebarGroupContent className="flex-1 min-h-0">
+                <ScrollArea className="h-full">
+            
+                  {meetingsByDate.length > 0 ? (
+                    <SidebarMenu>
+                      {meetingsByDate.map((dateGroup) => (
+                        <Collapsible
+                          key={dateGroup.title}
+                          asChild
+                          defaultOpen={dateGroup.isActive}
+                          className="group/collapsible"
+                        >
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton>
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>
+                                </div>
+                                <ChevronRight className="ml-auto flex-shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                              {dateGroup.items.map((meeting) => (
+                                <SidebarMenuSubItem key={meeting.id}>
+                                  <SidebarMenuSubButton 
+                                    asChild
+                                    className={cn(
+                                      meeting.isActive && "bg-muted font-semibold"
                                     )}
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span className="truncate text-sm flex-1">
-                                              {meeting.title}
-                                            </span>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="right" showArrow={true} className="ml-2">
-                                            <p>{meeting.title}</p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </div>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    ))}
-                  </SidebarMenu>
-                ) : (
-                  !isLoading && (
-                    <p className="text-xs text-muted-foreground px-3">
-                      No meetings found.
-                    </p>
-                  )
-                )}
+                                  >
+                                    <Link href={meeting.url}>
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      {meeting.time && (
+                                        <div className="relative">
+                                          <Badge variant="outline" className="">
+                                            {meeting.time}
+                                          </Badge>
+                                          {!meeting.isReviewed && (
+                                            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
+                                          )}
+                                        </div>
+                                      )}
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="truncate text-sm flex-1">
+                                                {meeting.title && meeting.title.length > 10
+                                                  ? `${meeting.title.slice(0, 10)}...`
+                                                  : meeting.title}
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="right" className="ml-2">
+                                              <p>{meeting.title}</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      ))}
+                    </SidebarMenu>
+                  ) : (
+                    !isLoading && (
+                      <p className="text-xs text-muted-foreground px-3">
+                        No meetings found.
+                      </p>
+                    )
+                  )}
+                </ScrollArea>
               </SidebarGroupContent>
             </SidebarGroup>
           )}
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="border-t border-border">
           <AuthButton />
         </SidebarFooter>
       </Sidebar>

@@ -42,7 +42,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Title" 
-      icon={<Type className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Type className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const title = row.getValue("title") as string
@@ -72,7 +72,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Meeting Date" 
-      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const meetingAt = row.getValue("meeting_at") as string
@@ -95,7 +95,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Time" 
-      icon={<Clock4 className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Clock4 className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const meetingAt = row.original.meeting_at
@@ -119,7 +119,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Age" 
-      icon={<Timer className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Timer className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const meetingAt = row.original.meeting_at
@@ -142,7 +142,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Reviewed" 
-      icon={<CheckCircle className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<CheckCircle className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const isReviewed = row.getValue("meeting_reviewed") as boolean
@@ -168,7 +168,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Speakers" 
-      icon={<Users className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Users className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const speakers = row.getValue("speakers") as Array<{
@@ -211,7 +211,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Created" 
-      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const createdAt = row.getValue("created_at") as string
@@ -239,7 +239,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
     <DataTableColumnHeader 
       column={column} 
       title="Updated" 
-      icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} />
+      icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />
     ),
     cell: ({ row }) => {
       const updatedAt = row.getValue("updated_at") as string

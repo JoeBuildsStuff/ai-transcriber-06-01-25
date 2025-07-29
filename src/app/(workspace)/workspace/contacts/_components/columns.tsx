@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { PersonWithRelations } from "../_lib/validations"
-import { ArrowUpRight, AtSign, BriefcaseBusiness, Building2, IdCard, MapPin, Phone, Pilcrow } from "lucide-react"
+import { ArrowUpRight, AtSign, BriefcaseBusiness, Building2, Calendar, IdCard, MapPin, Phone, Pilcrow } from "lucide-react"
 import Link from "next/link"
 import { formatPhoneNumber } from "react-phone-number-input"
 
@@ -41,7 +41,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Name" 
-        icon={<IdCard className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<IdCard className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -104,7 +104,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Email" 
-        icon={<AtSign className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<AtSign className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -137,7 +137,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Description" 
-        icon={<Pilcrow className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Pilcrow className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -166,7 +166,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Company" 
-        icon={<Building2 className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<Building2 className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -187,7 +187,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Title" 
-        icon={<BriefcaseBusiness className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<BriefcaseBusiness className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -248,7 +248,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       <DataTableColumnHeader 
         column={column} 
         title="Location" 
-        icon={<MapPin className="size-4 shrink-0" strokeWidth={1.5} />}
+        icon={<MapPin className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -275,7 +275,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
         title="LinkedIn" 
         icon={
           <div className="border border-muted-foreground rounded size-4 flex items-center justify-center">
-            <span className="text-xs">in</span>
+            <span className="text-xs text-muted-foreground">in</span>
           </div>
         }
       />
@@ -310,7 +310,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
   },
   {
     accessorKey: "created_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />,
     cell: ({ row }) => {
       const createdAt = row.getValue("created_at") as string
       if (!createdAt) return <div className="text-muted-foreground">—</div>
@@ -333,7 +333,7 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
   },
   {
     accessorKey: "updated_at",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />} />,
     cell: ({ row }) => {
       const updatedAt = row.getValue("updated_at") as string
       if (!updatedAt) return <div className="text-muted-foreground">—</div>
