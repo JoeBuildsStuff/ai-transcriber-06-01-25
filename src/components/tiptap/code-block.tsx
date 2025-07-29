@@ -76,7 +76,7 @@ export function CodeBlock(props: NodeViewProps) {
       </TooltipProvider>
       <Separator className='absolute top-13 left-0 right-0' />
       <pre>
-        <NodeViewContent as="code" />
+        <NodeViewContent />
       </pre>
     </NodeViewWrapper>
   )

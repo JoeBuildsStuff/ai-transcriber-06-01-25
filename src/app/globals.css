@@ -250,3 +250,130 @@ pre .hljs-strong {
 .prose code::after {
   content: '';
 }
+
+.prose table {
+  @apply w-full rounded-lg border border-border overflow-hidden;
+  border-spacing: 0;
+  border-collapse: separate;
+  margin: 1rem 0;
+  min-width: 300px;
+}
+
+.prose th {
+  @apply border-b border-r border-border px-1 py-2 text-left font-semibold text-foreground;
+}
+
+.prose td {
+  @apply border-b border-r border-border bg-transparent px-1 py-2 text-foreground;
+}
+
+/* Remove individual corner rounding on cells */
+.prose th:first-child {
+  /* Remove rounded-tl-lg */
+}
+
+.prose th:last-child,
+.prose td:last-child {
+  @apply border-r-0;
+}
+
+.prose th:last-child {
+  /* Remove rounded-tr-lg */
+}
+
+.prose tr:last-child th,
+.prose tr:last-child td {
+  @apply border-b-0;
+}
+
+/* Tiptap specific table styles - Fixed corners */
+.ProseMirror table {
+  @apply w-full rounded-lg border border-border overflow-hidden;
+  border-spacing: 0;
+  border-collapse: separate;
+  margin: 1rem 0;
+  min-width: 300px;
+}
+
+.ProseMirror th {
+  @apply border-b border-r border-border px-2 py-2 text-left font-semibold text-foreground;
+}
+
+.ProseMirror td {
+  @apply border-b border-r border-border bg-transparent px-2 py-2 text-foreground;
+}
+
+/* Remove individual corner rounding on cells */
+.ProseMirror th:first-child {
+  /* Remove rounded-tl-lg */
+}
+
+.ProseMirror th:last-child,
+.ProseMirror td:last-child {
+  @apply border-r-0;
+}
+
+.ProseMirror th:last-child {
+  /* Remove rounded-tr-lg */
+}
+
+.ProseMirror tr:last-child th,
+.ProseMirror tr:last-child td {
+  @apply border-b-0;
+}
+
+/* Table cell selection */
+.ProseMirror .selectedCell {
+  @apply bg-accent/50;
+}
+
+/* Table header styling */
+.ProseMirror th {
+  @apply bg-muted font-semibold;
+}
+
+/* Ensure table content is visible */
+.ProseMirror table {
+  display: table !important;
+}
+
+.ProseMirror thead {
+  display: table-header-group !important;
+}
+
+.ProseMirror tbody {
+  display: table-row-group !important;
+}
+
+.ProseMirror tr {
+  display: table-row !important;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  display: table-cell !important;
+  min-width: 100px;
+  padding: 0.5rem 0.5rem;
+}
+
+/* Table placeholder content */
+.ProseMirror th:empty::before {
+  content: 'Header';
+  @apply text-muted-foreground;
+}
+
+.ProseMirror td:empty::before {
+  content: 'Cell';
+  @apply text-muted-foreground;
+}
+
+/* Remove paragraph margins inside table cells */
+.prose th > p,
+.prose td > p {
+  @apply m-0;
+}
+
+.ProseMirror th > p,
+.ProseMirror td > p {
+  @apply m-0;
+}
