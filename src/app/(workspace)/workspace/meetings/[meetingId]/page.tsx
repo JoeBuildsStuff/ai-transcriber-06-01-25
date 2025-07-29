@@ -136,28 +136,28 @@ export default function MeetingDetailPage() {
   };
 
   const getSpeakerDisplayName = (speakerNumber: number): string => {
-    // If no speaker contacts or contacts data, fall back to default
-    if (!meeting?.speaker_names || !contacts || contacts.length === 0) {
+    // Find the speaker in the meetingSpeakers array
+    const speaker = meetingSpeakers.find(s => s.speaker_index === speakerNumber);
+    
+    if (!speaker) {
       return `Speaker ${speakerNumber}`;
     }
-  
-    // Get the contact ID for this speaker
-    const contactId = meeting.speaker_names[speakerNumber];
-    if (!contactId) {
-      return `Speaker ${speakerNumber}`;
+
+    // If speaker has associated contact, use contact data
+    if (speaker.contact) {
+      return speaker.contact.display_name || 
+             `${speaker.contact.first_name} ${speaker.contact.last_name}`.trim() || 
+             speaker.contact.primary_email || 
+             `Speaker ${speakerNumber}`;
     }
-  
-    // Find the contact in the contacts array
-    const contact = contacts.find(c => c.id === contactId);
-    if (!contact) {
-      return `Speaker ${speakerNumber}`;
+
+    // If speaker has speaker_name, use that
+    if (speaker.speaker_name && speaker.speaker_name !== `Speaker ${speakerNumber}`) {
+      return speaker.speaker_name;
     }
-  
-    // Return the best available display name
-    return contact.display_name || 
-           `${contact.first_name} ${contact.last_name}`.trim() || 
-           contact.primary_email || 
-           `Speaker ${speakerNumber}`;
+
+    // Fall back to default
+    return `Speaker ${speakerNumber}`;
   };
 
   const getAttendeeDisplayName = (attendee: MeetingAttendeeFromDB): string => {
