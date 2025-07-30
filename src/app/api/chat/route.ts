@@ -31,6 +31,9 @@ interface ChatAPIResponse {
 export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIResponse>> {
   try {
     const body: ChatAPIRequest = await request.json()
+    
+    console.log("body", body);
+    
     const { message, context, messages = [] } = body
 
     // Validate input
