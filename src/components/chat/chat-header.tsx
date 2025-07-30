@@ -45,8 +45,6 @@ export function ChatHeader() {
     setMinimized(false)
   }
 
-
-
   const handleConfirmClear = () => {
     clearMessages()
     setShowClearDialog(false)

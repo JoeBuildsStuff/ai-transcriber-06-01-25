@@ -38,11 +38,6 @@ export async function POST(req: NextRequest) {
           const body = await req.json();
           const { transcript, meetingId, speakerDetails, user_notes } = body;
 
-          console.log("speakerDetails", speakerDetails);
-          console.log("user_notes", user_notes);
-          console.log("transcript", transcript);
-          console.log("meetingId", meetingId);
-
           if (!meetingId) {
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "meetingId is required" }) + "\n\n"));
             controller.close();
