@@ -3,9 +3,10 @@
 import { useCallback, useMemo } from 'react'
 import { useChatStore } from '@/lib/chat/chat-store'
 import type { ChatMessage, ChatAction, PageContext } from '@/types/chat'
+import type { Attachment } from '@/components/chat/chat-input'
 
 interface UseChatProps {
-  onSendMessage?: (message: string) => Promise<void>
+  onSendMessage?: (message: string, attachments?: Attachment[]) => Promise<void>
   onActionClick?: (action: ChatAction) => void
 }
 
@@ -30,8 +31,8 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   } = useChatStore()
 
   // Handle sending a new message
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || isLoading) return
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
+    if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
     // Ensure we have a current session
     if (!currentSessionId) {
@@ -41,7 +42,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     // Add user message immediately
     const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
       role: 'user',
-      content: content.trim(),
+      content: content.trim() || 'Sent with attachments',
       context: currentContext ? {
         filters: currentContext.currentFilters,
         data: {
@@ -59,10 +60,10 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     try {
       // Call custom send handler if provided, otherwise use default API call
       if (onSendMessage) {
-        await onSendMessage(content)
+        await onSendMessage(content, attachments)
       } else {
         // Default API call
-        await sendToAPI(content, currentContext)
+        await sendToAPI(content, currentContext, attachments)
       }
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -78,17 +79,26 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   }, [currentContext, currentSessionId, createSession, addMessage, onSendMessage, isLoading, setLoading])
 
   // Default API handler
-  const sendToAPI = useCallback(async (content: string, context: PageContext | null) => {
+  const sendToAPI = useCallback(async (content: string, context: PageContext | null, attachments?: Attachment[]) => {
+    const formData = new FormData()
+    formData.append('message', content)
+    formData.append('context', JSON.stringify(context))
+    formData.append('messages', JSON.stringify(messages.slice(-10))) // Send last 10 messages for context
+    
+    // Add attachments if any
+    if (attachments && attachments.length > 0) {
+      attachments.forEach((attachment, index) => {
+        formData.append(`attachment-${index}`, attachment.file)
+        formData.append(`attachment-${index}-name`, attachment.name)
+        formData.append(`attachment-${index}-type`, attachment.type)
+        formData.append(`attachment-${index}-size`, attachment.size.toString())
+      })
+      formData.append('attachmentCount', attachments.length.toString())
+    }
+
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: content,
-        context,
-        messages: messages.slice(-10) // Send last 10 messages for context
-      }),
+      body: formData,
     })
 
     if (!response.ok) {

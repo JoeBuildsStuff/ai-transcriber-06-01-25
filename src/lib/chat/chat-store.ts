@@ -1,6 +1,17 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+export interface ToolCall {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+  result?: {
+    success: boolean
+    data?: unknown
+    error?: string
+  }
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -16,6 +27,7 @@ export interface ChatMessage {
     data?: unknown
     error?: string
   }
+  toolCalls?: ToolCall[]
 }
 
 export interface ChatAction {
@@ -79,6 +91,15 @@ interface ChatStore {
   updateMessage: (id: string, updates: Partial<ChatMessage>) => void
   deleteMessage: (id: string) => void
   clearMessages: () => void
+
+  // Message actions
+  copyMessage: (messageId: string) => void
+  editMessage: (messageId: string, newContent: string) => void
+  retryMessage: (messageId: string, onRetry: (content: string) => void) => void
+
+  // Tool call operations
+  addToolCalls: (messageId: string, toolCalls: ToolCall[]) => void
+  updateToolCallResult: (messageId: string, toolCallId: string, result: { success: boolean, data?: unknown, error?: string }) => void
 
   // UI State
   setOpen: (open: boolean) => void
@@ -331,6 +352,143 @@ export const useChatStore = create<ChatStore>()(
                 ...session,
                 messages: [],
                 updatedAt: new Date(),
+              }
+              : session
+          )
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+          }
+        })
+      },
+
+      copyMessage: (messageId: string) => {
+        const state = get()
+        const message = state.messages.find(msg => msg.id === messageId)
+        if (message) {
+          navigator.clipboard.writeText(message.content).catch(console.error)
+        }
+      },
+
+      editMessage: (messageId: string, newContent: string) => {
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === state.currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.map(msg =>
+                  msg.id === messageId ? { ...msg, content: newContent } : msg
+                ),
+                updatedAt: new Date(),
+              }
+              : session
+          )
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+          }
+        })
+      },
+
+      retryMessage: (messageId: string, onRetry: (content: string) => void) => {
+        const state = get()
+        const message = state.messages.find(msg => msg.id === messageId)
+        if (message && message.role === 'user') {
+          // Remove the user message and its assistant response
+          const messageIndex = state.messages.findIndex(msg => msg.id === messageId)
+          if (messageIndex !== -1) {
+            set((state) => {
+              const updatedSessions = state.sessions.map(session =>
+                session.id === state.currentSessionId
+                  ? {
+                    ...session,
+                    messages: session.messages.filter((_, index) => index < messageIndex),
+                    updatedAt: new Date(),
+                  }
+                  : session
+              )
+
+              const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+
+              return {
+                sessions: updatedSessions,
+                currentSession,
+                messages,
+              }
+            })
+
+            // Call the retry callback if provided, otherwise just add the message back
+            if (onRetry) {
+              onRetry(message.content)
+            } else {
+              // Fallback: add the message back to trigger a new API call
+              setTimeout(() => {
+                const { addMessage } = useChatStore.getState()
+                addMessage({
+                  role: 'user',
+                  content: message.content,
+                  context: message.context
+                })
+              }, 100)
+            }
+          }
+        }
+      },
+
+      addToolCalls: (messageId: string, toolCalls: ToolCall[]) => {
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === state.currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.map(msg =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      toolCalls: [...(msg.toolCalls || []), ...toolCalls],
+                      updatedAt: new Date(),
+                    }
+                    : msg
+                ),
+              }
+              : session
+          )
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+          }
+        })
+      },
+
+      updateToolCallResult: (messageId: string, toolCallId: string, result: { success: boolean, data?: unknown, error?: string }) => {
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === state.currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.map(msg =>
+                  msg.id === messageId
+                    ? {
+                      ...msg,
+                      toolCalls: msg.toolCalls?.map(tc =>
+                        tc.id === toolCallId ? { ...tc, result } : tc
+                      ),
+                      updatedAt: new Date(),
+                    }
+                    : msg
+                ),
               }
               : session
           )

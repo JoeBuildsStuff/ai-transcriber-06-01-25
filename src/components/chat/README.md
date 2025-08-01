@@ -113,6 +113,33 @@ The message input area with auto-resize and send functionality.
 - Enter to send (Shift+Enter for new line)
 - Loading state during API calls
 - Disabled state when processing
+- **File attachment support** with drag-and-drop
+- **Attachment preview** with file info and delete functionality
+
+**File Attachments:**
+- Click paperclip icon to select files
+- Supports multiple file types (images, documents, audio, video)
+- Shows file name, type, and size
+- Individual delete buttons for each attachment
+- Files are sent with the message to the API
+- Attachment information is included in the AI prompt
+
+**Attachment Interface:**
+```typescript
+interface Attachment {
+  id: string
+  file: File
+  name: string
+  size: number
+  type: string
+}
+```
+
+**Usage:**
+```tsx
+// Files are automatically handled when sent
+await sendMessage("Analyze this document", attachments)
+```
 
 ### 8. Chat History (`chat-history.tsx`)
 Session management interface showing all chat sessions.
@@ -202,8 +229,21 @@ Handles chat requests with Anthropic Claude integration.
   message: string
   context?: PageContext
   messages?: ChatMessage[]
+  attachments?: Array<{
+    file: File
+    name: string
+    type: string
+    size: number
+  }>
 }
 ```
+
+**File Upload Support:**
+- Uses `FormData` for multipart requests
+- Supports multiple file attachments
+- Files are processed and included in AI prompt
+- Attachment metadata (name, type, size) is preserved
+- Backward compatible with JSON-only requests
 
 **Response Format:**
 ```typescript

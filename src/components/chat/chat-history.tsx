@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from 'date-fns'
 import { Trash2, ChevronRight, MessagesSquare, SquarePen } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   AlertDialog,
@@ -147,7 +147,7 @@ export function ChatHistory() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          <AlertDialogAction onClick={handleConfirmDelete} className={buttonVariants({ variant: "destructive" })} >
                             Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>

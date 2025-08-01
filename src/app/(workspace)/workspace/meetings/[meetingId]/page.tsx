@@ -1019,7 +1019,7 @@ export default function MeetingDetailPage() {
           <Card className="h-full">
             <CardContent>
             {meeting.transcription ? (
-              <ScrollArea className="h-[calc(100vh-445px)]">
+              <ScrollArea className="h-[calc(100vh-23rem)]">
                 <div className="pr-2">
                 {displayableTranscript.length > 0 ? (
                   <Transcript 

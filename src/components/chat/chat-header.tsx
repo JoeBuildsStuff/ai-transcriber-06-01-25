@@ -1,7 +1,7 @@
 'use client'
 
 import { X, Trash2, ChevronLeft, SquarePen, Download, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
@@ -44,6 +44,8 @@ export function ChatHeader() {
     setOpen(false)
     setMinimized(false)
   }
+
+
 
   const handleConfirmClear = () => {
     clearMessages()
@@ -222,7 +224,7 @@ export function ChatHeader() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel onClick={handleCancelClear}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirmClear} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction onClick={handleConfirmClear} className={buttonVariants({ variant: "destructive" })}>
                       Clear
                     </AlertDialogAction>
                   </AlertDialogFooter>
