@@ -172,7 +172,15 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
     cell: ({ row }) => {
       const company = row.original.company
       if (!company) return <div className="text-muted-foreground">—</div>
-      return <Badge variant="outline" className="text-sm font-normal">{company.name}</Badge>
+      return (
+        <Badge 
+          variant="outline" 
+          className="text-sm font-normal"
+          href={`/workspace/company/${company.id}`}
+        >
+          {company.name}
+        </Badge>
+      )
     },
     meta: {
       label: "Company",
@@ -274,8 +282,8 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
         column={column} 
         title="LinkedIn" 
         icon={
-          <div className="border border-muted-foreground rounded size-4 flex items-center justify-center">
-            <span className="text-xs text-muted-foreground">in</span>
+          <div className="border border-muted-foreground rounded size-4 flex items-center justify-center text-muted-foreground">
+            <span className="text-xs">in</span>
           </div>
         }
       />
@@ -287,18 +295,27 @@ export const columns: ColumnDef<PersonWithRelations>[] = [
       // Extract username from LinkedIn URL
       const match = linkedin.match(/linkedin\.com\/in\/([^\/\?]+)/)
       if (match) {
-        return <Badge variant="blue" className="text-sm font-normal">@{match[1]}</Badge>
+        return (
+          <Badge 
+            variant="blue" 
+            className="text-sm font-normal"
+            href={linkedin}
+            external
+          >
+            @{match[1]}
+          </Badge>
+        )
       }
       
       return (
-        <a 
-          href={linkedin} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 text-sm"
+        <Badge 
+          variant="outline" 
+          className="text-sm font-normal"
+          href={linkedin}
+          external
         >
           {linkedin}
-        </a>
+        </Badge>
       )
     },
     meta: {

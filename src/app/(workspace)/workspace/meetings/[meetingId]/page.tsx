@@ -861,20 +861,23 @@ export default function MeetingDetailPage() {
                   <span className="text-xs md:text-sm text-muted-foreground">Attendees: </span>
                   {meeting.attendees && meeting.attendees.length > 0 ? (
                     meeting.attendees.map((attendee) => (
-                      <Badge 
-                        key={attendee.id} 
-                        variant={
-                          attendee.attendance_status === 'present' ? 'blue' :
-                          attendee.attendance_status === 'absent' ? 'red' : 'gray'
-                        }
+                      <button
+                        key={attendee.id}
                         className={`cursor-pointer transition-colors ${
                           updatingAttendeeId === attendee.id ? 'opacity-50' : 'hover:opacity-80'
                         }`}
                         onClick={() => handleAttendanceStatusChange(attendee.id, attendee.attendance_status)}
                       >
-                        {getAttendeeDisplayName(attendee as unknown as MeetingAttendeeFromDB)}
-                        {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
-                      </Badge>
+                        <Badge 
+                          variant={
+                            attendee.attendance_status === 'present' ? 'blue' :
+                            attendee.attendance_status === 'absent' ? 'red' : 'gray'
+                          }
+                        >
+                          {getAttendeeDisplayName(attendee as unknown as MeetingAttendeeFromDB)}
+                          {attendee.role === 'organizer' && <span className="ml-1">👑</span>}
+                        </Badge>
+                      </button>
                     ))
                   ) : (
                     <span className="text-xs text-muted-foreground">No attendees added</span>

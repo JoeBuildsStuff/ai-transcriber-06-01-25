@@ -301,7 +301,7 @@ export function AppSidebar() {
                 <ScrollArea className="h-full">
             
                   {meetingsByDate.length > 0 ? (
-                    <SidebarMenu>
+                    <SidebarMenu className="">
                       {meetingsByDate.map((dateGroup) => (
                         <Collapsible
                           key={dateGroup.title}
@@ -311,7 +311,7 @@ export function AppSidebar() {
                         >
                           <SidebarMenuItem>
                             <CollapsibleTrigger asChild>
-                              <SidebarMenuButton>
+                              <SidebarMenuButton className="">
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                   <span className="text-sm font-medium whitespace-nowrap">{dateGroup.title}</span>
                                   <span className="text-xs text-muted-foreground whitespace-nowrap truncate">{dateGroup.subtitle}</span>

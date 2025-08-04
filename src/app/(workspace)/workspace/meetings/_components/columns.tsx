@@ -172,6 +172,8 @@ export const columns: ColumnDef<MeetingsList>[] = [
     ),
     cell: ({ row }) => {
       const speakers = row.getValue("speakers") as Array<{
+        id: string
+        contact_id: string | null
         first_name: string | null
         last_name: string | null
         speaker_name: string | null
@@ -182,15 +184,30 @@ export const columns: ColumnDef<MeetingsList>[] = [
       }
 
       return (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-3">
           {speakers.map((speaker, index) => {
             // Use contact name if available, otherwise fall back to speaker_name
             const displayName = speaker.first_name && speaker.last_name 
               ? `${speaker.first_name} ${speaker.last_name}`.trim()
               : speaker.speaker_name || "Unknown"
             
+            // If speaker has a contact_id, make the badge clickable
+            if (speaker.contact_id) {
+              return (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className="text-xs mb-1"
+                  href={`/workspace/contacts/${speaker.contact_id}`}
+                >
+                  {displayName}
+                </Badge>
+              )
+            }
+            
+            // Otherwise, render as regular badge
             return (
-              <Badge key={index} variant="outline" className="text-xs">
+              <Badge key={index} variant="outline" className="text-xs mb-1">
                 {displayName}
               </Badge>
             )

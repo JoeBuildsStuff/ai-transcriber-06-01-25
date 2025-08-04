@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { ArrowUpRight } from "lucide-react"
+import Link from "next/link"
 
 import { cn } from "@/lib/utils"
 
@@ -45,22 +46,129 @@ const badgeVariants = cva(
   }
 )
 
+// Helper function to get arrow color based on badge variant
+const getArrowColorClass = (variant: string) => {
+  switch (variant) {
+    case "blue":
+      return "text-blue-600 dark:text-blue-400";
+    case "green":
+      return "text-green-600 dark:text-green-400";
+    case "red":
+      return "text-red-600 dark:text-red-400";
+    case "yellow":
+      return "text-yellow-600 dark:text-yellow-400";
+    case "orange":
+      return "text-orange-600 dark:text-orange-400";
+    case "amber":
+      return "text-amber-600 dark:text-amber-400";
+    case "indigo":
+      return "text-indigo-600 dark:text-indigo-400";
+    case "purple":
+      return "text-purple-600 dark:text-purple-400";
+    case "pink":
+      return "text-pink-600 dark:text-pink-400";
+    case "gray":
+      return "text-gray-600 dark:text-gray-400";
+    case "destructive":
+      return "text-destructive";
+    case "secondary":
+      return "text-secondary-foreground";
+    case "default":
+      return "text-primary-foreground";
+    case "outline":
+    default:
+      return "text-muted-foreground";
+  }
+};
+
+export interface BadgeProps extends VariantProps<typeof badgeVariants> {
+  /**
+   * The content to display inside the badge
+   */
+  children?: React.ReactNode;
+  /**
+   * Additional CSS classes to apply to the badge
+   */
+  className?: string;
+  /**
+   * If provided, renders the badge as a link
+   */
+  href?: string;
+  /**
+   * Whether the link should open in a new tab
+   */
+  external?: boolean;
+  /**
+   * Whether to show the ArrowUpRight icon for links
+   */
+  showIcon?: boolean;
+}
+
 function Badge({
-  className,
   variant,
-  asChild = false,
-  ...props
-}: React.ComponentProps<"span"> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : "span"
+  children,
+  className,
+  href,
+  external = false,
+  showIcon = true,
+}: BadgeProps) {
+  const badgeClasses = cn(
+    badgeVariants({ variant }),
+    href && showIcon && "transition-all duration-200 group-hover:pr-6",
+    className
+  );
+
+  const content = (
+    <>
+      <span
+        data-slot="badge"
+        className={badgeClasses}
+      >
+        {children}
+      </span>
+      {href && showIcon && (
+        <ArrowUpRight 
+          className={cn(
+            "size-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -ml-7",
+            getArrowColorClass(variant || "default")
+          )} 
+        />
+      )}
+    </>
+  );
+
+  if (href) {
+    if (external) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 group cursor-pointer"
+        >
+          {content}
+        </a>
+      );
+    } else {
+      return (
+        <Link
+          href={href}
+          className="inline-flex items-center gap-1 group cursor-pointer"
+        >
+          {content}
+        </Link>
+      );
+    }
+  }
 
   return (
-    <Comp
+    <span
       data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
-      {...props}
-    />
-  )
+      className={badgeClasses}
+    >
+      {children}
+    </span>
+  );
 }
 
 export { Badge, badgeVariants }

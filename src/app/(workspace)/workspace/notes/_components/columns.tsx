@@ -3,6 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { NoteWithAssociations } from "../_lib/validations"
 import { ArrowUpRight, FileText, Workflow, Users, Calendar, Type } from "lucide-react"
@@ -110,17 +111,50 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       if (contacts.length === 1) {
         const contact = contacts[0]
         const name = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact'
-        return <Badge variant="blue" className="text-sm font-normal">{name}</Badge>
+        return (
+          <Badge 
+            variant="blue" 
+            className="text-sm font-normal"
+            href={`/workspace/contacts/${contact.id}`}
+          >
+            {name}
+          </Badge>
+        )
       }
       
       return (
         <div className="flex items-center gap-2">
-          <Badge variant="blue" className="text-sm font-normal">
+          <Badge 
+            variant="blue" 
+            className="text-sm font-normal"
+            href={`/workspace/contacts/${contacts[0].id}`}
+          >
             {contacts[0].first_name || ''} {contacts[0].last_name || ''}
           </Badge>
-          <Badge variant="gray" className="text-xs font-normal">
+          <Popover>
+          <PopoverTrigger>
+          <Badge variant="blue" className="text-xs font-normal cursor-pointer">
             +{contacts.length - 1}
           </Badge>
+          </PopoverTrigger>
+          <PopoverContent className="w-fit p-2 rounded-xl">
+            <div className="flex flex-col gap-2">
+              {contacts.slice(1).map((contact, index) => {
+                const name = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact'
+                return (
+                  <Badge 
+                    key={index} 
+                    variant="blue" 
+                    className="text-sm font-normal"
+                    href={`/workspace/contacts/${contact.id}`}
+                  >
+                    {name}
+                  </Badge>
+                )
+              })}
+            </div>
+          </PopoverContent>
+          </Popover>
         </div>
       )
     },
@@ -148,17 +182,50 @@ export const columns: ColumnDef<NoteWithAssociations>[] = [
       if (meetings.length === 1) {
         const meeting = meetings[0]
         const title = meeting.title || 'Untitled Meeting'
-        return <Badge variant="green" className="text-sm font-normal">{title}</Badge>
+        return (
+          <Badge 
+            variant="green" 
+            className="text-sm font-normal"
+            href={`/workspace/meetings/${meeting.id}`}
+          >
+            {title}
+          </Badge>
+        )
       }
       
       return (
         <div className="flex items-center gap-2">
-          <Badge variant="green" className="text-sm font-normal">
+          <Badge 
+            variant="green" 
+            className="text-sm font-normal"
+            href={`/workspace/meetings/${meetings[0].id}`}
+          >
             {meetings[0].title || 'Untitled Meeting'}
           </Badge>
-          <Badge variant="gray" className="text-xs font-normal">
+          <Popover>
+          <PopoverTrigger>
+          <Badge variant="green" className="text-xs font-normal cursor-pointer">
             +{meetings.length - 1}
           </Badge>
+          </PopoverTrigger>
+          <PopoverContent className="w-fit p-2 rounded-xl">
+            <div className="flex flex-col gap-2">
+              {meetings.slice(1).map((meeting, index) => {
+                const title = meeting.title || 'Untitled Meeting'
+                return (
+                  <Badge 
+                    key={index} 
+                    variant="green" 
+                    className="text-sm font-normal"
+                    href={`/workspace/meetings/${meeting.id}`}
+                  >
+                    {title}
+                  </Badge>
+                )
+              })}
+            </div>
+          </PopoverContent>
+          </Popover>
         </div>
       )
     },
