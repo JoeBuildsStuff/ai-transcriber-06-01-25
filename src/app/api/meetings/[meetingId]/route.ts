@@ -136,6 +136,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<Params>
 
     const { audio_file_path } = meetingData;
 
+    // Get the note_id from the meeting_notes junction table
+    const { data: meetingNote, error: meetingNoteError } = await supabase
+      .schema('ai_transcriber')
+      .from('meeting_notes')
+      .select('note_id')
+      .eq('meeting_id', meetingId)
+      .eq('user_id', user.id)
+      .single();
+
     // If an audio file path exists, attempt to delete it from storage
     if (audio_file_path) {
       const { error: storageError } = await supabase.storage
@@ -149,6 +158,38 @@ export async function DELETE(req: Request, { params }: { params: Promise<Params>
         // return NextResponse.json({ error: 'Failed to delete audio file', details: storageError.message }, { status: 500 });
       } else {
         console.log(`Audio file ${audio_file_path} deleted successfully.`);
+      }
+    }
+
+    // Delete the meeting_notes junction table entry
+    if (!meetingNoteError && meetingNote) {
+      const { error: deleteMeetingNoteError } = await supabase
+        .schema('ai_transcriber')
+        .from('meeting_notes')
+        .delete()
+        .eq('meeting_id', meetingId)
+        .eq('user_id', user.id);
+
+      if (deleteMeetingNoteError) {
+        console.error(`Error deleting meeting_notes for meeting ${meetingId}:`, deleteMeetingNoteError);
+        // Continue with deletion even if this fails
+      } else {
+        console.log(`Meeting notes junction entry for meeting ${meetingId} deleted successfully.`);
+      }
+
+      // Delete the associated note
+      const { error: deleteNoteError } = await supabase
+        .schema('ai_transcriber')
+        .from('notes')
+        .delete()
+        .eq('id', meetingNote.note_id)
+        .eq('user_id', user.id);
+
+      if (deleteNoteError) {
+        console.error(`Error deleting note ${meetingNote.note_id} for meeting ${meetingId}:`, deleteNoteError);
+        // Continue with deletion even if this fails
+      } else {
+        console.log(`Note ${meetingNote.note_id} for meeting ${meetingId} deleted successfully.`);
       }
     }
 

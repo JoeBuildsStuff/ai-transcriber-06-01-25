@@ -25,7 +25,6 @@ export type Meetings = {
   meeting_at?: string,
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
-  user_notes?: string,
 }
 
 export type MeetingsList = {
@@ -38,7 +37,6 @@ export type MeetingsList = {
   meeting_reviewed?: boolean,
   original_file_name?: string,
   summary?: string,
-  user_notes?: string,
 }
 
 export type MeetingsDetail = {
@@ -55,7 +53,6 @@ export type MeetingsDetail = {
   speaker_names?: Json,
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
-  user_notes?: string,
 }
 
 

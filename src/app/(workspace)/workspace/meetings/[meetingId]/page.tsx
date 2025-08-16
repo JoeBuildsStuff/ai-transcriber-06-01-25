@@ -39,8 +39,8 @@ import LazyAudioPlayer from '@/components/lazy-audio-player';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails, MeetingAttendeeFromDB, MeetingSpeakerWithContact } from '@/types';
 import UploadAudio from './_components/upload-audio';
 import { getMeetingSpeakers } from '@/actions/contacts';
-import UserNotes from './_components/user-notes';
 import { Badge } from '@/components/ui/badge';
+import NewNotes from '@/app/(workspace)/workspace/meetings/[meetingId]/_components/user-notes';
 
 export default function MeetingDetailPage() {
   const params = useParams();
@@ -987,6 +987,7 @@ export default function MeetingDetailPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Audio Player */}
       {meeting.hasAudio && meeting.transcription?.metadata?.duration ? (
         <div className="">
             <LazyAudioPlayer
@@ -1061,8 +1062,8 @@ export default function MeetingDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notes">
-          <UserNotes userNotes={meeting.user_notes} meetingId={meetingId} />
+        <TabsContent value="notes" className="h-full">
+          <NewNotes meetingId={meetingId} />
         </TabsContent>
       </Tabs>
 

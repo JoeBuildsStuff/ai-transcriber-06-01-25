@@ -34,12 +34,53 @@ export async function createMeeting() {
     }
   }
 
+  // Create a note entry with no content
+  const noteData = {
+    user_id: userData.user.id,
+    title: "Meeting Notes",
+    content: null,
+  }
+
+  const { data: newNote, error: noteError } = await supabase
+    .schema("ai_transcriber")
+    .from("notes")
+    .insert(noteData)
+    .select("id")
+    .single()
+
+  if (noteError) {
+    console.error("Error creating note:", noteError.message)
+    return {
+      error: "Failed to create note in the database.",
+    }
+  }
+
+  // Create a meeting_notes entry linking the meeting to the note
+  const meetingNoteData = {
+    meeting_id: newMeeting.id,
+    note_id: newNote.id,
+    user_id: userData.user.id,
+  }
+
+  const { error: meetingNoteError } = await supabase
+    .schema("ai_transcriber")
+    .from("meeting_notes")
+    .insert(meetingNoteData)
+
+  if (meetingNoteError) {
+    console.error("Error creating meeting note link:", meetingNoteError.message)
+    return {
+      error: "Failed to link meeting to note in the database.",
+    }
+  }
+
   revalidatePath("/workspace/meetings")
   revalidatePath("/workspace")
 
   return {
     data: "Meeting created successfully",
     meeting: newMeeting,
+    note: newNote,
   }
 }
 
@@ -253,6 +294,56 @@ export async function updateAttendeeStatus(
     return { data }
   } catch (error) {
     console.error('Error updating attendee status:', error)
+    return { error: "An unexpected error occurred" }
+  }
+}
+
+export async function getMeetingNote(meetingId: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to fetch meeting notes." }
+  }
+
+  try {
+    // First, get the note_id from the meeting_notes junction table
+    const { data: meetingNote, error: meetingNoteError } = await supabase
+      .schema("ai_transcriber")
+      .from("meeting_notes")
+      .select("note_id")
+      .eq("meeting_id", meetingId)
+      .eq("user_id", user.id)
+      .single()
+
+    if (meetingNoteError) {
+      if (meetingNoteError.code === 'PGRST116') {
+        // No note found for this meeting
+        return { data: null }
+      }
+      return { error: meetingNoteError.message }
+    }
+
+    if (!meetingNote) {
+      return { data: null }
+    }
+
+    // Then, get the actual note content
+    const { data: note, error: noteError } = await supabase
+      .schema("ai_transcriber")
+      .from("notes")
+      .select("id, title, content, created_at, updated_at")
+      .eq("id", meetingNote.note_id)
+      .eq("user_id", user.id)
+      .single()
+
+    if (noteError) {
+      return { error: noteError.message }
+    }
+
+    return { data: note }
+  } catch (error) {
+    console.error('Error fetching meeting note:', error)
     return { error: "An unexpected error occurred" }
   }
 }

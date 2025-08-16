@@ -170,7 +170,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
 
     // Editor
     return (
-        <div className='relative border border-border rounded-md bg-card'>
+        <div className='relative border border-border rounded-md bg-card h-full'>
             <TooltipProvider>
 
                 {/* start fixed menu */}
