@@ -168,18 +168,22 @@ const Transcript: React.FC<TranscriptProps> = ({
             className={`mb-2 p-3 rounded-lg transition-all duration-300 ${isActive ? 'border-1 border-border bg-secondary' : ''}`}
             >
             <div className="flex items-center gap-2 mb-2">
-              <Badge
-                variant="outline"
-                className={`${getSpeakerColor(
-                  group.speaker
-                )} border font-medium rounded-md cursor-pointer`}
+              <button
                 onClick={() => handleOpenModal(group.speaker)}
                 title={`Associate speaker for ${getSpeakerDisplayName(
                   group.speaker
                 )}`}
+                className="p-0 border-0 bg-transparent"
               >
-                {getSpeakerDisplayName(group.speaker)}
-              </Badge>
+                <Badge
+                  variant="outline"
+                  className={`${getSpeakerColor(
+                    group.speaker
+                  )} border font-medium rounded-md cursor-pointer`}
+                >
+                  {getSpeakerDisplayName(group.speaker)}
+                </Badge>
+              </button>
               <Button
                 variant="ghost"
                 className="text-xs text-muted-foreground h-6"
