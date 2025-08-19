@@ -232,11 +232,13 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const { title, meeting_at, meeting_reviewed } = await req.json();
+    const { title, meeting_at, meeting_reviewed, summary_jsonb, summary } = await req.json();
     const updatePayload: { 
       title?: string; 
       meeting_at?: string; 
       meeting_reviewed?: boolean;
+      summary_jsonb?: Record<string, string>;
+      summary?: string;
       updated_at: string 
     } = {
       updated_at: new Date().toISOString()
@@ -263,6 +265,20 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       updatePayload.meeting_reviewed = meeting_reviewed;
     }
 
+    if (summary_jsonb !== undefined) {
+      if (typeof summary_jsonb !== 'object' || summary_jsonb === null) {
+        return NextResponse.json({ error: 'Summary JSONB must be a valid object' }, { status: 400 });
+      }
+      updatePayload.summary_jsonb = summary_jsonb;
+    }
+
+    if (summary !== undefined) {
+      if (typeof summary !== 'string') {
+        return NextResponse.json({ error: 'Summary must be a string' }, { status: 400 });
+      }
+      updatePayload.summary = summary;
+    }
+
     if (Object.keys(updatePayload).length === 1) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
@@ -273,7 +289,7 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       .update(updatePayload)
       .eq('id', meetingId)
       .eq('user_id', user.id)
-      .select('id, title, updated_at, meeting_at, meeting_reviewed')
+      .select('id, title, updated_at, meeting_at, meeting_reviewed, summary_jsonb, summary')
       .single();
 
     if (updateError) {

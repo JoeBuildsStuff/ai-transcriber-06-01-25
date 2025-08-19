@@ -1004,7 +1004,7 @@ export default function MeetingDetailPage() {
         <div className='flex justify-between items-center'>
           <TabsList>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
+            <TabsTrigger value="outline">Outline</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
@@ -1050,16 +1050,12 @@ export default function MeetingDetailPage() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="summary">
-          <Card className="h-full">
-            <CardContent>
+        <TabsContent value="outline">
               {meeting.summary_jsonb ? (
-                <Summary summary={meeting.summary_jsonb} />
+                <Summary summary={meeting.summary_jsonb} meetingId={meetingId} />
               ) : (
                 <p className="text-center text-muted-foreground p-4">No summary available for this meeting.</p>
               )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="notes" className="h-full">
