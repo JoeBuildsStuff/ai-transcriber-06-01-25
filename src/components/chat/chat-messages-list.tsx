@@ -39,7 +39,7 @@ export function ChatMessagesList({ onActionClick }: ChatMessagesListProps = {}) 
       ref={scrollAreaRef}
       className="flex-1 px-0"
     >
-      <div className="space-y-0">
+      <div className="space-y-0 overflow-hidden">
         {messages.map((message) => (
           <ChatMessage 
             key={message.id} 

@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Trash2, ChevronLeft, SquarePen, Download, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
+import { X, MessageSquareOff, ChevronLeft, SquarePen, Download, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
@@ -210,7 +210,7 @@ export function ChatHeader() {
               <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Trash2 className="mr-2 size-4" />
+                    <MessageSquareOff className="mr-2 size-4" />
                     Clear chat
                     <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
                   </DropdownMenuItem>

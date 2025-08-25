@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, CopyIcon, DraftingCompass, Loader2 } from 'lucide-react'
+import { ChevronDown, CopyIcon, DraftingCompass, Loader2, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -9,6 +9,7 @@ import { ChatMessage as ChatMessageType, ChatAction } from '@/types/chat'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import ChatMessageActions from './chat-message-actions'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,6 +17,7 @@ import { toast } from 'sonner'
 import { formatToolCallArguments, formatToolCallResult } from '@/lib/chat/utils'
 import { useState } from 'react'
 import { useChatStore } from '@/lib/chat/chat-store'
+import Image from 'next/image'
 
 // Import highlight.js styles
 import 'highlight.js/styles/github-dark.css'
@@ -23,6 +25,76 @@ import 'highlight.js/styles/github-dark.css'
 interface ChatMessageProps {
   message: ChatMessageType
   onActionClick?: (action: ChatAction) => void
+}
+
+interface MessageAttachment {
+  id: string
+  name: string
+  size: number
+  type: string
+  url?: string
+  data?: string // base64 data for images
+}
+
+// Helper functions for file handling
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+const getFileIcon = (attachment: MessageAttachment) => {
+  const fileType = attachment.type
+  const fileName = attachment.name
+
+  const iconMap = {
+    pdf: {
+      icon: FileText,
+      conditions: (type: string, name: string) =>
+        type.includes("pdf") ||
+        name.endsWith(".pdf") ||
+        type.includes("word") ||
+        name.endsWith(".doc") ||
+        name.endsWith(".docx"),
+    },
+    archive: {
+      icon: FileArchive,
+      conditions: (type: string, name: string) =>
+        type.includes("zip") ||
+        type.includes("archive") ||
+        name.endsWith(".zip") ||
+        name.endsWith(".rar"),
+    },
+    excel: {
+      icon: FileSpreadsheet,
+      conditions: (type: string, name: string) =>
+        type.includes("excel") ||
+        name.endsWith(".xls") ||
+        name.endsWith(".xlsx"),
+    },
+    video: {
+      icon: FileVideo,
+      conditions: (type: string) => type.includes("video/"),
+    },
+    audio: {
+      icon: Headphones,
+      conditions: (type: string) => type.includes("audio/"),
+    },
+    image: {
+      icon: ImageIcon,
+      conditions: (type: string) => type.startsWith("image/"),
+    },
+  }
+
+  for (const { icon: Icon, conditions } of Object.values(iconMap)) {
+    if (conditions(fileType, fileName)) {
+      return <Icon className="size-4 opacity-60" />
+    }
+  }
+
+  return <File className="size-4 opacity-60" />
 }
 
 // Loading placeholder component
@@ -50,6 +122,7 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
   const isSystem = message.role === 'system'
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
+  const [selectedAttachment, setSelectedAttachment] = useState<MessageAttachment | null>(null)
   const { editMessage } = useChatStore()
 
   // Debug tool calls
@@ -83,6 +156,14 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
     setIsEditing(false)
   }
 
+  const openAttachmentModal = (attachment: MessageAttachment) => {
+    setSelectedAttachment(attachment)
+  }
+
+  const closeAttachmentModal = () => {
+    setSelectedAttachment(null)
+  }
+
   return (
     <div className={cn(
       "flex gap-1 px-0 py-2",
@@ -104,6 +185,48 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
           )}>
             {formatDistanceToNow(message.timestamp, { addSuffix: true })}
           </div>
+        )}
+
+        {/* Attachments - shown for user messages */}
+        {isUser && message.attachments && message.attachments.length > 0 && (
+            <div className={cn(
+              "flex gap-1.5 overflow-x-auto pb-1",
+              "scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent",
+              "max-w-72"
+            )}>
+              {message.attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="bg-background relative flex flex-col rounded-md border group min-w-[60px] w-[60px] flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => openAttachmentModal(attachment)}
+                >
+                  {/* File Preview */}
+                  <div className="bg-accent flex aspect-square items-center justify-center overflow-hidden rounded-t-[inherit]">
+                    {attachment.type.startsWith("image/") && attachment.data ? (
+                      <img
+                        src={attachment.data}
+                        alt={attachment.name}
+                        className="size-full rounded-t-[inherit] object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        {getFileIcon(attachment)}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* File Info */}
+                  <div className="flex min-w-0 flex-col gap-0 border-t p-1">
+                    <p className="truncate text-[9px] font-medium leading-tight">
+                      {attachment.name.length > 8 ? attachment.name.substring(0, 8) + '...' : attachment.name}
+                    </p>
+                    <p className="text-muted-foreground truncate text-[8px] leading-tight">
+                      {formatFileSize(attachment.size)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
         )}
 
         {/* Tool calls - shown before the response for non-system messages */}
@@ -301,6 +424,65 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
           </div>
         )}
       </div>
+
+      {/* Attachment Preview Modal */}
+      <Dialog open={!!selectedAttachment} onOpenChange={closeAttachmentModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <div className="relative">
+            {selectedAttachment && (
+              <div className="flex flex-col">
+                {/* File Header */}
+                <div className="flex items-center gap-3 p-4 border-b">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-medium truncate">
+                      {selectedAttachment.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedAttachment.type} • {formatFileSize(selectedAttachment.size)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* File Content */}
+                <div className="flex-1 overflow-auto">
+                  {selectedAttachment.type.startsWith('image/') ? (
+                    <div className="flex items-center justify-center p-4">
+                      {/* Use img for base64 data URLs, Next.js Image for regular URLs */}
+                      {selectedAttachment.data ? (
+                        <img
+                          src={selectedAttachment.data}
+                          alt={selectedAttachment.name}
+                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                        />
+                      ) : selectedAttachment.url ? (
+                        <Image
+                          src={selectedAttachment.url}
+                          alt={selectedAttachment.name}
+                          width={800}
+                          height={600}
+                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                        />
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center p-8">
+                      <div className="text-center">
+                        {getFileIcon(selectedAttachment)}
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Preview not available for this file type
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {selectedAttachment.name}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

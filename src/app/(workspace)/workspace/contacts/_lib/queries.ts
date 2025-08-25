@@ -181,6 +181,160 @@ export async function getPersons(searchParams: SearchParams): Promise<{
   }
 }
 
+export async function searchPersons(searchTerm: string, limit: number = 10): Promise<{
+  data: PersonWithRelations[],
+  error: PostgrestError | null
+}> {
+  const supabase = await createClient()
+  
+  try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      throw new Error("User not authenticated")
+    }
+
+    // Search for persons by first name, last name, or company name
+    const { data, error } = await supabase
+      .from("new_contacts")
+      .select(`
+        *,
+        company:new_companies(*),
+        emails:new_contact_emails(*),
+        phones:new_contact_phones(*)
+      `)
+      .eq("user_id", user.id) // Ensure user can only access their own contacts
+      .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,company.name.ilike.%${searchTerm}%`)
+      .order("first_name", { ascending: true })
+      .limit(limit)
+
+    if (error) {
+      console.error("Error searching persons:", error)
+      return { data: [], error }
+    }
+
+    // Sort emails and phones by display_order for consistent primary selection
+    const processedData = (data as unknown as PersonWithRelations[])?.map(person => ({
+      ...person,
+      emails: person.emails?.sort((a, b) => a.display_order - b.display_order) || [],
+      phones: person.phones?.sort((a, b) => a.display_order - b.display_order) || []
+    })) || []
+
+    return {
+      data: processedData,
+      error: null
+    }
+  } catch (error) {
+    console.error("Unexpected error searching persons:", error)
+    return { 
+      data: [], 
+      error: { 
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        details: '',
+        hint: '',
+        code: 'UNKNOWN_ERROR',
+        name: 'PostgrestError'
+      } 
+    }
+  }
+}
+
+export async function searchPersonsByFields(searchCriteria: {
+  firstName?: string,
+  lastName?: string,
+  companyName?: string,
+  email?: string,
+  phone?: string
+}, limit: number = 10): Promise<{
+  data: PersonWithRelations[],
+  error: PostgrestError | null
+}> {
+  const supabase = await createClient()
+  
+  try {
+    // Get the current user for authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error("Error getting current user:", userError)
+      throw new Error("User not authenticated")
+    }
+
+    let query = supabase
+      .from("new_contacts")
+      .select(`
+        *,
+        company:new_companies(*),
+        emails:new_contact_emails(*),
+        phones:new_contact_phones(*)
+      `)
+      .eq("user_id", user.id) // Ensure user can only access their own contacts
+
+    // Build search conditions based on provided criteria
+    const conditions: string[] = []
+    
+    if (searchCriteria.firstName) {
+      conditions.push(`first_name.ilike.%${searchCriteria.firstName}%`)
+    }
+    
+    if (searchCriteria.lastName) {
+      conditions.push(`last_name.ilike.%${searchCriteria.lastName}%`)
+    }
+    
+    if (searchCriteria.companyName) {
+      conditions.push(`company.name.ilike.%${searchCriteria.companyName}%`)
+    }
+    
+    if (searchCriteria.email) {
+      conditions.push(`emails.email.ilike.%${searchCriteria.email}%`)
+    }
+    
+    if (searchCriteria.phone) {
+      conditions.push(`phones.phone.ilike.%${searchCriteria.phone}%`)
+    }
+
+    // Apply search conditions if any are provided
+    if (conditions.length > 0) {
+      query = query.or(conditions.join(','))
+    }
+
+    const { data, error } = await query
+      .order("first_name", { ascending: true })
+      .limit(limit)
+
+    if (error) {
+      console.error("Error searching persons by fields:", error)
+      return { data: [], error }
+    }
+
+    // Sort emails and phones by display_order for consistent primary selection
+    const processedData = (data as unknown as PersonWithRelations[])?.map(person => ({
+      ...person,
+      emails: person.emails?.sort((a, b) => a.display_order - b.display_order) || [],
+      phones: person.phones?.sort((a, b) => a.display_order - b.display_order) || []
+    })) || []
+
+    return {
+      data: processedData,
+      error: null
+    }
+  } catch (error) {
+    console.error("Unexpected error searching persons by fields:", error)
+    return { 
+      data: [], 
+      error: { 
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        details: '',
+        hint: '',
+        code: 'UNKNOWN_ERROR',
+        name: 'PostgrestError'
+      } 
+    }
+  }
+}
+
 export async function getContactById(contactId: string) {
   const supabase = await createClient()
   

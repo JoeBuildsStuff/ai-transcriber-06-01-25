@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { ChatMessage, PageContext } from '@/types/chat'
 import Anthropic from '@anthropic-ai/sdk'
-import { createPerson } from '@/app/(workspace)/workspace/contacts/_lib/actions'
+import { availableTools, toolExecutors } from './tools'
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
@@ -12,6 +12,7 @@ interface ChatAPIRequest {
   message: string
   context?: PageContext | null
   messages?: ChatMessage[]
+  model?: string
   attachments?: Array<{
     file: File
     name: string
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       const message = formData.get('message') as string
       const contextStr = formData.get('context') as string
       const messagesStr = formData.get('messages') as string
+      const model = formData.get('model') as string
       const attachmentCount = parseInt(formData.get('attachmentCount') as string || '0')
       
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
@@ -66,13 +68,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
         }
       }
       
-      body = { message, context, messages, attachments }
+      body = { message, context, messages, model, attachments }
     } else {
       // Handle JSON request (backward compatibility)
       body = await request.json()
     }
 
-    const { message, context, messages = [], attachments = [] } = body
+    const { message, context, messages = [], model, attachments = [] } = body
 
     // Validate input
     if (!message || typeof message !== 'string') {
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       )
     }
 
-    const response = await getLLMResponse(messages, message, context || null, attachments)
+    const response = await getLLMResponse(messages, message, context || null, attachments, model)
 
     return NextResponse.json(response)
   } catch (error) {
@@ -118,76 +120,17 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// Define available functions for the LLM
-const availableFunctions: Anthropic.Tool[] = [
-  {
-    name: 'create_person_contact',
-    description: 'Create a new person contact in the database with their information including name, emails, phones, company, and other details',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        first_name: {
-          type: 'string',
-          description: 'First name of the person'
-        },
-        last_name: {
-          type: 'string', 
-          description: 'Last name of the person'
-        },
-        _emails: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of email addresses for the person'
-        },
-        _phones: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Array of phone numbers for the person'
-        },
-        company_name: {
-          type: 'string',
-          description: 'Name of the company the person works for (will be created if it doesn\'t exist)'
-        },
-        job_title: {
-          type: 'string',
-          description: 'Job title or position of the person'
-        },
-        city: {
-          type: 'string',
-          description: 'City where the person is located'
-        },
-        state: {
-          type: 'string',
-          description: 'State where the person is located'
-        },
-        linkedin: {
-          type: 'string',
-          description: 'LinkedIn profile URL'
-        },
-        description: {
-          type: 'string',
-          description: 'Additional notes or description about the person'
-        }
-      },
-      required: []
-    }
-  }
-]
+// Use imported tool definitions
+const availableFunctions = availableTools
 
 async function executeFunctionCall(functionName: string, parameters: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
-
-    switch (functionName) {
-      case 'create_person_contact':
-        // Validate required parameters
-        if (!parameters.first_name && !parameters.last_name) {
-          return { success: false, error: 'At least first name or last name is required' }
-        }
-        const result = await createPerson(parameters)
-        return result
-      default:
-        return { success: false, error: `Unknown function: ${functionName}` }
+    const executor = toolExecutors[functionName]
+    if (!executor) {
+      return { success: false, error: `Unknown function: ${functionName}` }
     }
+    
+    return await executor(parameters)
   } catch (error) {
     console.error('Function execution error:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' }
@@ -198,7 +141,8 @@ async function getLLMResponse(
   history: ChatMessage[],
   newUserMessage: string,
   context: PageContext | null,
-  attachments: Array<{ file: File; name: string; type: string; size: number }> = []
+  attachments: Array<{ file: File; name: string; type: string; size: number }> = [],
+  model?: string
 ): Promise<ChatAPIResponse> {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -284,13 +228,13 @@ Guidelines:
 
     // 4. First API call
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: model || 'claude-sonnet-4-20250514',
       max_tokens: 2048,
       system: systemPrompt,
       tools: availableFunctions,
       messages: messagesForAPI,
     });
-    
+
     // 5. Tool use handling - handle multiple parallel tool calls
     const toolUseBlocks = response.content.filter(block => block.type === 'tool_use');
 
@@ -324,7 +268,7 @@ Guidelines:
 
         // 6. Second API call
         const followUpResponse = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: model || 'claude-sonnet-4-20250514',
             max_tokens: 2048,
             system: systemPrompt,
             tools: availableFunctions,

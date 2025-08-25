@@ -17,6 +17,14 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: Date
+  attachments?: Array<{
+    id: string
+    name: string
+    size: number
+    type: string
+    url?: string
+    data?: string // base64 data for images
+  }>
   context?: {
     filters?: Record<string, unknown>
     data?: Record<string, unknown>
@@ -112,6 +120,18 @@ interface ChatStore {
 
   // Context management
   updatePageContext: (context: PageContext) => void
+
+  // Quota management
+  getStorageUsage: () => {
+    totalSize: number
+    sessionsCount: number
+    messagesCount: number
+    attachmentsCount: number
+    attachmentsSize: number
+    usagePercentage: number
+  }
+  clearOldSessions: (keepCount?: number) => void
+  isStorageQuotaExceeded: () => boolean
 
   // Utility
   getUnreadCount: () => number
@@ -271,6 +291,33 @@ export const useChatStore = create<ChatStore>()(
 
             sessions = [newSession, ...sessions]
             currentSessionId = sessionId
+          }
+
+          // Check if adding this message would exceed quota
+          const currentUsage = get().getStorageUsage()
+          const messageSize = new Blob([JSON.stringify(message)]).size
+          const estimatedNewSize = currentUsage.totalSize + messageSize
+          const maxSize = 4 * 1024 * 1024 // 4MB
+
+          if (estimatedNewSize > maxSize) {
+            // Try to clear old sessions to make room
+            const sortedSessions = sessions.sort((a, b) => {
+              if (a.id === currentSessionId) return -1
+              if (b.id === currentSessionId) return 1
+              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            })
+
+            // Keep only the 2 most recent sessions
+            const sessionsToKeep = sortedSessions.slice(0, 2)
+            const sessionsToDelete = sortedSessions.slice(2)
+
+            // Delete old sessions
+            sessionsToDelete.forEach(session => {
+              get().deleteSession(session.id)
+            })
+
+            // Update sessions to only include kept ones
+            sessions = sessionsToKeep
           }
 
           // Update the current session with the new message
@@ -552,6 +599,67 @@ export const useChatStore = create<ChatStore>()(
         set({ currentContext: context })
       },
 
+      // Quota management
+      getStorageUsage: () => {
+        const { sessions } = get()
+        
+        const totalMessages = sessions.reduce((count, session) => count + session.messages.length, 0)
+        const totalAttachments = sessions.reduce((count, session) => 
+          count + session.messages.reduce((msgCount, msg) => msgCount + (msg.attachments?.length || 0), 0), 0
+        )
+        const totalAttachmentsSize = sessions.reduce((size, session) => 
+          size + session.messages.reduce((msgSize, msg) => 
+            msgSize + (msg.attachments?.reduce((attSize, att) => 
+              attSize + (att.data ? new Blob([att.data]).size : 0), 0
+            ) || 0), 0
+          ), 0
+        )
+
+        // Calculate total storage size
+        const totalSize = new Blob([JSON.stringify({
+          sessions: sessions,
+          currentSessionId: get().currentSessionId,
+          layoutMode: get().layoutMode,
+        })]).size
+
+        const maxStorageSize = 4 * 1024 * 1024 // 4MB
+        const usagePercentage = (totalSize / maxStorageSize) * 100
+
+        return {
+          totalSize,
+          sessionsCount: sessions.length,
+          messagesCount: totalMessages,
+          attachmentsCount: totalAttachments,
+          attachmentsSize: totalAttachmentsSize,
+          usagePercentage,
+        }
+      },
+
+      clearOldSessions: (keepCount = 3) => {
+        const { sessions, currentSessionId } = get()
+        
+        // Sort sessions by updatedAt, keeping current session first
+        const sortedSessions = sessions.sort((a, b) => {
+          if (a.id === currentSessionId) return -1
+          if (b.id === currentSessionId) return 1
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        })
+
+        // Keep the specified number of sessions
+        const _sessionsToKeep = sortedSessions.slice(0, keepCount)
+        const sessionsToDelete = sortedSessions.slice(keepCount)
+
+        // Delete old sessions
+        sessionsToDelete.forEach(session => {
+          get().deleteSession(session.id)
+        })
+      },
+
+      isStorageQuotaExceeded: () => {
+        const usage = get().getStorageUsage()
+        return usage.usagePercentage >= 95 // 95% threshold
+      },
+
       // Utility
       getUnreadCount: () => {
         // For now, return 0. This can be enhanced with read/unread tracking
@@ -560,7 +668,53 @@ export const useChatStore = create<ChatStore>()(
     }),
     {
       name: 'chat-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => ({
+        getItem: (name: string) => {
+          return localStorage.getItem(name)
+        },
+        setItem: (name: string, value: string) => {
+          const size = new Blob([value]).size
+          const maxSize = 4 * 1024 * 1024 // 4MB
+          
+          if (size > maxSize) {
+            console.warn('Storage quota exceeded, clearing old data')
+            // Try to clear old sessions to make room
+            const currentData = JSON.parse(localStorage.getItem('chat-storage') || '{}')
+            if (currentData.sessions?.length > 2) {
+              // Keep only the 2 most recent sessions
+              const sortedSessions = currentData.sessions.sort((a: { updatedAt: string }, b: { updatedAt: string }) => 
+                new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+              )
+              currentData.sessions = sortedSessions.slice(0, 2)
+              
+              // Try to save with reduced data
+              const reducedSize = new Blob([JSON.stringify(currentData)]).size
+              if (reducedSize <= maxSize) {
+                localStorage.setItem('chat-storage', JSON.stringify(currentData))
+                return
+              }
+            }
+            
+            // If still too large, log error but don't throw to prevent app crash
+            console.error('Storage quota exceeded. Please clear some chat history.')
+            // Try to save with minimal data
+            const minimalData = {
+              sessions: currentData.sessions.slice(0, 1),
+              currentSessionId: currentData.currentSessionId,
+              layoutMode: currentData.layoutMode,
+            }
+            const minimalSize = new Blob([JSON.stringify(minimalData)]).size
+            if (minimalSize <= maxSize) {
+              localStorage.setItem('chat-storage', JSON.stringify(minimalData))
+            }
+          }
+          
+          localStorage.setItem(name, value)
+        },
+        removeItem: (name: string) => {
+          localStorage.removeItem(name)
+        }
+      })),
       // Persist sessions with serialized dates
       partialize: (state) => ({
         sessions: state.sessions.slice(0, 10).map(session => ({
