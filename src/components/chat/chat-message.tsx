@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, CopyIcon, DraftingCompass, Loader2, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, CopyIcon, Lightbulb, Loader2, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -231,14 +231,14 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
 
         {/* Tool calls - shown before the response for non-system messages */}
         {!isSystem && message.toolCalls && message.toolCalls.length > 0 && (
-          <div className="space-y-2 mb-2">
+          <div className="space-y-2 mb-2 w-72">
             {message.toolCalls.map((toolCall) => (
               <Collapsible key={toolCall.id} className="rounded-lg px-3 py-2 text-sm break-words bg-muted text-foreground rounded-bl-sm">
                 <CollapsibleTrigger asChild>
                   <button className="flex items-center justify-between w-full cursor-pointer group">
                     <div className="flex items-center gap-2">
-                      <DraftingCompass className="size-4 shrink-0" strokeWidth={1.5}/>
-                      <span className="text-muted-foreground font-medium group-hover:underline">
+                      <Lightbulb className="size-4 shrink-0" strokeWidth={1.5}/>
+                      <span className="text-muted-foreground group-hover:underline text-sm">
                         {toolCall.name}
                       </span>
                     </div>

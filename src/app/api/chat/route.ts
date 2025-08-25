@@ -33,6 +33,16 @@ interface ChatAPIResponse {
     data?: unknown
     error?: string
   }
+  toolCalls?: Array<{
+    id: string
+    name: string
+    arguments: Record<string, unknown>
+    result?: {
+      success: boolean
+      data?: unknown
+      error?: string
+    }
+  }>
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIResponse>> {
@@ -226,78 +236,100 @@ Guidelines:
         }
     ];
 
-    // 4. First API call
-    const response = await anthropic.messages.create({
-      model: model || 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: availableFunctions,
-      messages: messagesForAPI,
-    });
+    // 4. Iterative tool calling with maximum of 5 iterations
+    let maxIterations = 5;
+    const currentMessages = [...messagesForAPI];
+    let finalResponse = null;
+    const allToolResults: Array<{ success: boolean; data?: unknown; error?: string }> = [];
+    const allToolCalls: Array<{
+      id: string
+      name: string
+      arguments: Record<string, unknown>
+      result?: {
+        success: boolean
+        data?: unknown
+        error?: string
+      }
+    }> = [];
 
-    // 5. Tool use handling - handle multiple parallel tool calls
-    const toolUseBlocks = response.content.filter(block => block.type === 'tool_use');
+    while (maxIterations > 0) {
+      const response = await anthropic.messages.create({
+        model: model || 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        tools: availableFunctions,
+        messages: currentMessages,
+      });
 
-    if (toolUseBlocks.length > 0) {
-        // Execute all tools in parallel
-        const toolResults = await Promise.all(
-            toolUseBlocks.map(async (toolUseBlock) => {
-                if (toolUseBlock.type === 'tool_use') {
-                    const functionResult = await executeFunctionCall(toolUseBlock.name, toolUseBlock.input as Record<string, unknown>);
-                    return {
-                        type: 'tool_result' as const,
-                        tool_use_id: toolUseBlock.id,
-                        content: functionResult.success ? JSON.stringify(functionResult.data) : functionResult.error || 'Unknown error',
-                    };
-                }
-                return null;
-            })
-        );
+      // Check for tool use blocks
+      const toolUseBlocks = response.content.filter(block => block.type === 'tool_use');
 
-        // Filter out any null results
-        const validToolResults = toolResults.filter(result => result !== null) as Anthropic.ToolResultBlockParam[];
+      if (toolUseBlocks.length === 0) {
+        // No more tools to execute, this is our final response
+        finalResponse = response;
+        break;
+      }
 
-        // Append assistant's response to messages
-        messagesForAPI.push({ role: 'assistant', content: response.content });
-        
-        // Append ALL tool results to messages in a single user message
-        messagesForAPI.push({
-            role: 'user',
-            content: validToolResults
-        });
+      // Execute all tools in parallel
+      const toolResults = await Promise.all(
+        toolUseBlocks.map(async (toolUseBlock) => {
+          if (toolUseBlock.type === 'tool_use') {
+            const functionResult = await executeFunctionCall(toolUseBlock.name, toolUseBlock.input as Record<string, unknown>);
+            allToolResults.push(functionResult);
+            
+            // Store tool call information
+            allToolCalls.push({
+              id: toolUseBlock.id,
+              name: toolUseBlock.name,
+              arguments: toolUseBlock.input as Record<string, unknown>,
+              result: functionResult
+            });
+            
+            return {
+              type: 'tool_result' as const,
+              tool_use_id: toolUseBlock.id,
+              content: functionResult.success ? JSON.stringify(functionResult.data) : functionResult.error || 'Unknown error',
+            };
+          }
+          return null;
+        })
+      );
 
-        // 6. Second API call
-        const followUpResponse = await anthropic.messages.create({
-            model: model || 'claude-sonnet-4-20250514',
-            max_tokens: 2048,
-            system: systemPrompt,
-            tools: availableFunctions,
-            messages: messagesForAPI, // <-- send the updated history
-        });
-        
-        const followUpContent = followUpResponse.content[0]?.type === 'text' 
-          ? followUpResponse.content[0].text 
-          : ''
+      // Filter out any null results
+      const validToolResults = toolResults.filter(result => result !== null) as Anthropic.ToolResultBlockParam[];
 
-        // Get the first successful result for legacy response format
-        const firstSuccessfulResult = toolResults.find(result => 
-            result && result.content !== 'Unknown error'
-        );
+      // Append assistant's response to messages
+      currentMessages.push({ role: 'assistant', content: response.content });
+      
+      // Append tool results to messages
+      currentMessages.push({
+        role: 'user',
+        content: validToolResults
+      });
 
-        return {
-          message: followUpContent || 'Tools executed successfully!',
-          functionResult: firstSuccessfulResult ? { success: true, data: firstSuccessfulResult.content } : { success: false, error: 'All tools failed' },
-          actions: []
-        }
+      maxIterations--;
     }
 
-    // Handle regular text response
-    const content = response.content[0]?.type === 'text' 
-      ? response.content[0].text 
-      : ''
+    // Handle the final response
+    if (finalResponse) {
+      const content = finalResponse.content[0]?.type === 'text' 
+        ? finalResponse.content[0].text 
+        : ''
 
+      // Get the first successful result for legacy response format
+      const firstSuccessfulResult = allToolResults.find(result => result.success);
+
+      return {
+        message: content || 'Tools executed successfully!',
+        functionResult: firstSuccessfulResult ? { success: true, data: firstSuccessfulResult.data } : { success: false, error: 'All tools failed' },
+        toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
+        actions: []
+      }
+    }
+
+    // Fallback response if no tools were executed
     return {
-      message: content || 'I apologize, but I encountered an error processing your request. Please try again.',
+      message: 'I apologize, but I encountered an error processing your request. Please try again.',
       actions: []
     }
   } catch (error) {
