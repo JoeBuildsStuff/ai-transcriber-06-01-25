@@ -232,13 +232,14 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const { title, meeting_at, meeting_reviewed, summary_jsonb, summary } = await req.json();
+    const { title, meeting_at, meeting_reviewed, summary_jsonb, summary, location } = await req.json();
     const updatePayload: { 
       title?: string; 
       meeting_at?: string; 
       meeting_reviewed?: boolean;
       summary_jsonb?: Record<string, string>;
       summary?: string;
+      location?: string | null;
       updated_at: string 
     } = {
       updated_at: new Date().toISOString()
@@ -279,6 +280,13 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       updatePayload.summary = summary;
     }
 
+    if (location !== undefined) {
+      if (typeof location !== 'string' && location !== null) {
+        return NextResponse.json({ error: 'Location must be a string or null' }, { status: 400 });
+      }
+      updatePayload.location = location;
+    }
+
     if (Object.keys(updatePayload).length === 1) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
@@ -289,7 +297,7 @@ export async function PUT(req: Request, { params }: { params: Promise<Params> })
       .update(updatePayload)
       .eq('id', meetingId)
       .eq('user_id', user.id)
-      .select('id, title, updated_at, meeting_at, meeting_reviewed, summary_jsonb, summary')
+      .select('id, title, updated_at, meeting_at, meeting_reviewed, summary_jsonb, summary, location')
       .single();
 
     if (updateError) {

@@ -160,12 +160,25 @@ async function getLLMResponse(
     }
 
     // 1. System Prompt
-    let systemPrompt = `You are a helpful assistant for a contact management application. You can help users manage their contacts by filtering, sorting, navigating, and creating new person contacts.
+    let systemPrompt = `You are a helpful assistant for a contact and meeting management application. You can help users manage their contacts and meetings by filtering, sorting, navigating, creating new person contacts, and creating new meetings.
 When users ask to create or add a new person contact, use the create_person_contact function with the provided information. Extract as much relevant information as possible from the user's request.
+When users ask to create a new meeting, use the create_meeting function. This creates a meeting that can be populated with audio files, notes, and other details later.
 For other requests, provide helpful responses and suggest specific actions when appropriate.
+
 Guidelines:
 - Use the create_person_contact function when users want to add new contacts
-- Extract information like name, email, phone, company, job title, location from user requests
+- Use the create_meeting function when users want to create a new meeting
+- Extract information like name, email, phone, company, job title, location from user requests for contacts
+- Extract information like title, meeting date/time, location, description from user requests for meetings
+
+Meeting Creation Guidelines:
+- When processing meeting invitations or calendar events from images:
+  - Extract the meeting title from the title field
+  - Extract the meeting date and time, converting to ISO format
+  - Extract the location (including Zoom Meeting IDs, room numbers, addresses, etc.)
+  - Extract the meeting description/body content - this should include the actual meeting content, personal messages, agenda items, or notes that appear in the meeting body/description area, not just logistical details
+  - For recurring meetings, include recurrence information in the description
+  - Include any personal messages, agenda items, or meeting notes from the invitation body
 - For filters: suggest filter actions with columnId, operator, and value
 - For sorting: suggest sort actions with columnId and direction  
 - For navigation: suggest navigate actions with pathname

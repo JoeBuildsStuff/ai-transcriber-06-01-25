@@ -7,6 +7,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `index.ts` - Exports all tools and executors
 - `create-person.ts` - Tool for creating person contacts
 - `search-persons.ts` - Tool for searching person contacts
+- `create-meeting.ts` - Tool for creating new meetings
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -63,6 +64,7 @@ export const availableTools: Anthropic.Tool[] = [
 export const toolExecutors: Record<string, (parameters: Record<string, unknown>) => Promise<{ success: boolean; data?: unknown; error?: string }>> = {
   create_person_contact: executeCreatePersonContact,
   search_persons: executeSearchPersons,
+  create_meeting: executeCreateMeeting,
   my_tool_name: executeMyTool // Add your executor here
 }
 
@@ -101,3 +103,14 @@ Search for persons by name, company, email, or phone number.
 - `limit` (number) - Maximum number of results to return (default: 10)
 
 **Usage:** Provide either a `searchTerm` for general search or specific fields for targeted search
+
+### create_meeting
+Creates a new meeting with title, meeting date/time, location, and description. When processing meeting invitations or calendar events from images, extracts the meeting body/description content as the description parameter. This creates a meeting that can be populated with audio files, attendees, and other details later.
+
+**Parameters:**
+- `title` (string, optional) - Title for the meeting (defaults to "Untitled Meeting")
+- `meeting_at` (string, optional) - Date and time for the meeting in ISO format (defaults to current time)
+- `location` (string, optional) - Location of the meeting (e.g., "Conference Room A", "Zoom Meeting", "123 Main St", "Zoom Meeting ID: 123 456 7890")
+- `description` (string, optional) - The meeting description, body content, or notes from the meeting invitation. This should include the actual meeting content, agenda, or notes that appear in the meeting body/description area of calendar invitations, not just logistical details. For example, if the meeting invitation contains personal messages, agenda items, or meeting notes, include those here.
+
+**Usage:** All parameters are optional. The tool creates a meeting with the specified details and automatically creates an associated note for meeting notes. The description parameter is stored as the initial content of the meeting note. When processing meeting invitations from images, the AI will extract the meeting body content (personal messages, agenda items, etc.) as the description rather than just logistical details.

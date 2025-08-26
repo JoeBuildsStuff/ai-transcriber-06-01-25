@@ -3,7 +3,37 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
-export async function createMeeting() {
+// Helper function to find contact by first and last name
+// used by the LLM Agent to add attendees to a meeting
+// right now the llm specifies a first name + last name and we search for that contact and adds the first contact found
+// TODO: in the future we should search for the contact by email
+async function findContactByName(firstName: string, lastName: string, userId: string) {
+  const supabase = await createClient()
+  
+  const { data: contacts, error } = await supabase
+    .schema("ai_transcriber")
+    .from("new_contacts")
+    .select("id, first_name, last_name")
+    .eq("user_id", userId)
+    .eq("first_name", firstName)
+    .eq("last_name", lastName)
+    .limit(1)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return contacts
+}
+
+export async function createMeeting(params?: {
+  title?: string
+  meeting_at?: string
+  description?: string
+  location?: string
+  participants?: Array<{ firstName: string; lastName: string }>
+}) {
   const supabase = await createClient()
 
   const { data: userData } = await supabase.auth.getUser()
@@ -15,16 +45,17 @@ export async function createMeeting() {
 
   const meetingData = {
     user_id: userData.user.id,
-    title: "Untitled Meeting",
+    title: params?.title || "Untitled Meeting",
     audio_file_path: "", // Required field, but no file yet.
-    meeting_at: new Date().toISOString(),
+    meeting_at: params?.meeting_at || new Date().toISOString(),
+    location: params?.location || null,
   }
 
   const { data: newMeeting, error } = await supabase
     .schema("ai_transcriber")
     .from("meetings")
     .insert(meetingData)
-    .select("id")
+    .select("id, title, meeting_at, location")
     .single()
 
   if (error) {
@@ -34,11 +65,11 @@ export async function createMeeting() {
     }
   }
 
-  // Create a note entry with no content
+  // Create a note entry with optional description as content
   const noteData = {
     user_id: userData.user.id,
     title: "Meeting Notes",
-    content: null,
+    content: params?.description || null,
   }
 
   const { data: newNote, error: noteError } = await supabase
@@ -74,6 +105,63 @@ export async function createMeeting() {
     }
   }
 
+  // Add participants if provided
+  // Helper function to find contact by first and last name
+  // used by the LLM Agent to add attendees to a meeting
+  // right now the llm specifies a first name + last name and we search for that contact and adds the first contact found
+  // TODO: in the future we should search for the contact by email
+  const addedParticipants: Array<{ name: string; contactId: string | null; found: boolean }> = []
+  if (params?.participants && params.participants.length > 0) {
+    const participantResults = await Promise.all(
+      params.participants.map(async (participant) => {
+        const contact = await findContactByName(participant.firstName, participant.lastName, userData.user.id)
+        
+        if (contact) {
+          return {
+            name: `${participant.firstName} ${participant.lastName}`,
+            contactId: contact.id,
+            found: true
+          }
+        } else {
+          return {
+            name: `${participant.firstName} ${participant.lastName}`,
+            contactId: null,
+            found: false
+          }
+        }
+      })
+    )
+    
+    addedParticipants.push(...participantResults)
+    
+    const participantContactIds = participantResults
+      .filter(p => p.found)
+      .map(p => p.contactId!)
+      .filter(Boolean)
+
+    // Add found participants to the meeting
+    if (participantContactIds.length > 0) {
+      const attendeesToInsert = participantContactIds.map(contactId => ({
+        meeting_id: newMeeting.id,
+        contact_id: contactId,
+        user_id: userData.user.id,
+        invitation_status: 'invited' as const,
+        attendance_status: 'unknown' as const,
+        role: 'attendee' as const,
+      }))
+
+      const { error: attendeeError } = await supabase
+        .schema("ai_transcriber")
+        .from("meeting_attendees")
+        .insert(attendeesToInsert)
+
+      if (attendeeError) {
+        console.error("Error adding participants:", attendeeError.message)
+        // Don't fail the entire operation, just log the error
+      }
+    }
+  }
+
   revalidatePath("/workspace/meetings")
   revalidatePath("/workspace")
 
@@ -81,6 +169,7 @@ export async function createMeeting() {
     data: "Meeting created successfully",
     meeting: newMeeting,
     note: newNote,
+    participants: addedParticipants
   }
 }
 

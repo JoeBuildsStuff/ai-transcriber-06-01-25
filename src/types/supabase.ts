@@ -281,6 +281,7 @@ export type Database = {
           created_at: string | null
           formatted_transcript: Json | null
           id: string
+          location: string | null
           meeting_at: string | null
           meeting_reviewed: boolean | null
           openai_response: Json | null
@@ -292,13 +293,13 @@ export type Database = {
           transcription: Json | null
           updated_at: string | null
           user_id: string | null
-          user_notes: string | null
         }
         Insert: {
           audio_file_path?: string | null
           created_at?: string | null
           formatted_transcript?: Json | null
           id?: string
+          location?: string | null
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
@@ -310,13 +311,13 @@ export type Database = {
           transcription?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_notes?: string | null
         }
         Update: {
           audio_file_path?: string | null
           created_at?: string | null
           formatted_transcript?: Json | null
           id?: string
+          location?: string | null
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
@@ -328,7 +329,6 @@ export type Database = {
           transcription?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_notes?: string | null
         }
         Relationships: []
       }
@@ -581,7 +581,6 @@ export type Database = {
           transcription: Json | null
           updated_at: string | null
           user_id: string | null
-          user_notes: string | null
         }
         Relationships: []
       }

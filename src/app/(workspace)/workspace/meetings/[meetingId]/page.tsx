@@ -316,10 +316,10 @@ export default function MeetingDetailPage() {
     }
   };
 
-  const handleUpdateMeetingDetails = async (details: { title: string; meeting_at: string }) => {
+  const handleUpdateMeetingDetails = async (details: { title: string; meeting_at: string; location?: string }) => {
     if (!meetingId || !meeting) return;
 
-    const { title, meeting_at } = details;
+    const { title, meeting_at, location } = details;
 
     const trimmedTitle = title.trim();
     if (trimmedTitle === "") {
@@ -329,15 +329,17 @@ export default function MeetingDetailPage() {
 
     const isTitleChanged = trimmedTitle !== (meeting.title || meeting.original_file_name);
     const isMeetingAtChanged = new Date(meeting_at).getTime() !== new Date(meeting.meeting_at).getTime();
+    const isLocationChanged = (location || null) !== (meeting.location || null);
     
-    if (!isTitleChanged && !isMeetingAtChanged) {
+    if (!isTitleChanged && !isMeetingAtChanged && !isLocationChanged) {
         setIsEditDetailsDialogOpen(false);
         return;
     }
 
-    const payload: { title?: string; meeting_at?: string } = {};
+    const payload: { title?: string; meeting_at?: string; location?: string | null } = {};
     if (isTitleChanged) payload.title = trimmedTitle;
     if (isMeetingAtChanged) payload.meeting_at = meeting_at;
+    if (isLocationChanged) payload.location = location || null;
 
     try {
         const response = await fetch(`/api/meetings/${meetingId}`, {
@@ -882,6 +884,12 @@ export default function MeetingDetailPage() {
                   ) : (
                     <span className="text-xs text-muted-foreground">No attendees added</span>
                   )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs md:text-sm text-muted-foreground">Location: </span>
+                <span className="text-xs md:text-sm text-muted-foreground">
+                  {meeting.location || "No location specified"}
+                </span>
               </div>
             </div>
 

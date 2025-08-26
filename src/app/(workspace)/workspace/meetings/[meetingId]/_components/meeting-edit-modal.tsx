@@ -44,6 +44,7 @@ function isValidDate(date: Date | undefined) {
 
 export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onRefresh }: MeetingEditModalProps) {
   const [title, setTitle] = useState("")
+  const [location, setLocation] = useState("")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedTime, setSelectedTime] = useState("")
   const [datePickerOpen, setDatePickerOpen] = useState(false)
@@ -62,6 +63,7 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
   useEffect(() => {
     if (meeting) {
       setTitle(meeting.title || meeting.original_file_name || "");
+      setLocation(meeting.location || "");
       const meetingDate = new Date(meeting.meeting_at || "");
       setSelectedDate(meetingDate);
       setMonth(meetingDate);
@@ -200,7 +202,8 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
       // Save meeting details (attendees are handled separately above)
       onSave({
         title,
-        meeting_at: meetingAt.toISOString()
+        meeting_at: meetingAt.toISOString(),
+        location: location.trim() || undefined
       });
        
        toast.success('Meeting updated successfully')
@@ -249,6 +252,19 @@ export default function MeetingEditModal({ isOpen, onClose, meeting, onSave, onR
                   onChange={(e) => setTitle(e.target.value)}
                   className="text-base"
                   placeholder="Enter meeting title"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location" className="text-sm font-medium">
+                  Location
+                </Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="text-base"
+                  placeholder="Enter meeting location (e.g., Conference Room A, Zoom Meeting)"
                 />
               </div>
 

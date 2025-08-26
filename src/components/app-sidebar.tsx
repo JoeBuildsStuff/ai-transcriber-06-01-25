@@ -49,6 +49,7 @@ interface Meeting {
   created_at: string;
   title: string | null;
   meeting_at: string | null;
+  location: string | null;
   meeting_reviewed: boolean | null;
 }
 
@@ -69,7 +70,7 @@ export function AppSidebar() {
       const { data: fetchedMeetings, error } = await supabase
         .from("meetings")
         .select(
-          "id, original_file_name, created_at, title, meeting_at, meeting_reviewed"
+          "id, original_file_name, created_at, title, meeting_at, location, meeting_reviewed"
         )
         .order("meeting_at", { ascending: false })
 

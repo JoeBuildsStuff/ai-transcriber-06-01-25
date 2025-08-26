@@ -46,6 +46,7 @@ export interface Meeting {
     created_at: string;
     updated_at: string;
     meeting_at: string;
+    location: string | null;
     speaker_names: { [key: string]: string } | null;
     summary: string;
     user_notes?: string | null;
@@ -56,6 +57,7 @@ export interface MeetingCardSummary {
   id: string
   title: string | null
   meeting_at: string | null
+  location: string | null
   speaker_names: { [key: string]: string } | null
   summary: string | null
   transcription: DeepgramTranscription | null
@@ -263,7 +265,7 @@ export interface MeetingEditModalProps {
     isOpen: boolean;
     onClose: () => void;
     meeting: MeetingDetails | MeetingCardSummary | null;
-    onSave: (details: { title: string; meeting_at: string }) => void;
+    onSave: (details: { title: string; meeting_at: string; location?: string }) => void;
     onRefresh?: () => Promise<void>;
 }
 
