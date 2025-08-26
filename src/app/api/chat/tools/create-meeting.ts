@@ -14,7 +14,7 @@ export const createMeetingTool: Anthropic.Tool = {
       },
       meeting_at: {
         type: 'string',
-        description: 'Date and time for the meeting in ISO format (optional, defaults to current time)'
+        description: 'Date and time for the meeting in ISO format with timezone information (optional, defaults to current time). For example: "2025-08-26T09:30:00-07:00" for Pacific Time. Always include timezone offset when available from the meeting invitation.'
       },
       location: {
         type: 'string',

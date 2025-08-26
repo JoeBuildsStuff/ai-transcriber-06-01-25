@@ -174,15 +174,13 @@ Guidelines:
 Meeting Creation Guidelines:
 - When processing meeting invitations or calendar events from images:
   - Extract the meeting title from the title field
-  - Extract the meeting date and time, converting to ISO format
+  - Extract the meeting date and time, converting to ISO format WITH timezone information. If the invitation shows a specific timezone (like "Pacific Time"), convert the time to that timezone's ISO format (e.g., "2025-08-26T09:30:00-07:00" for Pacific Time). If no timezone is specified, assume the user's local timezone.
   - Extract the location (including Zoom Meeting IDs, room numbers, addresses, etc.)
   - Extract the meeting description/body content - this should include the actual meeting content, personal messages, agenda items, or notes that appear in the meeting body/description area, not just logistical details
   - For recurring meetings, include recurrence information in the description
   - Include any personal messages, agenda items, or meeting notes from the invitation body
-- For filters: suggest filter actions with columnId, operator, and value
-- For sorting: suggest sort actions with columnId and direction  
-- For navigation: suggest navigate actions with pathname
-- Always provide helpful and contextual responses.`
+
+if a tool responds with a url to the record, please include the url in the response for quick navigation for the user.  use markdown to format the url.`
     
     if (context) {
       systemPrompt += `\n\n## Current Page Context:\n- Total items: ${context.totalCount}\n- Current filters: ${JSON.stringify(context.currentFilters, null, 2)}\n- Current sorting: ${JSON.stringify(context.currentSort, null, 2)}\n- Visible data sample: ${JSON.stringify(context.visibleData.slice(0, 3), null, 2)}`
