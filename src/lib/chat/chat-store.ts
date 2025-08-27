@@ -645,8 +645,7 @@ export const useChatStore = create<ChatStore>()(
           return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         })
 
-        // Keep the specified number of sessions
-        const _sessionsToKeep = sortedSessions.slice(0, keepCount)
+        // Get sessions to delete (keep the specified number of sessions)
         const sessionsToDelete = sortedSessions.slice(keepCount)
 
         // Delete old sessions
