@@ -8,6 +8,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `create-person.ts` - Tool for creating person contacts
 - `search-persons.ts` - Tool for searching person contacts
 - `create-meeting.ts` - Tool for creating new meetings
+- `search-meetings.ts` - Tool for searching existing meetings
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -58,6 +59,8 @@ import { myTool, executeMyTool } from './my-tool'
 export const availableTools: Anthropic.Tool[] = [
   createPersonContactTool,
   searchPersonsTool,
+  createMeetingTool,
+  searchMeetingsTool,
   myTool // Add your tool here
 ]
 
@@ -65,6 +68,7 @@ export const toolExecutors: Record<string, (parameters: Record<string, unknown>)
   create_person_contact: executeCreatePersonContact,
   search_persons: executeSearchPersons,
   create_meeting: executeCreateMeeting,
+  search_meetings: executeSearchMeetings,
   my_tool_name: executeMyTool // Add your executor here
 }
 
@@ -114,3 +118,15 @@ Creates a new meeting with title, meeting date/time, location, and description. 
 - `description` (string, optional) - The meeting description, body content, or notes from the meeting invitation. This should include the actual meeting content, agenda, or notes that appear in the meeting body/description area of calendar invitations, not just logistical details. For example, if the meeting invitation contains personal messages, agenda items, or meeting notes, include those here.
 
 **Usage:** All parameters are optional. The tool creates a meeting with the specified details and automatically creates an associated note for meeting notes. The description parameter is stored as the initial content of the meeting note. When processing meeting invitations from images, the AI will extract the meeting body content (personal messages, agenda items, etc.) as the description rather than just logistical details.
+
+### search_meetings
+Search for meetings by participant name, date range, title, or other criteria. Use this when users ask about meetings they have had with specific people or during specific time periods.
+
+**Parameters:**
+- `participantName` (string, optional) - Name of a meeting participant to search for (e.g., "Joe Taylor", "john smith")
+- `dateFrom` (string, optional) - Start date for the search range in ISO format (e.g., "2025-01-01")
+- `dateTo` (string, optional) - End date for the search range in ISO format (e.g., "2025-01-31")
+- `title` (string, optional) - Search for meetings with a specific title or title containing certain words
+- `limit` (number, optional) - Maximum number of results to return (default: 10)
+
+**Usage:** All parameters are optional. The tool searches for meetings based on the provided criteria and returns formatted results with meeting details and navigation URLs. Results are sorted by meeting date (most recent first). When users ask questions like "what meetings have I had with Joe Taylor in the past week?", the AI will extract the participant name and date range to perform the search.
