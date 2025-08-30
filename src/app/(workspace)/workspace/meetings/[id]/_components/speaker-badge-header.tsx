@@ -169,7 +169,7 @@ export default function SpeakerBadgeHeader({
                                 {getSpeakerDisplayName(speaker.speaker_index)}
                             </Badge>
                         </PopoverTrigger>
-                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[29rem] p-2.5 relative">
+                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[22rem] p-2.5 relative">
                                 <ScrollArea className="h-fit w-full">
                                     <div className="flex flex-row gap-2">
                                         {getSpeakerTimestamps(speaker.speaker_index).length > 0 ? (
@@ -220,7 +220,7 @@ export default function SpeakerBadgeHeader({
                                             </Button>
                                         )}
                                     </div>
-                                    <ScrollArea className="h-[20rem] w-full">
+                                    <ScrollArea className="h-[13rem] w-full">
                                         <div className="flex flex-col gap-2">
                                             {isLoading ? (
                                                 <div className="text-sm text-muted-foreground">Loading contacts...</div>

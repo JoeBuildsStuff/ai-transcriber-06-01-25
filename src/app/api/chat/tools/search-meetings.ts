@@ -1,5 +1,5 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
-import { getMeetingsList } from '@/app/(workspace)/workspace/meetings/_lib/queries'
+import { getMeetingsList } from '@/app/(workspace)/workspace/meeting/[id]/_lib/queries'
 
 // Tool definition for searching meetings
 export const searchMeetingsTool: Anthropic.Tool = {

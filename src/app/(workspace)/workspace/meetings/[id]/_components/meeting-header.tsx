@@ -6,6 +6,7 @@ import { MeetingAttendeeViewData } from "@/types";
 import AttendeesSelector from "./attendees-selector";
 import { RefObject } from "react";
 import { AudioPlayerRef } from "@/components/audio-player-lazy";
+import MeetingDelete from "./meeting-delete";
 
 interface MeetingHeaderProps {
     id: string;
@@ -24,10 +25,15 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Title */}
+            {/* title with delete button */}
             <div className="flex flex-row gap-2 items-center">
-                <Type className="size-4 shrink-0 text-muted-foreground" />
-                <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight" />
+                {/* Title */}
+                <div className="flex flex-row gap-2 items-center flex-1">
+                    <Type className="size-4 shrink-0 text-muted-foreground" />
+                    <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight border-none" />
+                </div>
+                {/* delete button */}
+                <MeetingDelete meetingId={id} />
             </div>
 
             {/* Attendees */}
@@ -40,7 +46,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
                     field="meeting_at" 
                     id={id} 
                     initialValue={meetingData.meeting_at || null}
-                    className="flex flex-row gap-2 items-center font-extralight"
+                    className="flex flex-row gap-2 items-center font-extralight border-none"
                 >
                     <Calendar className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
@@ -60,7 +66,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
             {/* Location */}
             <div className="flex flex-row gap-2 items-center">
                 <Map className="size-4 shrink-0 text-muted-foreground " />
-                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight" />
+                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight border-none" />
             </div>
 
             {/* Audio Player */}

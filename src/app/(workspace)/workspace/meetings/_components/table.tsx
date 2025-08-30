@@ -1,8 +1,8 @@
 import { columns } from "./columns"
 import { DataTable } from "@/components/data-table/data-table"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
-import { getMeetingsList } from "../_lib/queries"
-import { createMeeting, deleteMeetings, updateMeeting, multiUpdateMeetings } from "../_lib/actions"
+import { getMeetingsList } from "../../meetings/[id]/_lib/queries"
+import { createMeeting, deleteMeetings, updateMeeting, multiUpdateMeetings } from "../../meetings/[id]/_lib/actions"
 
 interface DataTableMeetingsProps {
   searchParams?: SearchParams

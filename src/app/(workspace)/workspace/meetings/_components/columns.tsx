@@ -5,7 +5,7 @@ import { ArrowUpRight, Calendar, CheckCircle, Circle, Clock4, Timer, Type, Users
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
-import { MeetingsList } from "../_lib/validations"
+import { MeetingsList } from "../../meetings/[id]/_lib/validations"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 

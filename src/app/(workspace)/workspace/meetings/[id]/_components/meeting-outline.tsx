@@ -8,16 +8,20 @@ import React, { useEffect } from "react";
 import { marked } from "marked";
 import Tiptap from "@/components/tiptap/tiptap";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { useSummaryAutoSave } from "@/hooks/use-summary-auto-save";
+import UploadAudio from "./upload-audio";
 
-interface SummaryProps {
-  summary: Record<string, string>;
+interface OutlineProps {
+  outline: Record<string, string>;
   meetingId: string;
+  audioFilePath?: string;
+  onUploadSuccess?: () => void;
 }
 
-const Summary: React.FC<SummaryProps> = ({ summary, meetingId }) => {
+const Outline: React.FC<OutlineProps> = ({ outline, meetingId, audioFilePath, onUploadSuccess }) => {
   const {
-    summary: editableSummary,
+    summary: editableOutline,
     saveStatus,
     hasUnsavedChanges,
     handleSectionChange,
@@ -25,7 +29,7 @@ const Summary: React.FC<SummaryProps> = ({ summary, meetingId }) => {
     handleReset
   } = useSummaryAutoSave({
     meetingId,
-    initialSummary: summary
+    initialSummary: outline
   });
 
   const sectionOrder = [
@@ -37,21 +41,6 @@ const Summary: React.FC<SummaryProps> = ({ summary, meetingId }) => {
     'action_items',
     'next_meeting_open_items',
   ];
-
-  const sections = Object.entries(editableSummary).filter(
-    ([key, value]) => key !== 'title' && key !== 'date' && value && value.trim() !== ""
-  );
-
-  sections.sort(([keyA], [keyB]) => {
-    const indexA = sectionOrder.indexOf(keyA);
-    const indexB = sectionOrder.indexOf(keyB);
-
-    if (indexA === -1 && indexB === -1) return 0;
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-
-    return indexA - indexB;
-  });
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -79,15 +68,47 @@ const Summary: React.FC<SummaryProps> = ({ summary, meetingId }) => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedChanges])
 
+  // Check if there's no audio file or outline data
+  const hasNoAudioOrOutline = !audioFilePath && (!editableOutline || Object.keys(editableOutline).length === 0);
+
+  // If no audio or outline, show upload component
+  if (hasNoAudioOrOutline) {
+    return (
+      <Card className="h-full p-1 gap-2">
+        <UploadAudio 
+          meetingId={meetingId} 
+          onUploadSuccess={() => {
+            onUploadSuccess?.();
+          }}
+        />
+      </Card>
+    );
+  }
+
+  const sections = Object.entries(editableOutline).filter(
+    ([key, value]) => key !== 'title' && key !== 'date' && value && value.toString().trim() !== ""
+  );
+
+  sections.sort(([keyA], [keyB]) => {
+    const indexA = sectionOrder.indexOf(keyA);
+    const indexB = sectionOrder.indexOf(keyB);
+
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+
+    return indexA - indexB;
+  });
+
   if (sections.length === 0) {
-    return <p className="text-center text-muted-foreground p-4">Waiting for summary...</p>;
+    return <p className="text-center text-muted-foreground p-4">Waiting for outline...</p>;
   }
 
   return (
     <div className="relative h-full overflow-y-auto" onKeyDown={handleKeyDown}>
       <div className="flex flex-col gap-4 h-full overflow-y-auto">
         {sections.map(([key, value]) => {
-          const htmlContent = marked(value) as string;
+          const htmlContent = marked(String(value)) as string;
           return (
             <div key={key} className="relative">
               {/* <h3 className="text-lg font-semibold mb-2 pb-1 border-b">{formatTitle(key)}</h3> */}
@@ -130,4 +151,4 @@ const Summary: React.FC<SummaryProps> = ({ summary, meetingId }) => {
   );
 };
 
-export default Summary;
+export default Outline;

@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MeetingTranscript from "./meeting-transcript";
-import Summary from "./meeting-summary";
+import Summary from "./meeting-outline";
 import MeetingNotes from "./meeting-notes";
-import { Meetings } from "@/app/(workspace)/workspace/meetings/_lib/validations";
+import { Meetings } from "@/app/(workspace)/workspace/meetings/[id]/_lib/validations";
 import { MeetingSpeakerWithContact } from "@/types";
 
 interface MeetingBodyProps {
@@ -14,9 +14,10 @@ interface MeetingBodyProps {
     meetingId: string;
     onSeekAndPlay?: (time: number) => void;
     currentTime?: number;
+    onUploadSuccess?: () => void;
 }
 
-export default function MeetingBody({ meetingData, meetingSpeakers: initialMeetingSpeakers, meetingId, onSeekAndPlay, currentTime = 0 }: MeetingBodyProps) {
+export default function MeetingBody({ meetingData, meetingSpeakers: initialMeetingSpeakers, meetingId, onSeekAndPlay, currentTime = 0, onUploadSuccess }: MeetingBodyProps) {
     const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>(initialMeetingSpeakers);
 
     return (
@@ -35,14 +36,16 @@ export default function MeetingBody({ meetingData, meetingSpeakers: initialMeeti
                         onSpeakersUpdate={setMeetingSpeakers}
                         onSeekAndPlay={onSeekAndPlay}
                         currentTime={currentTime}
+                        onUploadSuccess={onUploadSuccess}
                     />
                 </TabsContent>
                 <TabsContent value="outline" className="h-full overflow-y-auto">
-                    {meetingData.summary_jsonb ? (
-                        <Summary summary={meetingData.summary_jsonb as Record<string, string>} meetingId={meetingId} />
-                    ) : (
-                        <p className="text-center text-muted-foreground p-4">No summary available for this meeting.</p>
-                    )}
+                    <Summary 
+                        outline={meetingData.summary_jsonb as Record<string, string> || {}} 
+                        meetingId={meetingId}
+                        audioFilePath={meetingData.audio_file_path}
+                        onUploadSuccess={onUploadSuccess}
+                    />
                 </TabsContent>
                 <TabsContent value="notes" className="h-full overflow-y-auto">
                     <MeetingNotes meetingId={meetingId} />

@@ -1,7 +1,7 @@
 import { FormattedTranscriptGroup, MeetingSpeakerWithContact } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Meetings } from "../../../meetings/_lib/validations";
+import { Meetings } from "../_lib/validations";
 import SpeakerBadgeHeader from "./speaker-badge-header";
 import { useSpeakerUtils } from "@/hooks/use-speaker-utils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import UploadAudio from "./upload-audio";
 
 interface MeetingTranscriptProps {
     meetingData: Meetings;
@@ -17,9 +18,10 @@ interface MeetingTranscriptProps {
     onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
     onSeekAndPlay?: (time: number) => void;
     currentTime?: number;
+    onUploadSuccess?: () => void;
 }
 
-export default function MeetingTranscript({ meetingData, meetingSpeakers, meetingId, onSpeakersUpdate, onSeekAndPlay, currentTime = 0 }: MeetingTranscriptProps) {
+export default function MeetingTranscript({ meetingData, meetingSpeakers, meetingId, onSpeakersUpdate, onSeekAndPlay, currentTime = 0, onUploadSuccess }: MeetingTranscriptProps) {
     const { getSpeakerColor, getSpeakerDisplayName } = useSpeakerUtils(meetingSpeakers);
     const transcriptRef = useRef<HTMLDivElement>(null);
     const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -70,7 +72,11 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
         
         // Find the current segment
         for (let i = 0; i < transcript.length; i++) {
-            if (isCurrentSegment(transcript[i], i, transcript)) {
+            const nextItem = transcript[i + 1];
+            const endTime = nextItem ? nextItem.start : transcript[i].start + 5;
+            const isCurrentItem = currentTime >= transcript[i].start && currentTime < endTime;
+            
+            if (isCurrentItem) {
                 currentSegmentIndex = i;
                 break;
             }
@@ -96,14 +102,30 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
         }
     }, [meetingData.formatted_transcript]);
 
+    // Check if there's no audio file or transcript
+    const hasNoAudioOrTranscript = !meetingData.audio_file_path && !meetingData.formatted_transcript;
+
+    // If no audio or transcript, show upload component
+    if (hasNoAudioOrTranscript) {
+        return (
+            <Card className="h-full p-1 gap-2" ref={transcriptRef}>
+                <UploadAudio 
+                    meetingId={meetingId} 
+                    onUploadSuccess={() => {
+                        onUploadSuccess?.();
+                    }}
+                />
+            </Card>
+        );
+    }
+
     return (
         <Card className="h-full p-1 gap-2" ref={transcriptRef}>
-
             <Button
                 variant="ghost"
                 size="sm"
                 onClick={copyTranscript}
-                className="absolute top-1 right-0 z-100"
+                className="absolute top-1 right-0"
                 title="Copy transcript"
             >
                 {isCopied ? <Check className="size-4" /> : <Copy className="size-4" />}

@@ -345,7 +345,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
       {!selectedFile ? (
         <Card
           className={`
-            border-2 border-dashed p-8 text-center transition-colors cursor-pointer
+            border-1 border-dashed p-8 text-center transition-colors cursor-pointer
             ${isDragging 
               ? 'border-primary bg-primary/5' 
               : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
@@ -357,12 +357,12 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
           onClick={handleBrowseClick}
         >
           <div className="flex flex-col items-center space-y-4">
-            <div className="p-4 rounded-full bg-muted">
-              <Upload className="w-8 h-8 text-muted-foreground" />
+            <div className="p-3 rounded-full bg-muted">
+              <Upload className="size-5 text-muted-foreground font-light" strokeWidth={1.5} />
             </div>
             
             <div className="space-y-2">
-              <h3 className="text-lg font-medium">Upload Audio File</h3>
+              <h3 className="text-lg font-light">Upload Audio File</h3>
               <p className="text-sm text-muted-foreground">
                 Drag and drop an audio file here, or click to browse
               </p>
@@ -389,10 +389,10 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded bg-muted">
-                <FileAudio className="w-5 h-5 text-muted-foreground" />
+                <FileAudio className="size-5 text-muted-foreground font-light" strokeWidth={1.5} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                <p className="text-sm font-light truncate">{selectedFile.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatFileSize(selectedFile.size)} • {selectedFile.type || 'Audio file'}
                 </p>
@@ -406,7 +406,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
                 onClick={handleRemoveFile}
                 disabled={isUploading}
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" strokeWidth={1.5} />
               </Button>
             </div>
           </div>
@@ -415,7 +415,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
             <Button 
               onClick={handleUpload} 
               disabled={isUploading}
-              className="w-full"
+              className="w-full font-light"
             >
               {isUploading ? 'Uploading...' : 'Upload and Transcribe'}
             </Button>
