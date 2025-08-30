@@ -21,7 +21,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <AuthProvider>
           <SidebarProvider>
             {children}
-            <Toaster />
+            <Toaster position="top-center" richColors/>
           </SidebarProvider>
         </AuthProvider>
       </ThemeProvider>

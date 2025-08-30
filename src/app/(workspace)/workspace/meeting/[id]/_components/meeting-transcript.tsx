@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MeetingTranscriptProps {
     meetingData: Meetings;
@@ -96,16 +97,18 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
     }, [meetingData.formatted_transcript]);
 
     return (
-        <Card className="h-full overflow-y-auto p-1 gap-2" ref={transcriptRef}>
+        <Card className="h-full p-1 gap-2" ref={transcriptRef}>
+
             <Button
                 variant="ghost"
                 size="sm"
                 onClick={copyTranscript}
-                className="absolute top-2 right-2 z-10"
+                className="absolute top-1 right-0 z-100"
                 title="Copy transcript"
             >
                 {isCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
             </Button>
+            <ScrollArea className="h-full overflow-y-auto">
             {/* Speaker badges row */}
             <SpeakerBadgeHeader 
                 meetingSpeakers={meetingSpeakers} 
@@ -122,11 +125,11 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
                         <div 
                             key={index} 
                             ref={(el) => { segmentRefs.current[index] = el; }}
-                            className={`mb-2 p-3 rounded-lg transition-colors duration-200 ${
+                            className={`mb-1 p-2 rounded-xl transition-colors duration-200 ${
                                 isCurrentSegment(item, index, meetingData.formatted_transcript as unknown as FormattedTranscriptGroup[]) ? 'bg-secondary' : ''
                             }`}
                         >
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-1">
                                 <Badge
                                     variant="outline"
                                     className={`${getSpeakerColor(
@@ -145,11 +148,12 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
                                     {formatTime(item.start)}
                                 </Button>
                             </div>
-                            <div className="text ml-4">{item.text}</div>
+                            <div className="text-base font-extralight ml-4">{item.text}</div>
                         </div>
                     ))}
                 </div>
             )}
+            </ScrollArea>
         </Card>
     );
 }

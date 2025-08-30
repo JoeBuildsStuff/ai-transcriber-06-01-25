@@ -106,7 +106,7 @@ export default function AttendeesSelector({ meetingId, meetingAttendees }: Atten
     };
 
     return (
-        <div className="flex flex-row gap-2 items-start">
+        <div className="flex flex-row gap-2 items-start font-extralight">
             <Users className="size-4 shrink-0 text-muted-foreground mt-2" />
             <div className="flex-1">
                 <MultipleSelector
@@ -122,9 +122,10 @@ export default function AttendeesSelector({ meetingId, meetingAttendees }: Atten
                     value={selectedAttendees}
                     options={allContacts}
                     placeholder="Select attendees..."
+                    className="font-extralight"
                     hideClearAllButton
                     hidePlaceholderWhenSelected
-                    emptyIndicator={<p className="text-center text-sm">No contacts found</p>}
+                    emptyIndicator={<p className="text-center text-sm font-extralight">No contacts found</p>}
                     onChange={handleAttendeeChange}
                     disabled={isLoading}
                 />

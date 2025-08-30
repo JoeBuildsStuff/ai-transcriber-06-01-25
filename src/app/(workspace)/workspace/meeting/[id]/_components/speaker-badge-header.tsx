@@ -157,19 +157,19 @@ export default function SpeakerBadgeHeader({
     };
 
     return (
-        <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-3">
-            <span className="text-sm">Speakers:</span>
+        <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-3 font-extralight">
+            <span className="text-sm font-extralight">Speakers:</span>
             <div className="flex flex-wrap gap-2">
                 {meetingSpeakers.map((speaker) => (
                     <Popover key={speaker.speaker_index}>
                         <PopoverTrigger>
                             <Badge
-                                className={`${getSpeakerColor(speaker.speaker_index)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
+                                className={`${getSpeakerColor(speaker.speaker_index)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-extralight`}
                             >
                                 {getSpeakerDisplayName(speaker.speaker_index)}
                             </Badge>
                         </PopoverTrigger>
-                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[29rem] p-3 relative">
+                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[29rem] p-2.5 relative">
                                 <ScrollArea className="h-fit w-full">
                                     <div className="flex flex-row gap-2">
                                         {getSpeakerTimestamps(speaker.speaker_index).length > 0 ? (
@@ -178,25 +178,25 @@ export default function SpeakerBadgeHeader({
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <div
-                                                                className="cursor-pointer"
+                                                                className="cursor-pointer font-extralight"
                                                                 onClick={() => onSeekAndPlay?.(segment.start)}
                                                             >
                                                                 <Badge 
                                                                     variant="secondary"
-                                                                    className="hover:bg-secondary/80"
+                                                                    className="hover:bg-secondary/80 font-extralight"
                                                                 >
                                                                     {formatTime(segment.start)}
                                                                 </Badge>
                                                             </div>
                                                         </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>Jump to {formatTime(segment.start)} ({segment.duration.toFixed(1)}s)</p>
+                                                        <TooltipContent className="font-extralight">
+                                                            <p className="font-extralight">Jump to {formatTime(segment.start)} ({segment.duration.toFixed(1)}s)</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             ))
                                         ) : (
-                                            <div className="text-sm text-muted-foreground">
+                                            <div className="text-sm font-extralight">
                                                 No speaking segments found
                                             </div>
                                         )}
@@ -209,7 +209,7 @@ export default function SpeakerBadgeHeader({
                                             placeholder="Search contacts..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="peer ps-9 pe-9 text-sm"
+                                            className="peer ps-9 pe-9 text-sm font-extralight"
                                         />
                                         <div className="text-muted-foreground/80 pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 peer-disabled:opacity-50">
                                             <SearchIcon size={16} />
@@ -229,10 +229,10 @@ export default function SpeakerBadgeHeader({
                                                     {/* Remove association option if speaker has a contact */}
                                                     {speaker.contact_id && (
                                                         <div 
-                                                            className="flex flex-col gap-1 p-2 rounded-md border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 cursor-pointer transition-colors"
+                                                            className="flex flex-col gap-1 p-2 rounded-md border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 cursor-pointer transition-colors font-extralight"
                                                             onClick={() => handleAssociateContact(speaker.speaker_index, null)}
                                                         >
-                                                            <div className="font-medium text-sm text-destructive flex items-center gap-2">
+                                                            <div className="text-sm text-destructive flex items-center gap-2 font-extralight">
                                                                 <X size={14} />
                                                                 Remove association
                                                             </div>
@@ -246,23 +246,23 @@ export default function SpeakerBadgeHeader({
                                                             <div 
                                                                 key={contact.id} 
                                                                 className={cn(
-                                                                    "flex flex-col gap-1 p-2 rounded-md border cursor-pointer transition-colors",
+                                                                    "flex flex-col gap-1 p-2 rounded-md border cursor-pointer transition-colors font-extralight",
                                                                     isSelected 
                                                                         ? 'bg-secondary border-primary' 
                                                                         : 'hover:bg-secondary/50'
                                                                 )}
                                                                 onClick={() => handleAssociateContact(speaker.speaker_index, contact.id)}
                                                             >
-                                                                <div className="font-medium text-sm">
+                                                                <div className="text-sm font-extralight">
                                                                     {contact.display_name}
                                                                 </div>
                                                                 {contact.primary_email && (
-                                                                    <div className="text-xs text-muted-foreground">
+                                                                    <div className="text-xs text-muted-foreground font-extralight">
                                                                         {contact.primary_email}
                                                                     </div>
                                                                 )}
                                                                 {contact.company && (
-                                                                    <div className="text-xs text-muted-foreground">
+                                                                    <div className="text-xs text-muted-foreground font-extralight">
                                                                         {contact.company}
                                                                     </div>
                                                                 )}
@@ -271,16 +271,17 @@ export default function SpeakerBadgeHeader({
                                                     })}
                                                 </>
                                             ) : searchTerm ? (
-                                                <div className="text-sm text-muted-foreground">No contacts match your search</div>
+                                                <div className="text-sm text-muted-foreground font-extralight">No contacts match your search</div>
                                             ) : (
-                                                <div className="text-sm text-muted-foreground">No contacts found</div>
+                                                <div className="text-sm text-muted-foreground font-extralight">No contacts found</div>
                                             )}
                                         </div>
                                         <ScrollBar orientation="vertical" />
                                     </ScrollArea>
                                 </div>
-                                <Separator className="absolute bottom-13 -mx-3"  />
-                                <Button variant="secondary" className="w-full rounded-t-none border border-border">
+                                <Separator className="absolute bottom-13.5 -mx-2.5"  />
+                                {/* TODO: Enable this button to create a new contact */}
+                                <Button variant="secondary" className="w-full rounded-t-none rounded-b-lg border border-border font-extralight mt-1">
                                     Add new contact
                                 </Button>
                         </PopoverContent>

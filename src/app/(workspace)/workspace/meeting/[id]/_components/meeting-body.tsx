@@ -23,9 +23,9 @@ export default function MeetingBody({ meetingData, meetingSpeakers: initialMeeti
         <div className="h-full relative">
             <Tabs defaultValue="transcript" className="h-full">
                 <TabsList>
-                    <TabsTrigger value="transcript">Transcript</TabsTrigger>
-                    <TabsTrigger value="outline">Outline</TabsTrigger>
-                    <TabsTrigger value="notes">Notes</TabsTrigger>
+                    <TabsTrigger value="transcript" className="font-light">Transcript</TabsTrigger>
+                    <TabsTrigger value="outline" className="font-light">Outline</TabsTrigger>
+                    <TabsTrigger value="notes" className="font-light">Notes</TabsTrigger>
                 </TabsList>
                 <TabsContent value="transcript" className="h-full overflow-y-auto">
                     <MeetingTranscript 

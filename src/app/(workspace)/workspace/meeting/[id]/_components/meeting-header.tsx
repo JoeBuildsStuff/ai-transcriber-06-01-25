@@ -27,7 +27,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
             {/* Title */}
             <div className="flex flex-row gap-2 items-center">
                 <Type className="size-4 shrink-0 text-muted-foreground" />
-                <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} />
+                <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight" />
             </div>
 
             {/* Attendees */}
@@ -40,7 +40,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
                     field="meeting_at" 
                     id={id} 
                     initialValue={meetingData.meeting_at || null}
-                    className="flex flex-row gap-2 items-center"
+                    className="flex flex-row gap-2 items-center font-extralight"
                 >
                     <Calendar className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
@@ -50,7 +50,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
                     field="meeting_at" 
                     id={id} 
                     initialValue={meetingData.meeting_at || null}
-                    className="flex flex-row gap-2 items-center"
+                    className="flex flex-row gap-2 items-center font-extralight"
                 >
                     <Clock className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
@@ -59,8 +59,8 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
 
             {/* Location */}
             <div className="flex flex-row gap-2 items-center">
-                <Map className="size-4 shrink-0 text-muted-foreground" />
-                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm" />
+                <Map className="size-4 shrink-0 text-muted-foreground " />
+                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight" />
             </div>
 
             {/* Audio Player */}
