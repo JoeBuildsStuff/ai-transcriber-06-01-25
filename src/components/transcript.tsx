@@ -107,8 +107,7 @@ const Transcript: React.FC<TranscriptProps> = ({
 
     // If speaker has associated contact, use contact data
     if (speaker.contact) {
-      return speaker.contact.display_name || 
-             `${speaker.contact.first_name} ${speaker.contact.last_name}`.trim() || 
+      return `${speaker.contact.first_name} ${speaker.contact.last_name}`.trim() || 
              speaker.contact.primary_email || 
              `Speaker ${speakerNumber}`;
     }

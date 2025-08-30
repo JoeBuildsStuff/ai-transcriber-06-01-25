@@ -173,39 +173,6 @@ export async function createMeeting(params?: {
   }
 }
 
-// src/actions/meetings.ts
-export async function updateMeetingNotes(meetingId: string, notes: string) {
-  'use server'
-  
-  const supabase = await createClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  
-  if (userError || !user) {
-    return { error: "You must be logged in to update notes." }
-  }
-
-  try {
-    const { error } = await supabase
-      .schema("ai_transcriber")
-      .from("meetings")
-      .update({ 
-        user_notes: notes,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", meetingId)
-
-    if (error) {
-      return { error: error.message }
-    }
-
-    revalidatePath(`/workspace/meetings/${meetingId}`)
-    return { data: "Notes updated successfully" }
-  } catch (error) {
-    console.error('Error updating meeting notes:', error)
-    return { error: "An unexpected error occurred" }
-  }
-}
-
 // Meeting Attendees Management Functions
 export async function getMeetingAttendees(meetingId: string) {
   const supabase = await createClient()

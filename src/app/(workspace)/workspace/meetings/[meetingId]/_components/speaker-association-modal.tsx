@@ -142,7 +142,7 @@ export default function SpeakerAssociationModal({
   }
 
   const getContactDisplayName = (contact: Contact) => {
-    return contact.display_name || `${contact.first_name} ${contact.last_name}`.trim() || contact.primary_email
+    return `${contact.first_name} ${contact.last_name}`.trim() || contact.primary_email
   }
 
   const handleSegmentClick = (start: number) => {

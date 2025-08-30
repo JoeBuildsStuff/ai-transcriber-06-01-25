@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         try {
           const body = await req.json();
-          const { transcript, meetingId, speakerDetails, user_notes } = body;
+          const { transcript, meetingId, speakerDetails } = body;
 
           if (!meetingId) {
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "meetingId is required" }) + "\n\n"));
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
           const promptData = {
             transcript,
             participants: speakerDetails,
-            user_notes: user_notes,
           };
 
           const response = await openai.responses.parse({

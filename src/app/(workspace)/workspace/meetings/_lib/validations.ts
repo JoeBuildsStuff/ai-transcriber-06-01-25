@@ -25,6 +25,7 @@ export type Meetings = {
   meeting_at?: string,
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
+  location?: string,
 }
 
 export type MeetingsList = {

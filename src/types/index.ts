@@ -8,7 +8,6 @@ export type Contact = {
   user_id: string | null
   first_name?: string | null
   last_name?: string | null
-  display_name?: string | null
   primary_email?: string | null
   primary_phone?: string | null
   company?: string | null
@@ -49,7 +48,6 @@ export interface Meeting {
     location: string | null;
     speaker_names: { [key: string]: string } | null;
     summary: string;
-    user_notes?: string | null;
     meeting_reviewed?: boolean | null;
 }
 
@@ -75,7 +73,6 @@ export interface MeetingDetails extends Meeting {
   summary_jsonb: Record<string, string> | null;
   openai_response: string | null;
   hasAudio: boolean; // Indicates if audio file is available
-  user_notes?: string | null;
   meeting_reviewed?: boolean | null;
   attendees?: MeetingAttendeeWithContact[];
 }
@@ -135,6 +132,21 @@ export interface MeetingAttendeeFromDB {
   updated_at: string | null;
   notes: string | null;
   new_contacts: NewContactFromDB;
+}
+
+// Type for the meeting_attendees_with_contacts view
+export interface MeetingAttendeeViewData {
+    id: string | null;
+    meeting_id: string | null;
+    contact_id: string | null;
+    invitation_status: string | null;
+    attendance_status: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    primary_email: string | null;
+    primary_phone: string | null;
+    company: string | null;
+    job_title: string | null;
 }
 
 // ===== TRANSCRIPTION TYPES =====

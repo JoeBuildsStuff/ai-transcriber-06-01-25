@@ -34,7 +34,6 @@ export default function InputSupabase({ table, field, id, initialValue, placehol
       disabled={updating}
       placeholder={placeholder || `Enter ${field.replace('_', ' ')}...`}
       className={cn(
-        "w-full min-w-0 text-left hover:bg-secondary rounded-md py-2 px-2 truncate shadow-none",
         isUnsaved && "text-blue-700 dark:text-blue-400 font-medium",
         className
       )}

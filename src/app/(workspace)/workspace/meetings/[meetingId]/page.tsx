@@ -35,7 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/component
 import { DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { marked } from 'marked';
 import MeetingEditModal from './_components/meeting-edit-modal';
-import LazyAudioPlayer from '@/components/lazy-audio-player';
+import LazyAudioPlayer from '@/components/audio-player-lazy';
 import { AudioPlayerRef, Contact, DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup, MeetingDetails, MeetingAttendeeFromDB, MeetingSpeakerWithContact } from '@/types';
 import UploadAudio from './_components/upload-audio';
 import { getMeetingSpeakers } from '@/actions/contacts';
@@ -462,7 +462,7 @@ export default function MeetingDetailPage() {
     const summarizeResponse = await fetch('/api/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, meetingId: meeting!.id, speakerDetails, user_notes: meeting?.user_notes }),
+        body: JSON.stringify({ transcript, meetingId: meeting!.id, speakerDetails }),
     });
 
     if (!summarizeResponse.ok || !summarizeResponse.body) {

@@ -1,60 +1,167 @@
 "use client";
 
-import { MeetingSpeakerWithContact } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { MeetingSpeakerWithContact, FormattedTranscriptGroup } from "@/types";
+
 import { useSpeakerUtils } from "@/hooks/use-speaker-utils";
+import { getAllContacts } from "@/app/(workspace)/workspace/contacts/_lib/actions";
+import { updateMeetingSpeaker } from "@/actions/contacts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useEffect, useState, useTransition } from "react";
+import { Separator } from "@/components/ui/separator";
+import { SearchIcon, X } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useState, useTransition } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { updateMeetingSpeaker } from "@/actions/contacts";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SpeakerBadgeHeaderProps {
     meetingSpeakers: MeetingSpeakerWithContact[];
+    meetingId: string;
+    onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
+    formattedTranscript?: FormattedTranscriptGroup[];
+    onSeekAndPlay?: (time: number) => void;
 }
 
-export default function SpeakerBadgeHeader({ meetingSpeakers }: SpeakerBadgeHeaderProps) {
-    const { getSpeakerColor, getSpeakerDisplayName } = useSpeakerUtils(meetingSpeakers);
-    const meetingId = meetingSpeakers[0]?.meeting_id;
-    const [isPending, startTransition] = useTransition();
-    
-    // Fetch contacts when any popover opens (lazy-load per popover is fine, cached in state)
-    const [contacts, setContacts] = useState<
-        { id: string; first_name: string | null; last_name: string | null; display_name: string | null; primary_email: string | null; company: string | null }[]
-    >([]);
-    const [loaded, setLoaded] = useState(false);
-    const [loading, setLoading] = useState(false);
+interface Contact {
+    id: string;
+    first_name: string;
+    last_name: string;
+    display_name: string;
+    primary_email: string;
+    company: string;
+    created_at?: string;
+    updated_at?: string;
+    user_id?: string;
+}
 
-    const loadContacts = async () => {
-        if (loaded || loading) return;
-        setLoading(true);
-        try {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from("new_contacts")
-                .select("id, first_name, last_name, display_name, primary_email, company")
-                .order("updated_at", { ascending: false });
-            if (!error && data) {
-                setContacts(data);
-                setLoaded(true);
-            }
-        } finally {
-            setLoading(false);
-        }
+export default function SpeakerBadgeHeader({ 
+    meetingSpeakers, 
+    meetingId, 
+    onSpeakersUpdate,
+    formattedTranscript,
+    onSeekAndPlay
+}: SpeakerBadgeHeaderProps) {
+    const { getSpeakerColor, getSpeakerDisplayName } = useSpeakerUtils(meetingSpeakers);
+    const [contacts, setContacts] = useState<Contact[]>([]);
+    const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [, startTransition] = useTransition();
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
 
-    const getContactDisplayName = (c: { display_name: string | null; first_name: string | null; last_name: string | null; primary_email: string | null }) =>
-        c.display_name || `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.primary_email || "Unknown Contact";
+    const getSpeakerTimestamps = (speakerIndex: number) => {
+        if (!formattedTranscript) return [];
+        
+        // Get all segments for this speaker
+        const speakerSegments = formattedTranscript.filter(segment => segment.speaker === speakerIndex);
+        
+        // Calculate duration for each segment by finding the next segment in the full transcript
+        const segmentsWithDuration = speakerSegments.map((segment) => {
+            // Find the index of this segment in the full transcript
+            const segmentIndex = formattedTranscript.findIndex(s => 
+                s.speaker === segment.speaker && s.start === segment.start && s.text === segment.text
+            );
+            
+            // Get the next segment in the full transcript (regardless of speaker)
+            const nextSegment = formattedTranscript[segmentIndex + 1];
+            const nextStartTime = nextSegment ? nextSegment.start : segment.start + 5; // Default 5 seconds if no next segment
+            const duration = nextStartTime - segment.start;
+            
+            return {
+                start: segment.start,
+                duration: duration,
+                text: segment.text
+            };
+        });
+        
+        // Sort by duration (longest first) and return segments with duration info
+        return segmentsWithDuration
+            .sort((a, b) => b.duration - a.duration)
+            .slice(0, 10); // Limit to first 10 timestamps
+    };
+
+    useEffect(() => {
+        const loadContacts = async () => {
+            setIsLoading(true);
+            try {
+                const contactsData = await getAllContacts();
+                setContacts(contactsData);
+                setFilteredContacts(contactsData);
+            } catch (error) {
+                console.error('Error loading contacts:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadContacts();
+    }, []);
+
+    // Filter contacts based on search term
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setFilteredContacts(contacts);
+        } else {
+            const filtered = contacts.filter(contact => 
+                contact.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                contact.primary_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                contact.company.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            setFilteredContacts(filtered);
+        }
+    }, [searchTerm, contacts]);
+
+    const handleAssociateContact = (speakerIndex: number, contactId: string | null) => {
+        startTransition(async () => {
+            try {
+                await updateMeetingSpeaker(meetingId, speakerIndex, contactId);
+                
+                // Update the speakers list
+                const updatedSpeakers = meetingSpeakers.map(speaker => {
+                    if (speaker.speaker_index === speakerIndex) {
+                        if (contactId) {
+                            const contact = contacts.find(c => c.id === contactId);
+                            return { 
+                                ...speaker, 
+                                contact_id: contactId, 
+                                contact: contact ? {
+                                    ...contact,
+                                    created_at: contact.created_at || '',
+                                    updated_at: contact.updated_at || '',
+                                    user_id: contact.user_id || ''
+                                } : null
+                            };
+                        } else {
+                            return { ...speaker, contact_id: null, contact: null };
+                        }
+                    }
+                    return speaker;
+                });
+                
+                onSpeakersUpdate(updatedSpeakers);
+                toast.success('Speaker association updated successfully');
+            } catch (error) {
+                console.error('Error updating speaker association:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Failed to update speaker association';
+                toast.error(errorMessage);
+            }
+        });
+    };
 
     return (
         <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-3">
             <span className="text-sm">Speakers:</span>
             <div className="flex flex-wrap gap-2">
                 {meetingSpeakers.map((speaker) => (
-                    <Popover key={speaker.speaker_index} onOpenChange={(open) => { if (open) loadContacts(); }}>
+                    <Popover key={speaker.speaker_index}>
                         <PopoverTrigger>
                             <Badge
                                 className={`${getSpeakerColor(speaker.speaker_index)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
@@ -62,74 +169,120 @@ export default function SpeakerBadgeHeader({ meetingSpeakers }: SpeakerBadgeHead
                                 {getSpeakerDisplayName(speaker.speaker_index)}
                             </Badge>
                         </PopoverTrigger>
-                        <PopoverContent align="start" side="bottom" className="rounded-xl">
-                            <div className="flex flex-col gap-2">
-                                {/* <Label className="text-sm">Joe</Label> */}
+                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[29rem] p-3 relative">
                                 <ScrollArea className="h-fit w-full">
                                     <div className="flex flex-row gap-2">
-                                        {Array.from({ length: 10 }, (_, index) => (
-                                            <Badge key={index} variant="secondary">
-                                                {`${((index + 1) * 0.09).toFixed(2)}s`}
-                                            </Badge>
-                                        ))}
+                                        {getSpeakerTimestamps(speaker.speaker_index).length > 0 ? (
+                                            getSpeakerTimestamps(speaker.speaker_index).map((segment, index) => (
+                                                <TooltipProvider key={index}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div
+                                                                className="cursor-pointer"
+                                                                onClick={() => onSeekAndPlay?.(segment.start)}
+                                                            >
+                                                                <Badge 
+                                                                    variant="secondary"
+                                                                    className="hover:bg-secondary/80"
+                                                                >
+                                                                    {formatTime(segment.start)}
+                                                                </Badge>
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>Jump to {formatTime(segment.start)} ({segment.duration.toFixed(1)}s)</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            ))
+                                        ) : (
+                                            <div className="text-sm text-muted-foreground">
+                                                No speaking segments found
+                                            </div>
+                                        )}
                                     </div>
                                     <ScrollBar orientation="horizontal" />
                                 </ScrollArea>
-                            </div>
-                            {/* Contact selection with search */}
-                            <div className="mt-2">
-                                <Command>
-                                    <CommandInput placeholder="Search contacts..." />
-                                    <CommandList>
-                                        <CommandEmpty>{loading ? "Loading contacts..." : "No contacts found."}</CommandEmpty>
-                                        <CommandGroup>
-                                            {speaker.contact_id && (
-                                                <CommandItem
-                                                    value="remove"
-                                                    className="text-destructive"
-                                                    onSelect={() => {
-                                                        if (!meetingId) return;
-                                                        startTransition(async () => {
-                                                            await updateMeetingSpeaker(meetingId, speaker.speaker_index, null);
-                                                        });
-                                                    }}
-                                                >
-                                                    <X className="mr-2 h-4 w-4" />
-                                                    Remove association
-                                                </CommandItem>
+                                <div className="flex flex-col gap-2">
+                                    <div className="relative">
+                                        <Input
+                                            placeholder="Search contacts..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="peer ps-9 pe-9 text-sm"
+                                        />
+                                        <div className="text-muted-foreground/80 pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 peer-disabled:opacity-50">
+                                            <SearchIcon size={16} />
+                                        </div>
+                                        {searchTerm && (
+                                            <Button variant="ghost" size="icon" onClick={() => setSearchTerm("")} className="text-muted-foreground/80 absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50">
+                                                <X size={16} />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <ScrollArea className="h-[20rem] w-full">
+                                        <div className="flex flex-col gap-2">
+                                            {isLoading ? (
+                                                <div className="text-sm text-muted-foreground">Loading contacts...</div>
+                                            ) : filteredContacts.length > 0 ? (
+                                                <>
+                                                    {/* Remove association option if speaker has a contact */}
+                                                    {speaker.contact_id && (
+                                                        <div 
+                                                            className="flex flex-col gap-1 p-2 rounded-md border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 cursor-pointer transition-colors"
+                                                            onClick={() => handleAssociateContact(speaker.speaker_index, null)}
+                                                        >
+                                                            <div className="font-medium text-sm text-destructive flex items-center gap-2">
+                                                                <X size={14} />
+                                                                Remove association
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Contact list */}
+                                                    {filteredContacts.map((contact) => {
+                                                        const isSelected = speaker.contact_id === contact.id;
+                                                        return (
+                                                            <div 
+                                                                key={contact.id} 
+                                                                className={cn(
+                                                                    "flex flex-col gap-1 p-2 rounded-md border cursor-pointer transition-colors",
+                                                                    isSelected 
+                                                                        ? 'bg-secondary border-primary' 
+                                                                        : 'hover:bg-secondary/50'
+                                                                )}
+                                                                onClick={() => handleAssociateContact(speaker.speaker_index, contact.id)}
+                                                            >
+                                                                <div className="font-medium text-sm">
+                                                                    {contact.display_name}
+                                                                </div>
+                                                                {contact.primary_email && (
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        {contact.primary_email}
+                                                                    </div>
+                                                                )}
+                                                                {contact.company && (
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        {contact.company}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </>
+                                            ) : searchTerm ? (
+                                                <div className="text-sm text-muted-foreground">No contacts match your search</div>
+                                            ) : (
+                                                <div className="text-sm text-muted-foreground">No contacts found</div>
                                             )}
-                                            {contacts.map((c) => (
-                                                <CommandItem
-                                                    key={c.id}
-                                                    value={`${getContactDisplayName(c)} ${c.company || ""}`.trim()}
-                                                    onSelect={() => {
-                                                        if (!meetingId) return;
-                                                        startTransition(async () => {
-                                                            await updateMeetingSpeaker(meetingId, speaker.speaker_index, c.id);
-                                                        });
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            speaker.contact_id === c.id ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    <div className="flex flex-col">
-                                                        <div className="font-medium">{getContactDisplayName(c)}</div>
-                                                        {c.company && (
-                                                            <div className="text-xs text-muted-foreground">{c.company}</div>
-                                                        )}
-                                                        {c.primary_email && (
-                                                            <div className="text-xs text-muted-foreground">{c.primary_email}</div>
-                                                        )}
-                                                    </div>
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </div>
+                                        </div>
+                                        <ScrollBar orientation="vertical" />
+                                    </ScrollArea>
+                                </div>
+                                <Separator className="absolute bottom-13 -mx-3"  />
+                                <Button variant="secondary" className="w-full rounded-t-none border border-border">
+                                    Add new contact
+                                </Button>
                         </PopoverContent>
                     </Popover>
                 ))}

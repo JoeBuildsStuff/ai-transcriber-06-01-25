@@ -1,5 +1,8 @@
 "use client";
 
+// NOTE: Created this component so that audio files are only retrieved if use attempts to play it.  
+// TODO: have to click play 2x to work?
+
 import { Pause, Play, RotateCcw, RotateCw, Volume2, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
@@ -22,7 +25,7 @@ export interface AudioPlayerRef {
   seek: (time: number) => void;
 }
 
-const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meetingId, duration, onTimeUpdate }, ref) => {
+const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meetingId, onTimeUpdate }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(50);
@@ -94,8 +97,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
       if (onTimeUpdate) {
         onTimeUpdate(audio.currentTime);
       }
-      if (duration > 0) {
-        setProgress((audio.currentTime / duration) * 100);
+      if (audio.duration > 0) {
+        setProgress((audio.currentTime / audio.duration) * 100);
       }
     };
 
@@ -113,7 +116,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handlePause);
     };
-  }, [duration, audioLoaded, onTimeUpdate]);
+  }, [onTimeUpdate, audioLoaded]);
 
   const togglePlayPause = async () => {
     if (!audioLoaded) {
@@ -129,8 +132,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   const handleSeek = (value: number[]) => {
-    if (audioRef.current && duration > 0 && audioLoaded) {
-      const seekTime = (value[0] / 100) * duration;
+    if (audioRef.current && audioRef.current.duration > 0 && audioLoaded) {
+      const seekTime = (value[0] / 100) * audioRef.current.duration;
       audioRef.current.currentTime = seekTime;
       setProgress(value[0]);
       setCurrentTime(seekTime);
@@ -147,7 +150,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
       return;
     }
     if (audioRef.current) {
-      audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 10, duration);
+      audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 10, audioRef.current.duration);
     }
   };
 
@@ -201,11 +204,11 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
                 showTooltip
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                tooltipContent={(value) => formatTime((value / 100) * duration)}
+                tooltipContent={(value) => formatTime((value / 100) * audioRef.current?.duration || 0)}
               />
               <div className="w-full flex justify-between mt-2">
                 <p className="text-sm text-muted-foreground">{formatTime(currentTime)}</p>
-                <p className="text-sm text-muted-foreground">{formatTime(duration)}</p>
+                <p className="text-sm text-muted-foreground">{formatTime(audioRef.current?.duration || 0)}</p>
               </div>
             </div>
 

@@ -23,7 +23,6 @@ export default async function DataTableMeetings({
   const initialState = {
     ...parseSearchParams(searchParams),
     columnVisibility: {
-      user_notes: false,
       created_at: false,
       updated_at: false,
       summary: false,

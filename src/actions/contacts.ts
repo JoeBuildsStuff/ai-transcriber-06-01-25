@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { MeetingSpeaker, MeetingSpeakerWithContact } from "@/types"
-import { Database } from "@/types/supabase"
+
 
 export async function updateSpeakerContacts(meetingId: string, speakerContacts: Record<number, string>) {
   const supabase = await createClient()
@@ -159,7 +159,7 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
   // Get speakers from meeting_speakers table
   const { data: speakers, error } = await supabase
     .from('meeting_speakers')
-    .select('*')
+    .select('id, contact_id, speaker_index, speaker_name')
     .eq('meeting_id', meetingId)
     .order('speaker_index')
 
@@ -172,6 +172,7 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
     console.log(`No speakers found in meeting_speakers table for meeting ${meetingId}, checking speaker_names...`)
     
     // Get the meeting to check speaker_names
+    //TODO: This is likely not needed anymore since refactoring
     const { data: meeting } = await supabase
       .schema('ai_transcriber')
       .from('meetings')
@@ -195,41 +196,82 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
       // Retry fetching speakers
       const { data: newSpeakers } = await supabase
         .from('meeting_speakers')
-        .select('*')
+        .select('id, contact_id, speaker_index, speaker_name')
         .eq('meeting_id', meetingId)
         .order('speaker_index')
       
       if (newSpeakers) {
-        return transformSpeakersData(newSpeakers, userData.user.id, supabase)
+        return transformSpeakersData(newSpeakers, userData.user.id, supabase, meetingId)
       }
     }
     
     return []
   }
 
-  return transformSpeakersData(speakers, userData.user.id, supabase)
+  return transformSpeakersData(speakers, userData.user.id, supabase, meetingId)
+}
+
+export async function getMeetingAttendeesWithContacts(meetingId: string) {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    throw new Error("You must be logged in to view meeting attendees.")
+  }
+
+  const { data: attendees, error } = await supabase
+    .schema('ai_transcriber')
+    .from('meeting_attendees_with_contacts')
+    .select('id, meeting_id, contact_id, invitation_status, attendance_status, first_name, last_name, primary_email, primary_phone, company, job_title')
+    .eq('meeting_id', meetingId)
+    .eq('user_id', userData.user.id)
+    .order('created_at')
+
+  if (error) {
+    throw new Error(`Failed to fetch meeting attendees: ${error.message}`)
+  }
+
+  return attendees || []
 }
 
 // Helper function to transform speaker data
 async function transformSpeakersData(
-  speakers: Database['ai_transcriber']['Tables']['meeting_speakers']['Row'][], 
+  speakers: { id: string; contact_id: string | null; speaker_index: number; speaker_name: string | null }[], 
   userId: string, 
-  supabase: Awaited<ReturnType<typeof createClient>>
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  meetingId: string
 ): Promise<MeetingSpeakerWithContact[]> {
   // Get contact details for speakers that have contact_id
   const contactIds = speakers.filter(s => s.contact_id).map(s => s.contact_id)
-  let contacts: { id: string; first_name: string; last_name: string; job_title: string; is_favorite: boolean }[] = []
+  let contacts: { id: string; first_name: string; last_name: string; display_name: string | null; primary_email: string | null }[] = []
   
   if (contactIds.length > 0) {
     const { data: contactData, error: contactError } = await supabase
       .from('new_contacts')
-      .select('id, first_name, last_name, job_title, is_favorite')
+      .select(`
+        id, 
+        first_name, 
+        last_name,
+        emails:new_contact_emails(email, display_order)
+      `)
       .in('id', contactIds)
 
     if (contactError) {
       console.error('Error fetching contacts:', contactError)
     } else {
-      contacts = contactData || []
+      // Transform the data to include primary_email
+      contacts = (contactData || []).map(contact => {
+        const sortedEmails = contact.emails?.sort((a: { display_order: number }, b: { display_order: number }) => a.display_order - b.display_order) || []
+        const primaryEmail = sortedEmails[0]?.email || ''
+        
+        return {
+          id: contact.id,
+          first_name: contact.first_name || '',
+          last_name: contact.last_name || '',
+          display_name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
+          primary_email: primaryEmail
+        }
+      })
     }
   }
 
@@ -239,16 +281,16 @@ async function transformSpeakersData(
     
     return {
       id: speaker.id,
-      meeting_id: speaker.meeting_id,
+      meeting_id: meetingId, // We know this from the function parameter
       contact_id: speaker.contact_id,
       speaker_index: speaker.speaker_index,
       speaker_name: speaker.speaker_name,
-      confidence_score: speaker.confidence_score,
-      role: speaker.role,
-      is_primary_speaker: speaker.is_primary_speaker,
-      identified_at: speaker.identified_at,
-      created_at: speaker.created_at,
-      updated_at: speaker.updated_at,
+      confidence_score: null,
+      role: 'attendee',
+      is_primary_speaker: speaker.speaker_index === 0,
+      identified_at: null,
+      created_at: null,
+      updated_at: null,
       contact: contact ? {
         id: contact.id,
         created_at: '',
@@ -256,14 +298,14 @@ async function transformSpeakersData(
         user_id: userId,
         first_name: contact.first_name,
         last_name: contact.last_name,
-        display_name: null,
-        primary_email: null,
+        display_name: contact.display_name,
+        primary_email: contact.primary_email,
         company: null,
-        job_title: contact.job_title,
+        job_title: null,
         primary_phone: null,
         birthday: null,
         notes: null,
-        is_favorite: contact.is_favorite,
+        is_favorite: false,
         nickname: null,
         tags: null
       } : null

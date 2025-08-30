@@ -15,7 +15,7 @@ export async function getMeeting(
   const { data, error } = await supabase
     .schema("ai_transcriber")
     .from("meetings")
-    .select("id, user_id, audio_file_path, original_file_name, formatted_transcript, summary, created_at, updated_at, title, meeting_at, speaker_names, summary_jsonb, meeting_reviewed, user_notes")
+    .select("id, user_id, audio_file_path, original_file_name, formatted_transcript, summary, created_at, updated_at, title, meeting_at, speaker_names, summary_jsonb, meeting_reviewed, location")
     .eq("id", id)
     .single()
 

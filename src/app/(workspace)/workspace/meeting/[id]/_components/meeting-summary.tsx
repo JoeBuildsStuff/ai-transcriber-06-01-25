@@ -1,8 +1,12 @@
 "use client";
 
+// TODO: this is a copy of the summary component when refactoring meeting/[id] to server component
+// we dont need the original summary component anymore in the components folder
+// TODO: but this is also using a hook for useSummaryAutoSave, but we need to make an agnostic saving tiptap component
+
 import React, { useEffect } from "react";
 import { marked } from "marked";
-import Tiptap from "./tiptap/tiptap";
+import Tiptap from "@/components/tiptap/tiptap";
 import { Badge } from "@/components/ui/badge";
 import { useSummaryAutoSave } from "@/hooks/use-summary-auto-save";
 
