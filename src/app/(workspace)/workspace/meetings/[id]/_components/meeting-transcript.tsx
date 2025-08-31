@@ -6,10 +6,11 @@ import SpeakerBadgeHeader from "./speaker-badge-header";
 import { useSpeakerUtils } from "@/hooks/use-speaker-utils";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
-import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import UploadAudio from "./upload-audio";
+import { CheckIcon } from "@/components/icons/check";
+import { CopyIcon } from "@/components/icons/copy";
 
 interface MeetingTranscriptProps {
     meetingData: Meetings;
@@ -128,7 +129,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
                 className="absolute top-1 right-0"
                 title="Copy transcript"
             >
-                {isCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                {isCopied ? <CheckIcon /> : <CopyIcon />}
             </Button>
             <ScrollArea className="h-full overflow-y-auto">
             {/* Speaker badges row */}
