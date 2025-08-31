@@ -378,6 +378,7 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
           )}
+          
         </SidebarContent>
         <SidebarFooter className="border-t border-border">
           <AuthButton />

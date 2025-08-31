@@ -4,12 +4,10 @@ import { Pencil } from "lucide-react";
 import { useChatStore } from "@/lib/chat/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
-import { CopyIcon } from "@/components/icons/copy";
-import { CheckIcon } from "@/components/icons/check";
+import { CopyButton } from "@/components/ui/copy-button";
 import { RotateCCWIcon } from "@/components/icons/rotate-ccw";
 import { UpvoteIcon } from "@/components/icons/upvote";
 import { DownvoteIcon } from "@/components/icons/downvote";
-import { useState, useEffect } from "react";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
@@ -19,25 +17,8 @@ interface ChatMessageActionsProps {
 }
 
 export default function ChatMessageActions({ message, onEdit }: ChatMessageActionsProps) {
-  const { copyMessage, retryMessage } = useChatStore()
+  const { retryMessage } = useChatStore()
   const { sendMessage } = useChat()
-  const [showCheck, setShowCheck] = useState(false)
-
-  const handleCopy = () => {
-    copyMessage(message.id)
-    toast.success("Message copied to clipboard")
-    setShowCheck(true)
-  }
-
-  useEffect(() => {
-    if (showCheck) {
-      const timer = setTimeout(() => {
-        setShowCheck(false)
-      }, 2000)
-      
-      return () => clearTimeout(timer)
-    }
-  }, [showCheck])
 
   const handleRetry = () => {
     retryMessage(message.id, (content) => {
@@ -59,25 +40,14 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
   return (
     <TooltipProvider>
       <div className="flex">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="p-2 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
-              onClick={handleCopy}
-            >
-              {showCheck ? (
-                <CheckIcon className="" size={16} />
-              ) : (
-                <CopyIcon className="" size={16} />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="center" sideOffset={4} className="border border-border text-secondary-foreground bg-secondary">
-            {showCheck ? "Copied!" : "Copy"}
-          </TooltipContent>
-        </Tooltip>
+        <CopyButton
+          textToCopy={message.content}
+          successMessage="Message copied to clipboard"
+          tooltipText="Copy"
+          tooltipCopiedText="Copied!"
+          iconSize={16}
+          className="p-2 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
+        />
         
         {/* Show Retry, Upvote, and Downvote for assistant messages */}
         {message.role === 'assistant' && (

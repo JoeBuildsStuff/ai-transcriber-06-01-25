@@ -16,8 +16,6 @@ import {
     AlignLeft,
     AlignCenter,
     AlignRight,
-    Copy,
-    Check,
 } from 'lucide-react'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -25,6 +23,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortc
 import { Button } from '@/components/ui/button'
 import { LinkButton } from '@/components/tiptap/link-button'
 import TableButton from '@/components/tiptap/table-button'
+import { CopyIcon } from '@/components/icons/copy'
+import { CheckIcon } from '@/components/icons/check'
+import { toast } from 'sonner'
 import { useState } from 'react'
 
 interface FixedMenuProps {
@@ -33,7 +34,7 @@ interface FixedMenuProps {
 
 const FixedMenu = ({ editor }: FixedMenuProps) => {
     const [isCopied, setIsCopied] = useState(false)
-
+    
     const editorState = useEditorState({
         editor,
         selector: (state: { editor: Editor }) => ({
@@ -54,34 +55,38 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
         }),
     })
 
-    const handleCopy = () => {
+    const handleCopy = async () => {
         if (!editor) {
             return
         }
+        
         const htmlContent = editor.getHTML()
         const textContent = editor.getText()
 
-        navigator.clipboard.write([
-            new ClipboardItem({
-                'text/html': new Blob([htmlContent], { type: 'text/html' }),
-                'text/plain': new Blob([textContent], { type: 'text/plain' })
-            })
-        ]).then(() => {
+        try {
+            // Try to copy rich text with HTML and plain text formats
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                    'text/plain': new Blob([textContent], { type: 'text/plain' })
+                })
+            ])
             setIsCopied(true)
-            setTimeout(() => {
-                setIsCopied(false)
-            }, 2000)
-        }).catch(err => {
+            setTimeout(() => setIsCopied(false), 2000)
+            toast.success("Content copied to clipboard")
+        } catch (err) {
             console.error('Failed to copy rich text, falling back to plain text.', err)
-            navigator.clipboard.writeText(textContent).then(() => {
+            // Fallback to plain text if rich text copy fails
+            try {
+                await navigator.clipboard.writeText(textContent)
                 setIsCopied(true)
-                setTimeout(() => {
-                    setIsCopied(false)
-                }, 2000)
-            }).catch(err => {
-                console.error('Failed to copy plain text.', err)
-            })
-        })
+                setTimeout(() => setIsCopied(false), 2000)
+                toast.success("Content copied to clipboard")
+            } catch (fallbackErr) {
+                console.error('Failed to copy plain text.', fallbackErr)
+                toast.error("Failed to copy content")
+            }
+        }
     }
     
     return (
@@ -264,9 +269,16 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                     </div>
                 </div>
                 <div className='flex flex-row gap-1'>
-                    <Button size='sm' variant='ghost' className='text-xs' onClick={handleCopy}>
-                        {isCopied ? <Check className='' /> : <Copy className='' />}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Button size='sm' variant='ghost' className='text-xs' onClick={handleCopy}>
+                                {isCopied ? <CheckIcon className='' /> : <CopyIcon className='' />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{isCopied ? "Copied!" : "Copy content"}</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             </div>
         </div>

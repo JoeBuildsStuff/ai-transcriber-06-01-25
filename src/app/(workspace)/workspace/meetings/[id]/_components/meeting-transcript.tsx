@@ -5,12 +5,10 @@ import { Meetings } from "../_lib/validations";
 import SpeakerBadgeHeader from "./speaker-badge-header";
 import { useSpeakerUtils } from "@/hooks/use-speaker-utils";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import UploadAudio from "./upload-audio";
-import { CheckIcon } from "@/components/icons/check";
-import { CopyIcon } from "@/components/icons/copy";
+import { CopyButton } from "@/components/ui/copy-button";
 
 interface MeetingTranscriptProps {
     meetingData: Meetings;
@@ -26,7 +24,6 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
     const { getSpeakerColor, getSpeakerDisplayName } = useSpeakerUtils(meetingSpeakers);
     const transcriptRef = useRef<HTMLDivElement>(null);
     const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
-    const [isCopied, setIsCopied] = useState(false);
     
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
@@ -34,8 +31,8 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
         return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
 
-    const copyTranscript = async () => {
-        if (!meetingData.formatted_transcript) return;
+    const getTranscriptText = () => {
+        if (!meetingData.formatted_transcript) return "";
         
         const transcript = meetingData.formatted_transcript as unknown as FormattedTranscriptGroup[];
         let transcriptText = `Meeting Transcript\n\n`;
@@ -46,15 +43,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
             transcriptText += `[${timestamp}] ${speakerName}: ${item.text}\n\n`;
         });
         
-        try {
-            await navigator.clipboard.writeText(transcriptText);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000);
-            toast.success("Transcript copied to clipboard");
-        } catch (error) {
-            console.error("Failed to copy transcript:", error);
-            toast.error("Failed to copy transcript");
-        }
+        return transcriptText;
     };
 
     // Function to determine if a transcript segment is currently active
@@ -122,15 +111,14 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
 
     return (
         <Card className="h-full p-1 gap-2" ref={transcriptRef}>
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyTranscript}
+            <CopyButton
+                textToCopy={getTranscriptText()}
+                successMessage="Transcript copied to clipboard"
+                errorMessage="Failed to copy transcript"
+                tooltipText="Copy transcript"
                 className="absolute top-1 right-0"
-                title="Copy transcript"
-            >
-                {isCopied ? <CheckIcon /> : <CopyIcon />}
-            </Button>
+                size="sm"
+            />
             <ScrollArea className="h-full overflow-y-auto">
             {/* Speaker badges row */}
             <SpeakerBadgeHeader 

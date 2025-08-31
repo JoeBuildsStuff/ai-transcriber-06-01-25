@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { getMeeting } from "@/app/(workspace)/workspace/meetings/[id]/_lib/actions";
 import { getMeetingSpeakers, getMeetingAttendeesWithContacts } from "@/actions/contacts";
 import MeetingContent from "./_components/meeting-content";
+import MeetingIdSkeleton from "./_components/skeleton";
 import { Meetings } from "./_lib/validations";
 import { MeetingSpeakerWithContact, MeetingAttendeeViewData } from "@/types";
 
@@ -87,7 +88,7 @@ export default function Page({
     };
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <MeetingIdSkeleton />;
     }
 
     if (error || !meetingData) {

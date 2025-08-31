@@ -6,7 +6,8 @@ import { MeetingAttendeeViewData } from "@/types";
 import AttendeesSelector from "./attendees-selector";
 import { RefObject } from "react";
 import { AudioPlayerRef } from "@/components/audio-player-lazy";
-import MeetingDelete from "./meeting-delete";
+import { DeleteButton } from "@/components/ui/delete-button";
+import { deleteMeetings } from "../_lib/actions";
 
 interface MeetingHeaderProps {
     id: string;
@@ -33,7 +34,13 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
                     <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight border-none bg-input/30" />
                 </div>
                 {/* delete button */}
-                <MeetingDelete meetingId={id} />
+                <DeleteButton 
+                    onDelete={async () => {
+                        const result = await deleteMeetings([id]);
+                        if (!result.success) throw new Error(result.error);
+                    }}
+                    redirectTo="/workspace/meetings"
+                />
             </div>
 
             {/* Attendees */}

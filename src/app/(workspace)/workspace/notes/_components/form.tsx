@@ -15,6 +15,8 @@ import { useRouter } from "next/navigation";
 import NotesContent from "../../notes/[id]/_components/notes-content";
 import InputSupabase from "@/components/supabase/_components/input-supabase";
 import ComboboxSupabase from "@/components/supabase/_components/combobox-supabase";
+import { deleteNotes } from "../_lib/actions";
+import { DeleteButton } from "@/components/ui/delete-button";
 
 export interface NoteFormProps {
   /**
@@ -167,13 +169,13 @@ export default function NoteForm({
   };
 
   return (
-    <div className={cn("@container flex flex-col gap-1 text-foreground w-full", className)}>
-      <div className="flex items-center gap-2 justify-between">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[10rem] text-muted-foreground">
+    <div className={cn("@container flex flex-col gap-3 text-foreground w-full", className)}>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
           <Type className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Title</span>
         </div>
-        <div className="w-full min-w-0">
+        <div className="flex-1 min-w-0">
           <InputSupabase
             table="notes"
             field="title"
@@ -184,14 +186,23 @@ export default function NoteForm({
             className="border-none"
           />
         </div>
+        <div className="shrink-0">
+          <DeleteButton 
+            onDelete={async () => {
+              const result = await deleteNotes([noteId]);
+              if (!result.success) throw new Error(result.error);
+            }}
+            redirectTo="/workspace/notes"
+          />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 justify-between">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[10rem] text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
           <Users className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Contacts</span>
         </div>
-        <div className="w-full min-w-0">
+        <div className="flex-1 min-w-0">
           <ComboboxSupabase
             table="contact_notes"
             field="contact_id"
@@ -237,12 +248,12 @@ export default function NoteForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 justify-between">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[10rem] text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
           <Calendar className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Meetings</span>
         </div>
-        <div className="w-full min-w-0">
+        <div className="flex-1 min-w-0">
           <ComboboxSupabase
             table="meeting_notes"
             field="meeting_id"
@@ -283,12 +294,12 @@ export default function NoteForm({
         </div>
       </div>
 
-      <div className="flex items-start gap-2 justify-between">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[10rem] pt-3 text-muted-foreground">
+      <div className="flex items-start gap-2">
+        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] pt-3 text-muted-foreground">
           <File className="size-4 shrink-0" strokeWidth={1.5} />
           <span className="whitespace-nowrap @max-sm:hidden">Content</span>
         </div>
-        <div className="w-full min-w-0">
+        <div className="flex-1 min-w-0">
         <NotesContent
           noteId={initialNoteId || ""}
           noteContent={content}
