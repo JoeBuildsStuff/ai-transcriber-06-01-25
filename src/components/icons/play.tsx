@@ -1,34 +1,45 @@
-// https://icons.pqoqubbw.dev/
-
 'use client';
 
-import type { Transition } from 'motion/react';
+import type { Variants } from 'motion/react';
 import { motion, useAnimation } from 'motion/react';
 import type { HTMLAttributes } from 'react';
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CopyIconHandle {
+export interface PlayIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface CopyIconProps extends HTMLAttributes<HTMLDivElement> {
+interface PlayIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-const defaultTransition: Transition = {
-  type: 'spring',
-  stiffness: 160,
-  damping: 17,
-  mass: 1,
+const pathVariants: Variants = {
+  normal: {
+    x: 0,
+    rotate: 0,
+  },
+  animate: {
+    x: [0, -1, 2, 0],
+    rotate: [0, -10, 0, 0],
+    transition: {
+      duration: 0.5,
+      times: [0, 0.2, 0.5, 1],
+      stiffness: 260,
+      damping: 20,
+    },
+  },
 };
 
-const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
+const PlayIcon = forwardRef<PlayIconHandle, PlayIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
+
       return {
         startAnimation: () => controls.start('animate'),
         stopAnimation: () => controls.start('normal'),
@@ -37,16 +48,22 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
 
     const handleMouseEnter = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('animate');
-        onMouseEnter?.(e);
+        if (!isControlledRef.current) {
+          controls.start('animate');
+        } else {
+          onMouseEnter?.(e);
+        }
       },
       [controls, onMouseEnter]
     );
 
     const handleMouseLeave = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('normal');
-        onMouseLeave?.(e);
+        if (!isControlledRef.current) {
+          controls.start('normal');
+        } else {
+          onMouseLeave?.(e);
+        }
       },
       [controls, onMouseLeave]
     );
@@ -57,7 +74,7 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
         onMouseLeave={handleMouseLeave}
         {...props}
       >
-        <svg
+        <motion.svg
           xmlns="http://www.w3.org/2000/svg"
           width={size}
           height={size}
@@ -68,35 +85,17 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <motion.rect
-            width="14"
-            height="14"
-            x="8"
-            y="8"
-            rx="2"
-            ry="2"
-            variants={{
-              normal: { translateY: 0, translateX: 0 },
-              animate: { translateY: -3, translateX: -3 },
-            }}
-            animate={controls}
-            transition={defaultTransition}
-          />
-          <motion.path
-            d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-            variants={{
-              normal: { x: 0, y: 0 },
-              animate: { x: 3, y: 3 },
-            }}
-            transition={defaultTransition}
+          <motion.polygon
+            points="6 3 20 12 6 21 6 3"
+            variants={pathVariants}
             animate={controls}
           />
-        </svg>
+        </motion.svg>
       </div>
     );
   }
 );
 
-CopyIcon.displayName = 'CopyIcon';
+PlayIcon.displayName = 'PlayIcon';
 
-export { CopyIcon };
+export { PlayIcon };

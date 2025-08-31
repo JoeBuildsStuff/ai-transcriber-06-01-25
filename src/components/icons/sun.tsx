@@ -1,49 +1,36 @@
-// https://icons.pqoqubbw.dev/
-
-
 'use client';
 
 import type { Variants } from 'motion/react';
 import { motion, useAnimation } from 'motion/react';
 import type { HTMLAttributes } from 'react';
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CheckIconHandle {
+export interface SunIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface CheckIconProps extends HTMLAttributes<HTMLDivElement> {
+interface SunIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
 const pathVariants: Variants = {
-  normal: {
-    opacity: 1,
-    pathLength: 1,
-    scale: 1,
-    transition: {
-      duration: 0.3,
-      opacity: { duration: 0.1 },
-    },
-  },
-  animate: {
+  normal: { opacity: 1 },
+  animate: (i: number) => ({
     opacity: [0, 1],
-    pathLength: [0, 1],
-    scale: [0.5, 1],
-    transition: {
-      duration: 0.4,
-      opacity: { duration: 0.1 },
-    },
-  },
+    transition: { delay: i * 0.1, duration: 0.3 },
+  }),
 };
 
-const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
+const SunIcon = forwardRef<SunIconHandle, SunIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
+
       return {
         startAnimation: () => controls.start('animate'),
         stopAnimation: () => controls.start('normal'),
@@ -52,20 +39,25 @@ const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
 
     const handleMouseEnter = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('animate');
-        onMouseEnter?.(e);
+        if (!isControlledRef.current) {
+          controls.start('animate');
+        } else {
+          onMouseEnter?.(e);
+        }
       },
       [controls, onMouseEnter]
     );
 
     const handleMouseLeave = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('normal');
-        onMouseLeave?.(e);
+        if (!isControlledRef.current) {
+          controls.start('normal');
+        } else {
+          onMouseLeave?.(e);
+        }
       },
       [controls, onMouseLeave]
     );
-
     return (
       <div
         className={cn(className)}
@@ -84,18 +76,31 @@ const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <motion.path
-            variants={pathVariants}
-            initial="normal"
-            animate={controls}
-            d="M4 12 9 17L20 6"
-          />
+          <circle cx="12" cy="12" r="4" />
+          {[
+            'M12 2v2',
+            'm19.07 4.93-1.41 1.41',
+            'M20 12h2',
+            'm17.66 17.66 1.41 1.41',
+            'M12 20v2',
+            'm6.34 17.66-1.41 1.41',
+            'M2 12h2',
+            'm4.93 4.93 1.41 1.41',
+          ].map((d, index) => (
+            <motion.path
+              key={d}
+              d={d}
+              animate={controls}
+              variants={pathVariants}
+              custom={index + 1}
+            />
+          ))}
         </svg>
       </div>
     );
   }
 );
 
-CheckIcon.displayName = 'CheckIcon';
+SunIcon.displayName = 'SunIcon';
 
-export { CheckIcon };
+export { SunIcon };

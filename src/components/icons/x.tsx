@@ -1,34 +1,39 @@
-// https://icons.pqoqubbw.dev/
-
 'use client';
 
-import type { Transition } from 'motion/react';
+import type { Variants } from 'motion/react';
 import { motion, useAnimation } from 'motion/react';
 import type { HTMLAttributes } from 'react';
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CopyIconHandle {
+export interface XIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface CopyIconProps extends HTMLAttributes<HTMLDivElement> {
+interface XIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-const defaultTransition: Transition = {
-  type: 'spring',
-  stiffness: 160,
-  damping: 17,
-  mass: 1,
+const pathVariants: Variants = {
+  normal: {
+    opacity: 1,
+    pathLength: 1,
+  },
+  animate: {
+    opacity: [0, 1],
+    pathLength: [0, 1],
+  },
 };
 
-const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
+const XIcon = forwardRef<XIconHandle, XIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
+
       return {
         startAnimation: () => controls.start('animate'),
         stopAnimation: () => controls.start('normal'),
@@ -37,16 +42,22 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
 
     const handleMouseEnter = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('animate');
-        onMouseEnter?.(e);
+        if (!isControlledRef.current) {
+          controls.start('animate');
+        } else {
+          onMouseEnter?.(e);
+        }
       },
       [controls, onMouseEnter]
     );
 
     const handleMouseLeave = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('normal');
-        onMouseLeave?.(e);
+        if (!isControlledRef.current) {
+          controls.start('normal');
+        } else {
+          onMouseLeave?.(e);
+        }
       },
       [controls, onMouseLeave]
     );
@@ -68,28 +79,16 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <motion.rect
-            width="14"
-            height="14"
-            x="8"
-            y="8"
-            rx="2"
-            ry="2"
-            variants={{
-              normal: { translateY: 0, translateX: 0 },
-              animate: { translateY: -3, translateX: -3 },
-            }}
+          <motion.path
+            variants={pathVariants}
             animate={controls}
-            transition={defaultTransition}
+            d="M18 6 6 18"
           />
           <motion.path
-            d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-            variants={{
-              normal: { x: 0, y: 0 },
-              animate: { x: 3, y: 3 },
-            }}
-            transition={defaultTransition}
+            transition={{ delay: 0.2 }}
+            variants={pathVariants}
             animate={controls}
+            d="m6 6 12 12"
           />
         </svg>
       </div>
@@ -97,6 +96,6 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
   }
 );
 
-CopyIcon.displayName = 'CopyIcon';
+XIcon.displayName = 'XIcon';
 
-export { CopyIcon };
+export { XIcon };

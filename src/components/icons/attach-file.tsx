@@ -1,34 +1,41 @@
-// https://icons.pqoqubbw.dev/
-
 'use client';
 
-import type { Transition } from 'motion/react';
+import type { Variants } from 'motion/react';
 import { motion, useAnimation } from 'motion/react';
 import type { HTMLAttributes } from 'react';
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CopyIconHandle {
+export interface AttachFileIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface CopyIconProps extends HTMLAttributes<HTMLDivElement> {
+interface AttachFileIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-const defaultTransition: Transition = {
-  type: 'spring',
-  stiffness: 160,
-  damping: 17,
-  mass: 1,
+const pathVariants: Variants = {
+  normal: { pathLength: 1, opacity: 1, pathOffset: 0 },
+  animate: {
+    opacity: [0, 1],
+    pathLength: [0, 1],
+    transition: {
+      delay: 0.1,
+      duration: 0.4,
+      opacity: { duration: 0.1, delay: 0.1 },
+    },
+  },
 };
 
-const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
+const AttachFileIcon = forwardRef<AttachFileIconHandle, AttachFileIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
+
       return {
         startAnimation: () => controls.start('animate'),
         stopAnimation: () => controls.start('normal'),
@@ -37,19 +44,26 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
 
     const handleMouseEnter = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('animate');
-        onMouseEnter?.(e);
+        if (!isControlledRef.current) {
+          controls.start('animate');
+        } else {
+          onMouseEnter?.(e);
+        }
       },
       [controls, onMouseEnter]
     );
 
     const handleMouseLeave = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('normal');
-        onMouseLeave?.(e);
+        if (!isControlledRef.current) {
+          controls.start('normal');
+        } else {
+          onMouseLeave?.(e);
+        }
       },
       [controls, onMouseLeave]
     );
+
     return (
       <div
         className={cn(className)}
@@ -68,28 +82,11 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <motion.rect
-            width="14"
-            height="14"
-            x="8"
-            y="8"
-            rx="2"
-            ry="2"
-            variants={{
-              normal: { translateY: 0, translateX: 0 },
-              animate: { translateY: -3, translateX: -3 },
-            }}
-            animate={controls}
-            transition={defaultTransition}
-          />
           <motion.path
-            d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-            variants={{
-              normal: { x: 0, y: 0 },
-              animate: { x: 3, y: 3 },
-            }}
-            transition={defaultTransition}
+            variants={pathVariants}
+            initial="normal"
             animate={controls}
+            d="M6 7.90909V16C6 19.3137 8.68629 22 12 22V22C15.3137 22 18 19.3137 18 16V6C18 3.79086 16.2091 2 14 2V2C11.7909 2 10 3.79086 10 6V15.1818C10 16.2864 10.8954 17.1818 12 17.1818V17.1818C13.1046 17.1818 14 16.2864 14 15.1818V8"
           />
         </svg>
       </div>
@@ -97,6 +94,6 @@ const CopyIcon = forwardRef<CopyIconHandle, CopyIconProps>(
   }
 );
 
-CopyIcon.displayName = 'CopyIcon';
+AttachFileIcon.displayName = 'AttachFileIcon';
 
-export { CopyIcon };
+export { AttachFileIcon };

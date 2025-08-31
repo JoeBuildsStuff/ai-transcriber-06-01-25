@@ -1,9 +1,10 @@
 'use client'
 
-import { MessageSquare, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
+import { MessageSquareIcon } from '../icons/message-square'
+import { XIcon } from '../icons/x'
 
 export function ChatBubble() {
   const { isOpen, isMinimized, isMaximized, setOpen, setMinimized, setMaximized, layoutMode, setLayoutMode } = useChatStore()
@@ -52,7 +53,7 @@ export function ChatBubble() {
 
   return (
     <div className={cn(
-      "fixed bottom-6 right-6 z-50 bg-background rounded-full",
+      "fixed bottom-3 right-3 z-50 bg-background rounded-full",
       // Adjust position when maximized to avoid overlap
       isMaximized && "right-[25rem]"
     )}>
@@ -68,9 +69,9 @@ export function ChatBubble() {
       >
         <Button
           variant="outline"
-          className="rounded-full size-12 bg-background"
+          className="rounded-full size-12 bg-background shadow-md [&_svg]:!w-6 [&_svg]:!h-6"
         >
-          <MessageSquare className="size-6 shrink-0" strokeWidth={1.5}/>
+          <MessageSquareIcon />
         </Button>
         
         {/* Close button when minimized */}
@@ -87,7 +88,7 @@ export function ChatBubble() {
             )}
             onClick={handleClose}
           >
-            <X className="h-3 w-3" />
+            <XIcon />
           </Button>
         )}
       </div>

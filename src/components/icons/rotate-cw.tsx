@@ -1,49 +1,26 @@
-// https://icons.pqoqubbw.dev/
-
-
 'use client';
 
-import type { Variants } from 'motion/react';
 import { motion, useAnimation } from 'motion/react';
 import type { HTMLAttributes } from 'react';
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface CheckIconHandle {
+export interface RotateCWIconHandle {
   startAnimation: () => void;
   stopAnimation: () => void;
 }
 
-interface CheckIconProps extends HTMLAttributes<HTMLDivElement> {
+interface RotateCWIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
 }
 
-const pathVariants: Variants = {
-  normal: {
-    opacity: 1,
-    pathLength: 1,
-    scale: 1,
-    transition: {
-      duration: 0.3,
-      opacity: { duration: 0.1 },
-    },
-  },
-  animate: {
-    opacity: [0, 1],
-    pathLength: [0, 1],
-    scale: [0.5, 1],
-    transition: {
-      duration: 0.4,
-      opacity: { duration: 0.1 },
-    },
-  },
-};
-
-const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
+const RotateCWIcon = forwardRef<RotateCWIconHandle, RotateCWIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
     const controls = useAnimation();
+    const isControlledRef = useRef(false);
 
     useImperativeHandle(ref, () => {
+      isControlledRef.current = true;
       return {
         startAnimation: () => controls.start('animate'),
         stopAnimation: () => controls.start('normal'),
@@ -52,16 +29,16 @@ const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
 
     const handleMouseEnter = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('animate');
-        onMouseEnter?.(e);
+        if (!isControlledRef.current) controls.start('animate');
+        else onMouseEnter?.(e);
       },
       [controls, onMouseEnter]
     );
 
     const handleMouseLeave = useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
-        controls.start('normal');
-        onMouseLeave?.(e);
+        if (!isControlledRef.current) controls.start('normal');
+        else onMouseLeave?.(e);
       },
       [controls, onMouseLeave]
     );
@@ -73,7 +50,7 @@ const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
         onMouseLeave={handleMouseLeave}
         {...props}
       >
-        <svg
+        <motion.svg
           xmlns="http://www.w3.org/2000/svg"
           width={size}
           height={size}
@@ -83,19 +60,21 @@ const CheckIcon = forwardRef<CheckIconHandle, CheckIconProps>(
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+          variants={{
+            normal: { rotate: '0deg' },
+            animate: { rotate: '50deg' },
+          }}
+          animate={controls}
         >
-          <motion.path
-            variants={pathVariants}
-            initial="normal"
-            animate={controls}
-            d="M4 12 9 17L20 6"
-          />
-        </svg>
+          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+          <path d="M21 3v5h-5" />
+        </motion.svg>
       </div>
     );
   }
 );
 
-CheckIcon.displayName = 'CheckIcon';
+RotateCWIcon.displayName = 'RotateCWIcon';
 
-export { CheckIcon };
+export { RotateCWIcon };

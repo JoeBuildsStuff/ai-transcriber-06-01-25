@@ -122,7 +122,7 @@ export default function AttendeesSelector({ meetingId, meetingAttendees }: Atten
                     value={selectedAttendees}
                     options={allContacts}
                     placeholder="Select attendees..."
-                    className="font-extralight border-none"
+                    className="font-extralight border-none bg-input/30"
                     hideClearAllButton
                     hidePlaceholderWhenSelected
                     emptyIndicator={<p className="text-center text-sm font-extralight">No contacts found</p>}

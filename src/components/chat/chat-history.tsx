@@ -18,6 +18,7 @@ import {
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { ChevronRightIcon } from '../icons/chevron-right'
 
 export function ChatHistory() {
   const { 
@@ -83,7 +84,7 @@ export function ChatHistory() {
             onClick={handleBackToChat}
             title="Back to current chat"
           >
-            <ChevronRight className="size-4" />
+            <ChevronRightIcon className="size-4" />
           </Button>
         </div>
       </div>

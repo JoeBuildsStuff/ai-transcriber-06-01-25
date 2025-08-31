@@ -2,29 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, Trash2 } from "lucide-react";
 import { deleteMeetings } from "../_lib/actions";
 import { toast } from "sonner";
+import DeleteButton from "@/components/ui/delete-button";
 
 interface MeetingDeleteProps {
     meetingId: string;
 }
 
 export default function MeetingDelete({ meetingId }: MeetingDeleteProps) {
-    const [showConfirmation, setShowConfirmation] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
 
-    const handleFirstClick = () => {
-        setShowConfirmation(true);
-    };
-
-    const handleCancel = () => {
-        setShowConfirmation(false);
-    };
-
-    const handleConfirmDelete = async () => {
+    const handleDelete = async () => {
         setIsDeleting(true);
         
         try {
@@ -41,49 +31,25 @@ export default function MeetingDelete({ meetingId }: MeetingDeleteProps) {
                 toast.error("Failed to delete meeting", {
                     description: result.error
                 });
-                setShowConfirmation(false);
+                throw new Error(result.error);
             }
         } catch (error) {
             console.error("Error deleting meeting:", error);
             toast.error("Failed to delete meeting", {
                 description: "An unexpected error occurred"
             });
-            setShowConfirmation(false);
+            throw error; // Re-throw to let DeleteButton handle the confirmation state
         } finally {
             setIsDeleting(false);
         }
     };
 
-    if (showConfirmation) {
-        return (
-            <div className="flex items-center gap-2">
-                <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleCancel}
-                    disabled={isDeleting}
-                >
-                    <ChevronLeft className="size-4" />
-                </Button>
-                <Button 
-                    variant="red" 
-                    onClick={handleConfirmDelete}
-                    disabled={isDeleting}
-                >
-                    <span className="flex items-center gap-2">
-                        <Trash2 className="size-4 shrink-0"  />
-                        <span className="font-extralight">{isDeleting ? "Deleting..." : "Confirm Delete"}</span>
-                    </span>
-                </Button>
-            </div>
-        );
-    }
-
     return (
-        <div>
-            <Button variant="outline" size="icon" onClick={handleFirstClick}>
-                <Trash2 className="size-4 shrink-0 text-muted-foreground" />
-            </Button>
-        </div>
+        <DeleteButton 
+            onDelete={handleDelete}
+            isLoading={isDeleting}
+            confirmText="Confirm Delete"
+            size="icon"
+        />
     );
 }

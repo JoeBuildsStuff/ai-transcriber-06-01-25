@@ -2,10 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from 'react'
 import { 
-  Loader2, 
-  CornerRightUp, 
-  Paperclip, 
-  X, 
+  Loader2,  
   FileText, 
   FileVideo, 
   File,
@@ -14,12 +11,17 @@ import {
   Headphones,
   Image
 } from 'lucide-react'
+
+
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useChat } from '@/hooks/use-chat'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { XIcon } from '../icons/x'
+import { ArrowUpIcon } from '../icons/arrow-up'
+import { AttachFileIcon } from '../icons/attach-file'
 
 export interface Attachment {
   id: string
@@ -225,7 +227,7 @@ export function ChatInput() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                 >
-                  <Paperclip className="size-4 shrink-0" strokeWidth={1.5}/>
+                  <AttachFileIcon className="size-4 shrink-0"/>
                 </Button>
               </div>
 
@@ -251,12 +253,12 @@ export function ChatInput() {
                   onClick={handleSend}
                   disabled={!canSend}
                   size="sm"
-                  className="rounded-full border-none w-8"
+                  className="rounded-full border-none w-8 [&_svg]:!w-5 [&_svg]:!h-5"
                 >
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <CornerRightUp className="size-4 shrink-0" strokeWidth={1.5}/>
+                    <ArrowUpIcon/>
                   )}
                 </Button>
               </div>
@@ -267,7 +269,7 @@ export function ChatInput() {
         {attachments.length > 0 && (
           <div className="w-full p-2">
             <div className="flex w-full flex-col">
-                          <div className="flex gap-4 overflow-x-auto pt-2 pb-1">
+              <div className="flex gap-4 overflow-x-auto pt-2 pb-1">
               {attachments.map((attachment) => (
                 <div
                   key={attachment.id}
@@ -286,7 +288,7 @@ export function ChatInput() {
                     aria-label="Remove file"
                     disabled={isLoading}
                   >
-                    <X className="size-3.5" />
+                    <XIcon className="" />
                   </Button>
                   <div className="flex min-w-0 flex-col gap-0.5 border-t p-2">
                     <p className="truncate text-[11px] font-medium">

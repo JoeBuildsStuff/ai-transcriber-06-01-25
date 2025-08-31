@@ -30,7 +30,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
                 {/* Title */}
                 <div className="flex flex-row gap-2 items-center flex-1">
                     <Type className="size-4 shrink-0 text-muted-foreground" />
-                    <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight border-none" />
+                    <InputSupabase table="meetings" field="title" id={id} initialValue={meetingData.title || ''} className="font-extralight border-none bg-input/30" />
                 </div>
                 {/* delete button */}
                 <MeetingDelete meetingId={id} />
@@ -66,7 +66,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
             {/* Location */}
             <div className="flex flex-row gap-2 items-center">
                 <Map className="size-4 shrink-0 text-muted-foreground " />
-                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight border-none" />
+                <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight border-none bg-input/30" />
             </div>
 
             {/* Audio Player */}

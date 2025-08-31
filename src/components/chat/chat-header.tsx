@@ -1,6 +1,6 @@
 'use client'
 
-import { X, MessageSquareOff, ChevronLeft, SquarePen, Download, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
+import { MessageSquareOff, SquarePen, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
@@ -32,6 +32,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useState, useRef, useEffect } from 'react'
+import { ChevronLeftIcon } from '../icons/chevron-left'
+import { DownloadIcon } from '../icons/download'
+import { XIcon } from '../icons/x'
 
 export function ChatHeader() {
   const { setOpen, setMinimized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle, layoutMode, setLayoutMode } = useChatStore()
@@ -122,7 +125,7 @@ export function ChatHeader() {
           onClick={handleShowHistory}
           title="View chat history"
         >
-          <ChevronLeft className="size-5 text-primary flex-shrink-0" />
+          <ChevronLeftIcon />
         </Button>
 
         {/* Chat Title */}
@@ -172,7 +175,7 @@ export function ChatHeader() {
                 <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadChat}>
-                <Download className="mr-2 size-4" />
+                <DownloadIcon className="mr-2 size-4" />
                 Download chat
                 <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
               </DropdownMenuItem>
@@ -241,7 +244,7 @@ export function ChatHeader() {
           onClick={handleClose}
           title="Close"
         >
-          <X className="size-4 shrink-0" />
+          <XIcon className="size-4 shrink-0" />
         </Button>
       </div>
     </div>
