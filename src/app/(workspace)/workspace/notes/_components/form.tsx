@@ -305,21 +305,22 @@ export default function NoteForm({
         </div>
 
         {/* Content */}
-        <div className="h-full overflow-y-auto">
+        {/* <div className="h-full overflow-y-auto">
           <div className="flex items-start gap-2">
             <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] pt-3 text-muted-foreground">
               <File className="size-4 shrink-0" strokeWidth={1.5} />
               <span className="whitespace-nowrap @max-sm:hidden">Content</span>
-            </div>
-            <div className="flex-1 min-w-0 h-full ">
+            </div> */}
+            <div className="w-full h-full overflow-y-auto">
               <NotesContent
                 noteId={initialNoteId || ""}
                 noteContent={content}
                 onNoteIdChange={onNoteCreated}
               />
             </div>
-          </div>
-        </div>
+          {/* </div>
+        </div> */}
+
       </div>
 
       {/* Add Contact Dialog */}
