@@ -169,7 +169,10 @@ export default function NoteForm({
   };
 
   return (
-    <div className={cn("@container flex flex-col text-foreground w-full", className)}>
+    // TODO: we were using @container to support responsive design for the form field lables
+    // but its throwing off the tiptap bublemenu dropdown menu locations so we are going to remove it for now
+    // <div className={cn("@container flex flex-col text-foreground w-full", className)}>
+    <div className={cn("flex flex-col text-foreground w-full", className)}>
 
       <div className="flex flex-col gap-3 grid-rows-[auto_1fr] h-[calc(100vh-5.5rem)]">
         <div className="flex flex-col gap-3">

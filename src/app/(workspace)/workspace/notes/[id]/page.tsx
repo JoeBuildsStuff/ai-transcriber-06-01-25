@@ -20,7 +20,6 @@ export default async function Page({
 
 
     return (
-      <div className="container mx-auto p-1">
         <NoteForm
           initialNoteId={id}
           initialTitle={note.title || ""}
@@ -30,7 +29,6 @@ export default async function Page({
           availableContacts={contactsResult.data || []}
           availableMeetings={meetingsResult.data || []}
         />
-      </div>
     )
   } catch (error) {
     console.error("Error fetching note:", error)
