@@ -3,11 +3,7 @@
 import { Editor, useEditorState } from '@tiptap/react'
 import { BubbleMenu as TiptapBubbleMenu } from '@tiptap/react/menus'
 import {
-    Bold,
-    Italic,
     Strikethrough,
-    Underline as UnderlineIcon,
-    Code,
     Heading1,
     Heading2,
     Heading3,
@@ -17,8 +13,11 @@ import {
     AlignLeft,
     AlignCenter,
     AlignRight,
-    ChevronDown,
 } from 'lucide-react'
+import { BoldIcon } from '@/components/icons/bold'
+import { ItalicIcon } from '@/components/icons/italic'
+import { UnderlineIcon } from '@/components/icons/underline'
+import { ChevronsLeftRightIcon } from '@/components/icons/chevrons-left-right'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/tiptap/dropdown-menu-tiptap'
@@ -64,15 +63,20 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                 return from !== to
             }}
         >
-            <div className='flex flex-row gap-0.5 border rounded-md border-border bg-background p-0.5'>
+            <div className='flex flex-row gap-0.5 border rounded-xl border-border bg-background p-1'>
                 <Tooltip>
                     <TooltipTrigger>
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <Button size='sm' className='text-xs' variant='ghost'>
-                                    {editorState.isHeading1 ? <Heading1 className='h-4 w-4' /> : editorState.isHeading2 ? <Heading2 className='h-4 w-4' /> : editorState.isCodeBlock ? <Code className='h-4 w-4' /> : <Type className='h-4 w-4' />}
-                                    <ChevronDown className='h-4 w-4 text-muted-foreground' />
-                                </Button>
+                            <Button size='sm' className='text-xs' variant='secondary' >
+                                            {editorState.isHeading1 && <Heading1 className='' />}
+                                            {editorState.isHeading2 && <Heading2 className='' />}
+                                            {editorState.isHeading3 && <Heading3 className='' />}
+                                            {editorState.isOrderedList && <ListOrdered className='' />}
+                                            {editorState.isBulletList && <List className='' />}
+                                            {editorState.isCodeBlock && <ChevronsLeftRightIcon className='' />}
+                                            {!editorState.isHeading1 && !editorState.isHeading2 && !editorState.isHeading3 && !editorState.isOrderedList && !editorState.isBulletList && !editorState.isCodeBlock && <Type className='' />}
+                                        </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent portalled={false} align='start' side='bottom' sideOffset={10} className='text-xs w-[12rem] bg-background'>
                                 <DropdownMenuItem onClick={() => editor.chain().setParagraph().focus().run()}>
@@ -106,7 +110,7 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                                     <DropdownMenuShortcut>⌘ ⇧ 8</DropdownMenuShortcut>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
-                                    <Code className='' />
+                                    <ChevronsLeftRightIcon className='' />
                                     <span className='text-xs'>Code block</span>
                                     <DropdownMenuShortcut>⌘ ⌥ C</DropdownMenuShortcut>
                                 </DropdownMenuItem>
@@ -122,12 +126,11 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                     <TooltipTrigger>
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <Button size='sm' className='text-xs' variant='ghost' >
-                                    {editorState.isAlignLeft && <AlignLeft className='h-4 w-4' />}
-                                    {editorState.isAlignCenter && <AlignCenter className='h-4 w-4' />}
-                                    {editorState.isAlignRight && <AlignRight className='h-4 w-4' />}
-                                    {!editorState.isAlignLeft && !editorState.isAlignCenter && !editorState.isAlignRight && <AlignLeft className='h-4 w-4' />}
-                                    <ChevronDown className='h-4 w-4 text-muted-foreground' />
+                                <Button size='sm' className='text-xs' variant='secondary' >
+                                    {editorState.isAlignLeft && <AlignLeft className='' />}
+                                    {editorState.isAlignCenter && <AlignCenter className='' />}
+                                    {editorState.isAlignRight && <AlignRight className='' />}
+                                    {!editorState.isAlignLeft && !editorState.isAlignCenter && !editorState.isAlignRight && <AlignLeft className='' />}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent portalled={false} align='start' side='bottom' sideOffset={10} className='text-xs w-[10rem] bg-background'>
@@ -162,7 +165,7 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                             size='sm'
                             className='text-xs'
                         >
-                            <Bold className='' />
+                            <BoldIcon className='' />
                         </Toggle>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -177,7 +180,7 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                             size='sm'
                             className='text-xs'
                         >
-                            <Italic className='' />
+                            <ItalicIcon className='' />
                         </Toggle>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -222,7 +225,7 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                             size='sm'
                             className='text-xs'
                         >
-                            <Code className='' />
+                            <ChevronsLeftRightIcon className='' />
                         </Toggle>
                     </TooltipTrigger>
                     <TooltipContent>

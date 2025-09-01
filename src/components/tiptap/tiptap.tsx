@@ -19,15 +19,15 @@ import { useEffect, useState } from 'react'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
-    Bold,
-    Italic,
     Strikethrough,
-    Underline as UnderlineIcon,
-    Code,
     Type,
     AlignLeft,
     GripVertical,
 } from 'lucide-react'
+import { BoldIcon } from '@/components/icons/bold'
+import { ItalicIcon } from '@/components/icons/italic'
+import { UnderlineIcon } from '@/components/icons/underline'
+import { ChevronsLeftRightIcon } from '@/components/icons/chevrons-left-right'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -139,10 +139,10 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
                         </div>
                         <div className='flex flex-row gap-0.5 w-fit'>
                             <Toggle size='sm' disabled>
-                                <Bold className='' />
+                                <BoldIcon className='' />
                             </Toggle>
                             <Toggle size='sm' disabled>
-                                <Italic className='' />
+                                <ItalicIcon className='' />
                             </Toggle>
                             <Toggle size='sm' disabled>
                                 <Strikethrough className='' />
@@ -151,7 +151,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
                                 <UnderlineIcon className='' />
                             </Toggle>
                             <Toggle size='sm' disabled>
-                                <Code className='' />
+                                <ChevronsLeftRightIcon className='' />
                             </Toggle>
                         </div>
                     </div>

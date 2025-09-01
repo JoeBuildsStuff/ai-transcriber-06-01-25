@@ -29,9 +29,22 @@ export const LinkButton = ({ editor, size = 'sm', className = '' }: LinkButtonPr
     })
 
     const handleOpenDialog = () => {
-        const previousUrl = editor.getAttributes('link').href || ''
+        // Check if there's an active link at the current selection
+        const isActiveLink = editor.isActive('link')
+        let previousUrl = ''
+        
+        if (isActiveLink) {
+            // Get the href from the active link
+            previousUrl = editor.getAttributes('link').href || ''
+        }
+        
         setUrl(previousUrl)
         setError('')
+    }
+
+    const handleButtonClick = () => {
+        handleOpenDialog()
+        setIsLinkDialogOpen(true)
     }
 
     const handleSetLink = () => {
@@ -70,7 +83,7 @@ export const LinkButton = ({ editor, size = 'sm', className = '' }: LinkButtonPr
             <Tooltip>
                 <TooltipTrigger>
                     <Toggle
-                        onClick={() => setIsLinkDialogOpen(true)}
+                        onClick={handleButtonClick}
                         pressed={editorState.isLink}
                         size={size}
                         className={className}
@@ -83,7 +96,7 @@ export const LinkButton = ({ editor, size = 'sm', className = '' }: LinkButtonPr
                 </TooltipContent>
             </Tooltip>
             <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
-                <DialogContent className="sm:max-w-md" onOpenAutoFocus={handleOpenDialog}>
+                <DialogContent className="sm:max-w-md">
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="url">URL</Label>

@@ -2,11 +2,7 @@
 
 import { Editor, useEditorState } from '@tiptap/react'
 import {
-    Bold,
-    Italic,
     Strikethrough,
-    Underline as UnderlineIcon,
-    Code,
     Heading1,
     Heading2,
     Heading3,
@@ -17,6 +13,10 @@ import {
     AlignCenter,
     AlignRight,
 } from 'lucide-react'
+import { BoldIcon } from '@/components/icons/bold'
+import { ItalicIcon } from '@/components/icons/italic'
+import { UnderlineIcon } from '@/components/icons/underline'
+import { ChevronsLeftRightIcon } from '@/components/icons/chevrons-left-right'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/tiptap/dropdown-menu-tiptap'
@@ -105,7 +105,7 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                                             {editorState.isHeading3 && <Heading3 className='' />}
                                             {editorState.isOrderedList && <ListOrdered className='' />}
                                             {editorState.isBulletList && <List className='' />}
-                                            {editorState.isCodeBlock && <Code className='' />}
+                                            {editorState.isCodeBlock && <ChevronsLeftRightIcon className='' />}
                                             {!editorState.isHeading1 && !editorState.isHeading2 && !editorState.isHeading3 && !editorState.isOrderedList && !editorState.isBulletList && !editorState.isCodeBlock && <Type className='' />}
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -141,7 +141,7 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                                             <DropdownMenuShortcut>⌘ ⇧ 8</DropdownMenuShortcut>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
-                                            <Code className='' />
+                                            <ChevronsLeftRightIcon className='' />
                                             <span className='text-xs'>Code block</span>
                                             <DropdownMenuShortcut>⌘ ⌥ C</DropdownMenuShortcut>
                                         </DropdownMenuItem>
@@ -201,7 +201,7 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                                     pressed={editorState.isBold}
                                     size='sm'
                                 >
-                                    <Bold className='' />
+                                    <BoldIcon className='' />
                                 </Toggle>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -215,7 +215,7 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                                     pressed={editorState.isItalic}
                                     size='sm'
                                 >
-                                    <Italic className='' />
+                                    <ItalicIcon className='' />
                                 </Toggle>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -257,7 +257,7 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                                     pressed={editorState.isCode}
                                     size='sm'
                                 >
-                                    <Code className='' />
+                                    <ChevronsLeftRightIcon className='' />
                                 </Toggle>
                             </TooltipTrigger>
                             <TooltipContent>
