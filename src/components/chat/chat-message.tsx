@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import ChatMessageActions from './chat-message-actions'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -95,6 +96,76 @@ const getFileIcon = (attachment: MessageAttachment) => {
   }
 
   return <File className="size-4 opacity-60" />
+}
+
+// Citation component with popover
+const CitationPopover = ({ citationNumber, citation }: { 
+  citationNumber: number, 
+  citation: { url: string, title: string, cited_text: string } 
+}) => {
+  return (
+    <Popover>
+      <PopoverTrigger>
+        <Badge className="" variant="blue">
+          {citationNumber}
+        </Badge>
+      </PopoverTrigger>
+      <PopoverContent className="p-3" align="start">
+        <div className="space-y-2">
+          <Badge variant="blue" className="font-medium text-sm break-words whitespace-normal" href={citation.url}>{citation.title}</Badge>
+          {citation.cited_text && (
+            <div className="text-xs text-muted-foreground italic border-l-2 border-muted pl-2">
+              &ldquo;{citation.cited_text.length > 150 
+                ? citation.cited_text.substring(0, 150) + '...' 
+                : citation.cited_text}&rdquo;
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// Function to render text with inline citations
+const renderTextWithCitations = (text: string, citations: Array<{url: string, title: string, cited_text: string}>) => {
+  // Find all citation patterns like [1], [2], etc.
+  const citationRegex = /\[(\d+)\]/g
+  const parts = []
+  let lastIndex = 0
+  let match
+
+  while ((match = citationRegex.exec(text)) !== null) {
+    // Add text before the citation
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+    
+    // Add the citation popover
+    const citationNumber = parseInt(match[1])
+    const citation = citations[citationNumber - 1] // Citations are 1-indexed
+    
+    if (citation) {
+      parts.push(
+        <CitationPopover 
+          key={`citation-${citationNumber}-${match.index}`}
+          citationNumber={citationNumber} 
+          citation={citation} 
+        />
+      )
+    } else {
+      // If citation not found, just show the number
+      parts.push(match[0])
+    }
+    
+    lastIndex = match.index + match[0].length
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+  
+  return parts.length > 1 ? <>{parts}</> : text
 }
 
 // Loading placeholder component
@@ -382,6 +453,27 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
                         {children}
                       </pre>
                     ),
+                    // Custom text renderer to handle inline citations
+                    p: ({ children }) => {
+                      if (typeof children === 'string') {
+                        return <p>{renderTextWithCitations(children, message.citations || [])}</p>
+                      }
+                      return <p>{children}</p>
+                    },
+                    // Handle list items to process citations within them
+                    li: ({ children }) => {
+                      if (typeof children === 'string') {
+                        return <li>{renderTextWithCitations(children, message.citations || [])}</li>
+                      }
+                      return <li>{children}</li>
+                    },
+                    // Also handle text nodes that aren't in paragraphs
+                    text: ({ children }) => {
+                      if (typeof children === 'string') {
+                        return renderTextWithCitations(children, message.citations || [])
+                      }
+                      return children
+                    },
                   }}
                 >
                   {message.content}
@@ -403,6 +495,8 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
             {message.functionResult.success ? '✓ Action completed' : '✗ Action failed'}
           </Badge>
         )}
+
+
 
         {/* Suggested actions */}
         {message.suggestedActions && message.suggestedActions.length > 0 && (

@@ -63,12 +63,13 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
 
     const result = await response.json()
     
-    // Add the assistant message with tool calls if available
+    // Add the assistant message with tool calls and citations if available
     const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
       role: 'assistant',
       content: result.message || 'I apologize, but I couldn\'t generate a response.',
       suggestedActions: result.actions || [],
-      toolCalls: result.toolCalls || undefined
+      toolCalls: result.toolCalls || undefined,
+      citations: result.citations || undefined
     }
     
     addMessage(assistantMessage)

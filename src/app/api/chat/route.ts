@@ -43,6 +43,12 @@ interface ChatAPIResponse {
       error?: string
     }
   }>
+  citations?: Array<{
+    url: string
+    title: string
+    cited_text: string
+  }>
+  rawResponse?: unknown
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIResponse>> {
@@ -159,6 +165,8 @@ async function getLLMResponse(
       throw new Error('ANTHROPIC_API_KEY environment variable is not set')
     }
 
+    // Web search is always enabled
+    
     // 1. System Prompt
     let systemPrompt = `You are a helpful assistant for a contact and meeting management application. You can help users manage their contacts and meetings by filtering, sorting, navigating, creating new person contacts, creating new meetings, and searching for existing meetings.
 When users ask to create or add a new person contact, use the create_person_contact function with the provided information. Extract as much relevant information as possible from the user's request.
@@ -173,6 +181,12 @@ Guidelines:
 - Extract information like title, meeting date/time, location, description from user requests for meetings
 - For meeting searches, extract participant names, date ranges, and titles from user queries
 
+Web Search Capabilities:
+- You have access to real-time web search for up-to-date information about companies, people, news, and business topics
+- Use web search when users ask about current information not in your knowledge base (company news, recent events, stock prices, etc.)
+- When researching companies or people for contact creation, web search can provide additional context like company size, recent news, or professional background
+- Always cite sources from web search results in your responses
+- Focus on business and professional sources for reliable information
 Meeting Creation Guidelines:
 - When processing meeting invitations or calendar events from images:
   - Extract the meeting title from the title field
@@ -249,7 +263,23 @@ if a tool responds with a url to the record, please include the url in the respo
         }
     ];
 
-    // 4. Iterative tool calling with maximum of 5 iterations
+    // 4. Prepare tools (custom tools + web search)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: any[] = [...availableFunctions];
+    
+    // Add web search tool (always enabled)
+    tools.push({
+      type: "web_search_20250305",
+      name: "web_search",
+      max_uses: parseInt(process.env.WEB_SEARCH_MAX_USES || '5'),
+      // Add domain filtering for business/professional sources
+      // allowed_domains: [
+      //   "linkedin.com", "crunchbase.com", "bloomberg.com", 
+      //   "reuters.com", "techcrunch.com", "sec.gov", "nasdaq.com"
+      // ]
+    });
+
+    // 5. Iterative tool calling with maximum of 5 iterations
     let maxIterations = 5;
     const currentMessages = [...messagesForAPI];
     let finalResponse = null;
@@ -270,7 +300,7 @@ if a tool responds with a url to the record, please include the url in the respo
         model: model || 'claude-sonnet-4-20250514',
         max_tokens: 2048,
         system: systemPrompt,
-        tools: availableFunctions,
+        tools: tools,
         messages: currentMessages,
       });
 
@@ -325,18 +355,98 @@ if a tool responds with a url to the record, please include the url in the respo
 
     // Handle the final response
     if (finalResponse) {
-      const content = finalResponse.content[0]?.type === 'text' 
-        ? finalResponse.content[0].text 
-        : ''
+
+      // Extract web search tool calls from the final response
+      const webSearchToolCalls: Array<{
+        id: string
+        name: string
+        arguments: Record<string, unknown>
+        result?: {
+          success: boolean
+          data?: unknown
+          error?: string
+        }
+      }> = [];
+
+      // Find server_tool_use blocks (web search queries)
+      const serverToolUseBlocks = finalResponse.content.filter(block => block.type === 'server_tool_use');
+      const webSearchResultBlocks = finalResponse.content.filter(block => block.type === 'web_search_tool_result');
+
+      // Match tool uses with their results
+      serverToolUseBlocks.forEach(toolUse => {
+        if (toolUse.name === 'web_search') {
+          const correspondingResult = webSearchResultBlocks.find(result => result.tool_use_id === toolUse.id);
+          
+          webSearchToolCalls.push({
+            id: toolUse.id,
+            name: toolUse.name,
+            arguments: (toolUse.input as Record<string, unknown>) || {},
+            result: correspondingResult ? {
+              success: true,
+              data: correspondingResult.content || []
+            } : undefined
+          });
+        }
+      });
+
+      // Add web search tool calls to the existing allToolCalls array
+      allToolCalls.push(...webSearchToolCalls);
+      
+      // Process all content blocks to build the complete response with inline citations
+      let fullContent = '';
+      const citations: Array<{url: string, title: string, cited_text: string}> = [];
+      let citationCounter = 1;
+      
+      const textBlocks = finalResponse.content.filter(block => block.type === 'text');
+      
+      if (textBlocks.length > 0) {
+        // Process each text block and add inline citations
+        fullContent = textBlocks.map(block => {
+          let blockText = block.text;
+          
+          // If this block has citations, add them to our citations array and append citation numbers
+          if (block.citations && Array.isArray(block.citations)) {
+            const blockCitations: number[] = [];
+            
+            block.citations.forEach(citation => {
+              if (citation.type === 'web_search_result_location') {
+                citations.push({
+                  url: citation.url || '',
+                  title: citation.title || '',
+                  cited_text: citation.cited_text || ''
+                });
+                blockCitations.push(citationCounter);
+                citationCounter++;
+              }
+            });
+            
+            // Add citation numbers at the end of the text block if it has citations
+            if (blockCitations.length > 0) {
+              const citationNumbers = blockCitations.map(num => `[${num}]`).join('');
+              blockText += citationNumbers;
+            }
+          }
+          
+          return blockText;
+        }).join('');
+      } else {
+        // Fallback: look for any content that can be converted to text
+        const hasToolUse = finalResponse.content.some(block => 
+          block.type === 'server_tool_use' || block.type === 'web_search_tool_result'
+        );
+        fullContent = hasToolUse ? 'I executed a search to help answer your question.' : '';
+      }
 
       // Get the first successful result for legacy response format
       const firstSuccessfulResult = allToolResults.find(result => result.success);
 
       return {
-        message: content || 'Tools executed successfully!',
+        message: fullContent || 'Tools executed successfully!',
         functionResult: firstSuccessfulResult ? { success: true, data: firstSuccessfulResult.data } : { success: false, error: 'All tools failed' },
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
-        actions: []
+        citations: citations.length > 0 ? citations : undefined,
+        actions: [],
+        rawResponse: finalResponse // Include the raw response for debugging/future use
       }
     }
 

@@ -39,7 +39,7 @@ export function ChatInput() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage } = useChat()
   const { isLoading } = useChatStore()
-  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-20250514')
+  const [selectedModel, setSelectedModel] = useState('claude-3-5-haiku-latest')
 
   const handleSend = async () => {
     const trimmedInput = input.trim()
@@ -242,7 +242,7 @@ export function ChatInput() {
                     <SelectValue placeholder="Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-3-5-haiku-20241022">Haiku 3.5</SelectItem>
+                    <SelectItem value="claude-3-5-haiku-latest">Haiku 3.5</SelectItem>
                     <SelectItem value="claude-sonnet-4-20250514">Sonnet 4</SelectItem>
                     <SelectItem value="claude-opus-4-1-20250805">Opus 4.1</SelectItem>
                   </SelectContent>

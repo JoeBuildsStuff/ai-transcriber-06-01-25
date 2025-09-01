@@ -36,6 +36,11 @@ export interface ChatMessage {
     error?: string
   }
   toolCalls?: ToolCall[]
+  citations?: Array<{
+    url: string
+    title: string
+    cited_text: string
+  }>
 }
 
 export interface ChatAction {
