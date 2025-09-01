@@ -1,12 +1,17 @@
+// TODO: when we added ability to select first column by default did we optimize the code? 
+// need to also compare code for sort and filter
+
+
 "use client"
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ListFilter, Plus, ChevronRight } from "lucide-react";
+import { CommandShortcut } from "@/components/ui/command";
+import { ListFilter, Plus } from "lucide-react";
 import DataTableFilterItem from "./data-table-filter-item";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -42,6 +47,24 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
     })
   );
 
+  // Get available columns for filtering
+  const getAvailableColumns = useCallback(() => {
+    return table
+      .getAllColumns()
+      .filter(
+        (column) =>
+          column.getCanFilter() &&
+          column.id !== "select" &&
+          column.id !== "actions"
+      );
+  }, [table]);
+
+  // Get next available column that's not already used in filters
+  const getNextAvailableColumn = useCallback((excludeIds: string[] = []) => {
+    const availableColumns = getAvailableColumns();
+    return availableColumns.find(col => !excludeIds.includes(col.id)) || availableColumns[0];
+  }, [getAvailableColumns]);
+
   // Sync filters with table's column filters state
   useEffect(() => {
     const currentFilters = table.getState().columnFilters;
@@ -67,52 +90,42 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
       });
       setFilters(newFilters);
     } else {
-      // If no filters are applied, show one empty filter item
-      setFilters([
-        {
-          filterId: generateId(),
-          id: "" as Extract<keyof TData, string>,
-          value: "",
-          operator: "iLike",
-          variant: "text",
-        },
-      ]);
+      // If no filters are applied, show one filter item with the first available column
+      const firstColumn = getNextAvailableColumn();
+      if (firstColumn) {
+        const columnMeta = firstColumn.columnDef.meta;
+        const variant: FilterVariant = columnMeta?.variant ?? "text";
+        const defaultOperator = variant === "text" ? "iLike" : 
+                               variant === "number" ? "equals" :
+                               variant === "date" ? "equals" :
+                               variant === "boolean" ? "equals" :
+                               variant === "select" ? "equals" : "iLike";
+
+        setFilters([
+          {
+            filterId: generateId(),
+            id: firstColumn.id as Extract<keyof TData, string>,
+            value: "",
+            operator: defaultOperator as FilterOperator,
+            variant: variant,
+          },
+        ]);
+      } else {
+        // Fallback if no columns available
+        setFilters([
+          {
+            filterId: generateId(),
+            id: "" as Extract<keyof TData, string>,
+            value: "",
+            operator: "iLike",
+            variant: "text",
+          },
+        ]);
+      }
     }
-  }, [table.getState().columnFilters]);
+  }, [table, getNextAvailableColumn]);
 
-  const addFilter = () => {
-    const newFilter: ExtendedColumnFilter<TData> = {
-      filterId: generateId(),
-      id: "" as Extract<keyof TData, string>,
-      value: "",
-      operator: "iLike",
-      variant: "text",
-    };
-    setFilters([...filters, newFilter]);
-  };
-
-  const removeFilter = (filterId: string) => {
-    setFilters(filters.filter((f) => f.filterId !== filterId));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setFilters((items) => {
-        const oldIndex = items.findIndex((item) => item.filterId === active.id);
-        const newIndex = items.findIndex((item) => item.filterId === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const updateFilter = (filterId: string, newFilter: ExtendedColumnFilter<TData>) => {
-    setFilters(
-      filters.map((f) => (f.filterId === filterId ? newFilter : f))
-    );
-  };
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     // Get valid filters (those with column selected and either have value or are empty/not empty operators)
     const validFilters = filters.filter((f) => 
       f.id && f.operator && (
@@ -135,6 +148,88 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
     
     table.setColumnFilters(columnFilters);
     setOpen(false); // Close the popover after applying filters
+  }, [filters, table]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when the popover is open
+      if (!open) return;
+      
+      // Check for Shift+Enter
+      if (event.shiftKey && event.key === 'Enter') {
+        event.preventDefault();
+        applyFilters();
+      }
+    };
+
+    // Add event listener when popover is open
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, applyFilters]);
+
+  const addFilter = () => {
+    // Get currently used column IDs
+    const usedColumnIds = filters.map(f => f.id).filter(id => id !== "");
+    
+    // Get next available column
+    const nextColumn = getNextAvailableColumn(usedColumnIds);
+    
+    if (nextColumn) {
+      const columnMeta = nextColumn.columnDef.meta;
+      const variant: FilterVariant = columnMeta?.variant ?? "text";
+      const defaultOperator = variant === "text" ? "iLike" : 
+                             variant === "number" ? "equals" :
+                             variant === "date" ? "equals" :
+                             variant === "boolean" ? "equals" :
+                             variant === "select" ? "equals" : "iLike";
+
+      const newFilter: ExtendedColumnFilter<TData> = {
+        filterId: generateId(),
+        id: nextColumn.id as Extract<keyof TData, string>,
+        value: "",
+        operator: defaultOperator as FilterOperator,
+        variant: variant,
+      };
+      setFilters([...filters, newFilter]);
+    } else {
+      // Fallback if no more columns available
+      const newFilter: ExtendedColumnFilter<TData> = {
+        filterId: generateId(),
+        id: "" as Extract<keyof TData, string>,
+        value: "",
+        operator: "iLike",
+        variant: "text",
+      };
+      setFilters([...filters, newFilter]);
+    }
+  };
+
+  const removeFilter = (filterId: string) => {
+    setFilters(filters.filter((f) => f.filterId !== filterId));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setFilters((items) => {
+        const oldIndex = items.findIndex((item) => item.filterId === active.id);
+        const newIndex = items.findIndex((item) => item.filterId === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const updateFilter = (filterId: string, newFilter: ExtendedColumnFilter<TData>) => {
+    setFilters(
+      filters.map((f) => (f.filterId === filterId ? newFilter : f))
+    );
   };
 
   // Get the actual number of applied filters from the table state
@@ -199,7 +294,10 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
               onClick={applyFilters}
             >
               Apply
-              <ChevronRight className="h-4 w-4" />
+              {/* <ChevronRight className="h-4 w-4" /> */}
+              <CommandShortcut className="bg-primary text-background">
+                ⇧↵
+              </CommandShortcut>
             </Button>
           </div>
         </div>
