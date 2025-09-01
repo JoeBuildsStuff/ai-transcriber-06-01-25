@@ -1,7 +1,7 @@
 'use client'
 
 import { MessageSquareOff, SquarePen, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
@@ -20,17 +20,6 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { useState, useRef, useEffect } from 'react'
 import { ChevronLeftIcon } from '../icons/chevron-left'
 import { DownloadIcon } from '../icons/download'
@@ -40,7 +29,7 @@ export function ChatHeader() {
   const { setOpen, setMinimized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle, layoutMode, setLayoutMode } = useChatStore()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitle, setEditTitle] = useState('')
-  const [showClearDialog, setShowClearDialog] = useState(false)
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleClose = () => {
@@ -48,15 +37,17 @@ export function ChatHeader() {
     setMinimized(false)
   }
 
-
-
-  const handleConfirmClear = () => {
-    clearMessages()
-    setShowClearDialog(false)
-  }
-
-  const handleCancelClear = () => {
-    setShowClearDialog(false)
+  const handleClearChat = () => {
+    if (isConfirmingClear) {
+      clearMessages()
+      setIsConfirmingClear(false)
+    } else {
+      setIsConfirmingClear(true)
+      // Reset confirmation after 3 seconds
+      setTimeout(() => {
+        setIsConfirmingClear(false)
+      }, 3000)
+    }
   }
 
   const handleNewChat = () => {
@@ -121,7 +112,7 @@ export function ChatHeader() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 flex-shrink-0"
+          className="h-8 w-8 p-0 flex-shrink-0 rounded-tl-xl"
           onClick={handleShowHistory}
           title="View chat history"
         >
@@ -210,29 +201,19 @@ export function ChatHeader() {
                 </DropdownMenuPortal>
               </DropdownMenuSub>
               <DropdownMenuSeparator />
-              <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <MessageSquareOff className="mr-2 size-4" />
-                    Clear chat
-                    <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear Chat</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to clear the chat history? This action cannot be undone and will permanently remove all messages in this conversation.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={handleCancelClear}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirmClear} className={buttonVariants({ variant: "destructive" })}>
-                      Clear
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem 
+                variant='destructive'
+                onClick={handleClearChat}
+                onSelect={(e) => {
+                  if (!isConfirmingClear) {
+                    e.preventDefault()
+                  }
+                }}
+              >
+                <MessageSquareOff className="mr-2 size-4" />
+                {isConfirmingClear ? 'Confirm' : 'Clear'}
+                {/* <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut> */}
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -240,7 +221,7 @@ export function ChatHeader() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 rounded-tr-xl"
           onClick={handleClose}
           title="Close"
         >

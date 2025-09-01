@@ -40,7 +40,7 @@ export function ChatInput() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage } = useChat()
   const { isLoading } = useChatStore()
-  const [selectedModel, setSelectedModel] = useState('claude-3-5-haiku-latest')
+  const [selectedModel, setSelectedModel] = useState('gpt-oss-120b')
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
 
   const handleSend = async () => {

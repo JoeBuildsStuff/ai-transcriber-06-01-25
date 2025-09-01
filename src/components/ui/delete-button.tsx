@@ -309,7 +309,7 @@ export function DeleteButton({
         >
           <DeleteIcon />
           {showConfirm && !showAnimation && (
-            <span className="ml-1">{isDeleting ? "..." : confirmText}</span>
+            <span className="">{isDeleting ? "..." : confirmText}</span>
           )}
         </Button>
       )}

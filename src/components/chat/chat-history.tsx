@@ -1,23 +1,12 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { Trash2, ChevronRight, MessagesSquare, SquarePen } from 'lucide-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { ChevronRight, MessagesSquare, SquarePen } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { DeleteButton } from '@/components/ui/delete-button'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
 import { ChevronRightIcon } from '../icons/chevron-right'
 
 export function ChatHistory() {
@@ -29,8 +18,6 @@ export function ChatHistory() {
     createSession, 
     setShowHistory 
   } = useChatStore()
-  
-  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null)
 
   const sessions = getSessions()
 
@@ -38,20 +25,8 @@ export function ChatHistory() {
     switchToSession(sessionId)
   }
 
-  const handleDeleteClick = (e: React.MouseEvent, sessionId: string) => {
-    e.stopPropagation()
-    setSessionToDelete(sessionId)
-  }
-
-  const handleConfirmDelete = () => {
-    if (sessionToDelete) {
-      deleteSession(sessionToDelete)
-      setSessionToDelete(null)
-    }
-  }
-
-  const handleCancelDelete = () => {
-    setSessionToDelete(null)
+  const handleDeleteSession = async (sessionId: string) => {
+    deleteSession(sessionId)
   }
 
   const handleNewChat = () => {
@@ -70,6 +45,7 @@ export function ChatHistory() {
         <Button
             variant="ghost"
             size="sm"
+            className="h-8 w-8 p-0 rounded-tl-xl"
             onClick={handleNewChat}
             title="New chat"
           >
@@ -80,7 +56,7 @@ export function ChatHistory() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 rounded-tr-xl"
             onClick={handleBackToChat}
             title="Back to current chat"
           >
@@ -107,7 +83,7 @@ export function ChatHistory() {
                 <div
                   key={session.id}
                   className={cn(
-                    "group relative flex flex-col p-2 rounded-lg cursor-pointer",
+                    "group flex flex-col p-2 rounded-lg cursor-pointer overflow-hidden",
                     "hover:bg-accent/50 transition-colors",
                     "border border-transparent",
                     session.id === currentSessionId && "bg-accent border-border"
@@ -115,49 +91,27 @@ export function ChatHistory() {
                   onClick={() => handleSessionClick(session.id)}
                 >
                   {/* Session Title */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0 overflow-hidden justify-between">
                     <h3 className={cn(
-                      "font-medium text-sm line-clamp-2 flex-1",
+                      "flex font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap",
                       session.id === currentSessionId && "text-accent-foreground"
                     )}>
-                      {session.title}
+                      {session.title.slice(0, 20)}
                     </h3>
-                    
-                    {/* Delete Button with AlertDialog */}
-                    <AlertDialog open={sessionToDelete === session.id} onOpenChange={(open) => !open && handleCancelDelete()}>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={cn(
-                            "opacity-0 group-hover:opacity-100",
-                            "transition-opacity shrink-0"
-                          )}
-                          onClick={(e) => handleDeleteClick(e, session.id)}
-                          title="Delete chat"
-                        >
-                          <Trash2 className="size-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Chat</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this chat? This action cannot be undone and will permanently remove all messages in this conversation.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleConfirmDelete} className={buttonVariants({ variant: "destructive" })} >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {/* Delete Button */}
+                    <div 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DeleteButton
+                        variant="ghost"
+                        onDelete={() => handleDeleteSession(session.id)}
+                      />
+                    </div>
                   </div>
 
                   {/* Session Meta */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
                     <span>
                       {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
                     </span>
