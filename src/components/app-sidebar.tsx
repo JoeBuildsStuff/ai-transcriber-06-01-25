@@ -240,7 +240,7 @@ export function AppSidebar() {
                   <UploadAudioProcess> 
                     <SidebarMenuButton className="w-full justify-start">
                       <AudioLines className="w-4 h-4 mr-2 flex-none" />
-                      <span>New Transcription</span>
+                      <span>New</span>
                     </SidebarMenuButton>
                   </UploadAudioProcess> 
                 </SidebarMenuItem>

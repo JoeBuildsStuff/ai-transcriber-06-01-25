@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AI Transcriber",
+  title: "AI Next Steps",
   description:
     "Transform audio into text effortlessly with our AI-powered transcription service.",
   keywords: [
@@ -11,19 +11,19 @@ export const metadata: Metadata = {
     "transcription service",
     "artificial intelligence",
   ],
-  authors: [{ name: "AI Transcriber Team" }],
+  authors: [{ name: "AI Next Steps Team" }],
   openGraph: {
-    title: "AI Transcriber: Your Audio to Text Solution",
+    title: "AI Next Steps: Your Audio to Text Solution",
     description:
       "Experience seamless audio transcription with AI. Get accurate text from your audio files in no time.",
-    url: "https://aitranscriber.com",
-    siteName: "AI Transcriber",
+    url: "https://ainextsteps.com",
+    siteName: "AI Next Steps",
     images: [
       {
-        url: "https://aitranscriber.com/opengraph-image.png",
+        url: "https://ainextsteps.com/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "AI Transcriber Service Preview",
+        alt: "AI Next Steps Service Preview",
       },
     ],
     locale: "en_US",
@@ -31,11 +31,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Transcriber: Transcribe Audio with AI",
+    title: "AI Next Steps: Transcribe Audio with AI",
     description:
       "Convert your audio files to text with our advanced AI transcription service.",
-    creator: "@aitranscriber",
-    images: ["https://aitranscriber.com/twitter-image.jpg"],
+    creator: "@ainextsteps",
+    images: ["https://ainextsteps.com/twitter-image.jpg"],
   },
   robots: {
     index: true,
@@ -54,6 +54,6 @@ export const metadata: Metadata = {
     // apple: '/apple-touch-icon.png',
   },
   other: {
-    "application-name": "AI Transcriber",
+    "application-name": "AI Next Steps",
   },
 };

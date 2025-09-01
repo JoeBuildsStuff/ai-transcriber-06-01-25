@@ -1,6 +1,6 @@
-# AI Transcriber
+# AI Next Steps
 
-AI Transcriber is a Next.js application that turns uploaded audio into searchable meeting transcripts and summaries. Audio is stored in Supabase Storage, transcribed with Deepgram and summarized with OpenAI. User authentication, meeting data and files are all managed through Supabase.
+AI Next Steps is a Next.js application that turns uploaded audio into searchable meeting transcripts and summaries. Audio is stored in Supabase Storage, transcribed with Deepgram and summarized with OpenAI. User authentication, meeting data and files are all managed through Supabase.
 
 ## Features
 - Email, Google and GitHub authentication using Supabase
