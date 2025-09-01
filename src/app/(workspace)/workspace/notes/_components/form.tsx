@@ -311,7 +311,7 @@ export default function NoteForm({
               <File className="size-4 shrink-0" strokeWidth={1.5} />
               <span className="whitespace-nowrap @max-sm:hidden">Content</span>
             </div> */}
-            <div className="w-full h-full overflow-y-auto">
+            <div className="w-full h-full overflow-y-auto flex-1">
               <NotesContent
                 noteId={initialNoteId || ""}
                 noteContent={content}

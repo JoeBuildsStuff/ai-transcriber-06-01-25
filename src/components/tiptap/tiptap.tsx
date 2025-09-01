@@ -205,10 +205,10 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
                 {/* end drag handle */}
 
                 {/* start editor */}
-                <div className='flex-1 overflow-y-auto py-2 px-6 prose prose-base dark:prose-invert max-w-none'>
+                <div className='h-full flex-1 overflow-y-auto py-2 px-6 prose prose-base dark:prose-invert max-w-none'>
                     <EditorContent 
                         editor={editor} 
-                        className='[&_a:hover]:cursor-pointer' 
+                        className='[&_a:hover]:cursor-pointer h-full flex-1' 
                     />
                 </div>
                 {/* end editor */}

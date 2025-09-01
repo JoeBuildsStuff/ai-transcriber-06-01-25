@@ -59,8 +59,8 @@ export default function NotesContent({ noteContent, noteId, onNoteIdChange }: No
   }, [hasUnsavedChanges])
 
   return (
-    <div className="relative h-full">
-      <div onKeyDown={noteId ? handleKeyDown : undefined} className="h-full">
+    <div className="relative h-full flex-1">
+      <div onKeyDown={noteId ? handleKeyDown : undefined} className="h-full flex-1">
         <Tiptap
           content={content}
           onChange={(newContent: string) => handleContentChange(newContent)}

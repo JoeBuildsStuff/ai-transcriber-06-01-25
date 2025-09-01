@@ -110,7 +110,7 @@ const Outline: React.FC<OutlineProps> = ({ outline, meetingId, audioFilePath, on
         {sections.map(([key, value]) => {
           const htmlContent = marked(String(value)) as string;
           return (
-            <div key={key} className="">
+            <div key={key} className="h-full">
                 <Tiptap
                   content={htmlContent}
                   onChange={(newContent: string) => handleSectionChange(key, newContent)}
