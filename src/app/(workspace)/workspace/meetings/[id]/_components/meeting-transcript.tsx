@@ -131,7 +131,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
 
             {/* Transcript */}
             {meetingData.formatted_transcript && (
-                <div className="transcription">
+                <div className="transcription pt-2">
                     {(meetingData.formatted_transcript as unknown as FormattedTranscriptGroup[]).map((item: FormattedTranscriptGroup, index: number) => (
                         <div 
                             key={index} 
