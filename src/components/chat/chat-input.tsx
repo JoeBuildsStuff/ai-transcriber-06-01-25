@@ -22,6 +22,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { XIcon } from '../icons/x'
 import { ArrowUpIcon } from '../icons/arrow-up'
 import { AttachFileIcon } from '../icons/attach-file'
+import { LowMediumHighIcon } from '../icons/low-medium-high'
 
 export interface Attachment {
   id: string
@@ -40,6 +41,7 @@ export function ChatInput() {
   const { sendMessage } = useChat()
   const { isLoading } = useChatStore()
   const [selectedModel, setSelectedModel] = useState('claude-3-5-haiku-latest')
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
 
   const handleSend = async () => {
     const trimmedInput = input.trim()
@@ -57,7 +59,16 @@ export function ChatInput() {
     }
 
     try {
-      await sendMessage(messageContent, currentAttachments, selectedModel)
+      // Determine if we should use Cerebras API based on model selection
+      const isCerebrasModel = selectedModel.startsWith('gpt-oss-120b')
+      
+      if (isCerebrasModel) {
+        // Use Cerebras API with reasoning effort
+        await sendMessage(messageContent, currentAttachments, selectedModel, reasoningEffort)
+      } else {
+        // Use regular chat API
+        await sendMessage(messageContent, currentAttachments, selectedModel)
+      }
     } finally {
       // Focus back to input
       textareaRef.current?.focus()
@@ -238,15 +249,34 @@ export function ChatInput() {
                   onValueChange={setSelectedModel}
                   disabled={isLoading}
                 >
-                  <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none" >
+                  <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs" >
                     <SelectValue placeholder="Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-3-5-haiku-latest">Haiku 3.5</SelectItem>
-                    <SelectItem value="claude-sonnet-4-20250514">Sonnet 4</SelectItem>
-                    <SelectItem value="claude-opus-4-1-20250805">Opus 4.1</SelectItem>
+                    <SelectItem value="claude-3-5-haiku-latest" className="font-light text-xs">Haiku 3.5</SelectItem>
+                    <SelectItem value="claude-sonnet-4-20250514" className="font-light text-xs">Sonnet 4</SelectItem>
+                    <SelectItem value="claude-opus-4-1-20250805" className="font-light text-xs">Opus 4.1</SelectItem>
+                    <SelectItem value="gpt-oss-120b" className="font-light text-xs">GPT-OSS-120B</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Reasoning Effort Selector (only show for Cerebras models) */}
+                {selectedModel.startsWith('gpt-oss-120b') && (
+                  <Select
+                    value={reasoningEffort}
+                    onValueChange={(value: 'low' | 'medium' | 'high') => setReasoningEffort(value)}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs" >
+                      <SelectValue placeholder="Reasoning" />
+                    </SelectTrigger>
+                    <SelectContent className="font-light text-xs">
+                      <SelectItem value="low" className="font-light text-xs"><LowMediumHighIcon level={1} /> Low</SelectItem>
+                      <SelectItem value="medium" className="font-light text-xs"><LowMediumHighIcon level={2} /> Medium</SelectItem>
+                      <SelectItem value="high" className="font-light text-xs"><LowMediumHighIcon level={3} />High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
 
                 {/* Send button */}
                 <Button

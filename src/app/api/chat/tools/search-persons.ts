@@ -8,10 +8,6 @@ export const searchPersonsTool: Anthropic.Tool = {
   input_schema: {
     type: 'object' as const,
     properties: {
-      searchTerm: {
-        type: 'string',
-        description: 'General search term to search across first name, last name, and company name'
-      },
       firstName: {
         type: 'string',
         description: 'Search specifically by first name'

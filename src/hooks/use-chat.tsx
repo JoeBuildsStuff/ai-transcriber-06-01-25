@@ -32,13 +32,16 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   } = useChatStore()
 
   // Default API handler
-  const sendToAPI = useCallback(async (content: string, context: PageContext | null, attachments?: Attachment[], model?: string) => {
+  const sendToAPI = useCallback(async (content: string, context: PageContext | null, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high') => {
     const formData = new FormData()
     formData.append('message', content)
     formData.append('context', JSON.stringify(context))
     formData.append('messages', JSON.stringify(messages.slice(-10))) // Send last 10 messages for context
     if (model) {
       formData.append('model', model)
+    }
+    if (reasoningEffort) {
+      formData.append('reasoning_effort', reasoningEffort)
     }
     
     // Add attachments if any
@@ -76,7 +79,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   }, [messages, addMessage])
 
   // Handle sending a new message
-  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string) => {
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high') => {
     if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
     // Ensure we have a current session
@@ -152,8 +155,58 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       if (onSendMessage) {
         await onSendMessage(content, attachments)
       } else {
-        // Default API call
-        await sendToAPI(content, currentContext, attachments, model)
+        // Determine if we should use Cerebras API based on model selection
+        const isCerebrasModel = model?.startsWith('gpt-oss-120b')
+        
+        if (isCerebrasModel) {
+          // Use Cerebras API
+          const cerebrasFormData = new FormData()
+          cerebrasFormData.append('message', content)
+          cerebrasFormData.append('context', JSON.stringify(currentContext))
+          cerebrasFormData.append('messages', JSON.stringify(messages.slice(-10)))
+          if (model) {
+            cerebrasFormData.append('model', model)
+          }
+          if (reasoningEffort) {
+            cerebrasFormData.append('reasoning_effort', reasoningEffort)
+          }
+          
+          // Add attachments if any
+          if (attachments && attachments.length > 0) {
+            attachments.forEach((attachment, index) => {
+              cerebrasFormData.append(`attachment-${index}`, attachment.file)
+              cerebrasFormData.append(`attachment-${index}-name`, attachment.name)
+              cerebrasFormData.append(`attachment-${index}-type`, attachment.type)
+              cerebrasFormData.append(`attachment-${index}-size`, attachment.size.toString())
+            })
+            cerebrasFormData.append('attachmentCount', attachments.length.toString())
+          }
+
+          const response = await fetch('/api/chat/cerebras', {
+            method: 'POST',
+            body: cerebrasFormData,
+          })
+
+          if (!response.ok) {
+            throw new Error(`Cerebras API error: ${response.status}`)
+          }
+
+          const result = await response.json()
+          
+          // Add the assistant message with tool calls and citations if available
+          const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+            role: 'assistant',
+            content: result.message || 'I apologize, but I couldn\'t generate a response.',
+            suggestedActions: result.actions || [],
+            toolCalls: result.toolCalls || undefined,
+            citations: result.citations || undefined
+          }
+          
+          addMessage(assistantMessage)
+        } else {
+          // Default API call
+          await sendToAPI(content, currentContext, attachments, model, reasoningEffort)
+        }
       }
     } catch (error) {
       console.error('Failed to send message:', error)
