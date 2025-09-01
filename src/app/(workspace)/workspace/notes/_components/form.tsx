@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { File, Users, Calendar, Type, X, ArrowUpRight } from "lucide-react";
+import { Users, Calendar, Type, X, ArrowUpRight } from "lucide-react";
 import { Contact, Meeting } from '../_lib/validations';
 import { Button } from "@/components/ui/button";
 import PersonForm from "../../contacts/_components/form";
