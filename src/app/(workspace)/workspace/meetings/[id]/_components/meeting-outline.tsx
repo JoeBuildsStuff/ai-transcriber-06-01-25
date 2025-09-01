@@ -105,27 +105,23 @@ const Outline: React.FC<OutlineProps> = ({ outline, meetingId, audioFilePath, on
   }
 
   return (
-    <div className="relative h-full overflow-y-auto" onKeyDown={handleKeyDown}>
-      <div className="flex flex-col gap-4 h-full overflow-y-auto">
+    <div className="h-full relative" onKeyDown={handleKeyDown}>
+      <div className="flex flex-col gap-4 h-full">
         {sections.map(([key, value]) => {
           const htmlContent = marked(String(value)) as string;
           return (
-            <div key={key} className="relative">
-              {/* <h3 className="text-lg font-semibold mb-2 pb-1 border-b">{formatTitle(key)}</h3> */}
-              <div className="prose prose-md max-w-none dark:prose-invert overflow-y-auto">
+            <div key={key} className="">
                 <Tiptap
                   content={htmlContent}
                   onChange={(newContent: string) => handleSectionChange(key, newContent)}
-                  // showFixedMenu={false}
                 />
-              </div>
             </div>
           );
         })}
       </div>
       
       {/* Save status badges */}
-      <div className="fixed top-20 right-4 z-10 flex items-center gap-2">
+      <div className="absolute top-10 right-4 z-20 flex items-center gap-2">
         {hasUnsavedChanges && saveStatus === 'idle' && (
           <Badge variant="orange">
             Unsaved changes

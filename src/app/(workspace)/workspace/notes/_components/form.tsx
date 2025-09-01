@@ -169,145 +169,157 @@ export default function NoteForm({
   };
 
   return (
-    <div className={cn("@container flex flex-col gap-3 text-foreground w-full", className)}>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
-          <Type className="size-4 shrink-0" strokeWidth={1.5} />
-          <span className="whitespace-nowrap @max-sm:hidden">Title</span>
+    <div className={cn("@container flex flex-col text-foreground w-full", className)}>
+
+      <div className="flex flex-col gap-3 grid-rows-[auto_1fr] h-[calc(100vh-5.5rem)]">
+        <div className="flex flex-col gap-3">
+          {/* Title */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
+              <Type className="size-4 shrink-0" strokeWidth={1.5} />
+              <span className="whitespace-nowrap @max-sm:hidden">Title</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <InputSupabase
+                table="notes"
+                field="title"
+                id={noteId}
+                initialValue={initialTitle}
+                placeholder="Add note title..."
+                onNoteCreated={onNoteCreated}
+                className="border-none"
+              />
+            </div>
+            <div className="shrink-0">
+              <DeleteButton 
+                onDelete={async () => {
+                  const result = await deleteNotes([noteId]);
+                  if (!result.success) throw new Error(result.error);
+                }}
+                redirectTo="/workspace/notes"
+              />
+            </div>
+          </div>
+
+          {/* Contacts */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
+              <Users className="size-4 shrink-0" strokeWidth={1.5} />
+              <span className="whitespace-nowrap @max-sm:hidden">Contacts</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <ComboboxSupabase
+                table="contact_notes"
+                field="contact_id"
+                id={noteId}
+                initialValue={contactIds}
+                options={availableContacts.map(contact => ({
+                  value: contact.id,
+                  label: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
+                  subLabel: contact.company?.name
+                }))}
+                placeholder="Associate with contacts..."
+                searchPlaceholder="Search contacts..."
+                emptyText="No contacts found."
+                onNoteCreated={onNoteCreated}
+                noteIdField="note_id"
+                targetIdField="contact_id"
+                actionButton={{
+                  label: "Add Contact",
+                  onClick: () => setAddContactDialogOpen(true)
+                }}
+                renderBadge={(option, onRemove) => (
+                  <ContextMenu key={option.value}>
+                    <ContextMenuTrigger>
+                      <Badge variant="blue" className="text-sm cursor-pointer">
+                        {option.label}
+                        <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
+                          e.stopPropagation();
+                          onRemove();
+                        }}>
+                          <X className="size-4" />
+                        </Button>
+                      </Badge>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => router.push(`/workspace/contacts/${option.value}`)}>
+                        View Contact
+                        <ArrowUpRight className="size-4 shrink-0" />
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Meetings */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
+              <Calendar className="size-4 shrink-0" strokeWidth={1.5} />
+              <span className="whitespace-nowrap @max-sm:hidden">Meetings</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <ComboboxSupabase
+                table="meeting_notes"
+                field="meeting_id"
+                id={noteId}
+                initialValue={meetingIds}
+                options={availableMeetings.map(meeting => ({
+                  value: meeting.id,
+                  label: meeting.title || 'Untitled Meeting'
+                }))}
+                placeholder="Associate with meetings..."
+                searchPlaceholder="Search meetings..."
+                emptyText="No meetings found."
+                onNoteCreated={onNoteCreated}
+                noteIdField="note_id"
+                targetIdField="meeting_id"
+                renderBadge={(option, onRemove) => (
+                  <ContextMenu key={option.value}>
+                    <ContextMenuTrigger>
+                      <Badge variant="green" className="text-sm cursor-pointer">
+                        {option.label}
+                        <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
+                          e.stopPropagation();
+                          onRemove();
+                        }}>
+                          <X className="size-4" />
+                        </Button>
+                      </Badge>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => router.push(`/workspace/meetings/${option.value}`)}>
+                        View Meeting
+                        <ArrowUpRight className="size-4 shrink-0" />
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                )}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <InputSupabase
-            table="notes"
-            field="title"
-            id={noteId}
-            initialValue={initialTitle}
-            placeholder="Add note title..."
-            onNoteCreated={onNoteCreated}
-            className="border-none"
-          />
-        </div>
-        <div className="shrink-0">
-          <DeleteButton 
-            onDelete={async () => {
-              const result = await deleteNotes([noteId]);
-              if (!result.success) throw new Error(result.error);
-            }}
-            redirectTo="/workspace/notes"
-          />
+
+        {/* Content */}
+        <div className="h-full overflow-y-auto">
+          <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] pt-3 text-muted-foreground">
+              <File className="size-4 shrink-0" strokeWidth={1.5} />
+              <span className="whitespace-nowrap @max-sm:hidden">Content</span>
+            </div>
+            <div className="flex-1 min-w-0 h-full ">
+              <NotesContent
+                noteId={initialNoteId || ""}
+                noteContent={content}
+                onNoteIdChange={onNoteCreated}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
-          <Users className="size-4 shrink-0" strokeWidth={1.5} />
-          <span className="whitespace-nowrap @max-sm:hidden">Contacts</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <ComboboxSupabase
-            table="contact_notes"
-            field="contact_id"
-            id={noteId}
-            initialValue={contactIds}
-            options={availableContacts.map(contact => ({
-              value: contact.id,
-              label: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
-              subLabel: contact.company?.name
-            }))}
-            placeholder="Associate with contacts..."
-            searchPlaceholder="Search contacts..."
-            emptyText="No contacts found."
-            onNoteCreated={onNoteCreated}
-            noteIdField="note_id"
-            targetIdField="contact_id"
-            actionButton={{
-              label: "Add Contact",
-              onClick: () => setAddContactDialogOpen(true)
-            }}
-            renderBadge={(option, onRemove) => (
-              <ContextMenu key={option.value}>
-                <ContextMenuTrigger>
-                  <Badge variant="blue" className="text-sm cursor-pointer">
-                    {option.label}
-                    <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove();
-                    }}>
-                      <X className="size-4" />
-                    </Button>
-                  </Badge>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => router.push(`/workspace/contacts/${option.value}`)}>
-                    View Contact
-                    <ArrowUpRight className="size-4 shrink-0" />
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
-          <Calendar className="size-4 shrink-0" strokeWidth={1.5} />
-          <span className="whitespace-nowrap @max-sm:hidden">Meetings</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <ComboboxSupabase
-            table="meeting_notes"
-            field="meeting_id"
-            id={noteId}
-            initialValue={meetingIds}
-            options={availableMeetings.map(meeting => ({
-              value: meeting.id,
-              label: meeting.title || 'Untitled Meeting'
-            }))}
-            placeholder="Associate with meetings..."
-            searchPlaceholder="Search meetings..."
-            emptyText="No meetings found."
-            onNoteCreated={onNoteCreated}
-            noteIdField="note_id"
-            targetIdField="meeting_id"
-            renderBadge={(option, onRemove) => (
-              <ContextMenu key={option.value}>
-                <ContextMenuTrigger>
-                  <Badge variant="green" className="text-sm cursor-pointer">
-                    {option.label}
-                    <Button variant="ghost" size="icon" className="size-4" onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove();
-                    }}>
-                      <X className="size-4" />
-                    </Button>
-                  </Badge>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => router.push(`/workspace/meetings/${option.value}`)}>
-                    View Meeting
-                    <ArrowUpRight className="size-4 shrink-0" />
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-start gap-2">
-        <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] pt-3 text-muted-foreground">
-          <File className="size-4 shrink-0" strokeWidth={1.5} />
-          <span className="whitespace-nowrap @max-sm:hidden">Content</span>
-        </div>
-        <div className="flex-1 min-w-0">
-        <NotesContent
-          noteId={initialNoteId || ""}
-          noteContent={content}
-          onNoteIdChange={onNoteCreated}
-        />
-        </div>
-      </div>
-
+      {/* Add Contact Dialog */}
       <Dialog open={addContactDialogOpen} onOpenChange={setAddContactDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden">
           <DialogHeader>

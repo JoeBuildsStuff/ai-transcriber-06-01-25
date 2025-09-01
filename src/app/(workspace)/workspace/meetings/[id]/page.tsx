@@ -1,7 +1,5 @@
 'use client';
 
-// b5bdf5b0-4ba6-4713-a734-c0c90db33d0b
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMeeting } from "@/app/(workspace)/workspace/meetings/[id]/_lib/actions";

@@ -170,11 +170,15 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
 
     // Editor
     return (
-        <div className='relative border border-border rounded-md bg-card h-full'>
+        <div className='relative border border-border rounded-md bg-card h-full flex flex-col'>
             <TooltipProvider>
 
                 {/* start fixed menu */}
-                {showFixedMenu && <FixedMenu editor={editor} />}
+                {showFixedMenu && (
+                    <div className='sticky top-0 z-10 bg-card/80 backdrop-blur-lg rounded-lg'>
+                        <FixedMenu editor={editor} />
+                    </div>
+                )}
                 {/* end fixed menu */}
 
                 {/* start bubble menu */}
@@ -201,7 +205,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
                 {/* end drag handle */}
 
                 {/* start editor */}
-                <div className='py-2 px-6 prose prose-base dark:prose-invert max-w-none'>
+                <div className='flex-1 overflow-y-auto py-2 px-6 prose prose-base dark:prose-invert max-w-none'>
                     <EditorContent 
                         editor={editor} 
                         className='[&_a:hover]:cursor-pointer' 
