@@ -13,6 +13,7 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { cn } from '@/lib/utils';
 import { type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 type ButtonProps = ComponentProps<"button"> & VariantProps<typeof buttonVariants> & {
   asChild?: boolean;
@@ -69,23 +70,46 @@ export function CopyButton({
   };
 
   const ButtonComponent = (
-    <Button
-      variant={variant}
-      size={size}
-      className={cn(
-        'h-fit w-fit p-2 m-0 text-muted-foreground hover:text-primary',
-        className
-      )}
-      onClick={handleCopy}
-      disabled={!textToCopy}
-      {...props}
-    >
-      {isCopied ? (
-        <CheckIcon className="" size={iconSize} />
-      ) : (
-        <CopyIcon className="" size={iconSize} />
-      )}
-    </Button>
+    <motion.div
+    whileHover={{ scale: 1.2 }}
+    whileTap={{ scale: 0.8 }}
+    style={{}}
+>
+      <Button
+        variant={variant}
+        size={size}
+        className={cn(
+          'h-fit w-fit p-2 m-0 text-muted-foreground hover:text-primary',
+          className
+        )}
+        onClick={handleCopy}
+        disabled={!textToCopy}
+        {...props}
+      >
+        {isCopied ? (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="check-icon"
+              exit={{ opacity: 0, scale: 0.5, rotate: 180 }}
+              transition={{ duration: 0.3, ease: "easeIn" }}
+            >
+              <CheckIcon className="" size={iconSize} />
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`copy-icon-${isCopied}`}
+              initial={{ opacity: 0, scale: 0.5, rotate: -180 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <CopyIcon className="" size={iconSize} />
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </Button>
+    </motion.div>
   );
 
   if (!showTooltip) {

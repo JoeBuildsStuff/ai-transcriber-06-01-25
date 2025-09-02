@@ -23,18 +23,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortc
 import { Button } from '@/components/ui/button'
 import { LinkButton } from '@/components/tiptap/link-button'
 import TableButton from '@/components/tiptap/table-button'
-import { CopyIcon } from '@/components/icons/copy'
-import { CheckIcon } from '@/components/icons/check'
-import { toast } from 'sonner'
-import { useState } from 'react'
+import { CopyButton } from '@/components/ui/copy-button'
 
 interface FixedMenuProps {
     editor: Editor
 }
 
 const FixedMenu = ({ editor }: FixedMenuProps) => {
-    const [isCopied, setIsCopied] = useState(false)
-    
     const editorState = useEditorState({
         editor,
         selector: (state: { editor: Editor }) => ({
@@ -55,38 +50,14 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
         }),
     })
 
-    const handleCopy = async () => {
-        if (!editor) {
-            return
-        }
+    const getContentToCopy = () => {
+        if (!editor) return ''
         
         const htmlContent = editor.getHTML()
         const textContent = editor.getText()
-
-        try {
-            // Try to copy rich text with HTML and plain text formats
-            await navigator.clipboard.write([
-                new ClipboardItem({
-                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
-                    'text/plain': new Blob([textContent], { type: 'text/plain' })
-                })
-            ])
-            setIsCopied(true)
-            setTimeout(() => setIsCopied(false), 2000)
-            toast.success("Content copied to clipboard")
-        } catch (err) {
-            console.error('Failed to copy rich text, falling back to plain text.', err)
-            // Fallback to plain text if rich text copy fails
-            try {
-                await navigator.clipboard.writeText(textContent)
-                setIsCopied(true)
-                setTimeout(() => setIsCopied(false), 2000)
-                toast.success("Content copied to clipboard")
-            } catch (fallbackErr) {
-                console.error('Failed to copy plain text.', fallbackErr)
-                toast.error("Failed to copy content")
-            }
-        }
+        
+        // Return HTML content if it's different from plain text, otherwise return plain text
+        return htmlContent !== textContent ? htmlContent : textContent
     }
     
     return (
@@ -269,16 +240,16 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                     </div>
                 </div>
                 <div className='flex flex-row gap-1'>
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Button size='sm' variant='ghost' className='text-xs' onClick={handleCopy}>
-                                {isCopied ? <CheckIcon className='' /> : <CopyIcon className='' />}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{isCopied ? "Copied!" : "Copy content"}</p>
-                        </TooltipContent>
-                    </Tooltip>
+                    <CopyButton
+                        textToCopy={getContentToCopy()}
+                        size='sm'
+                        variant='ghost'
+                        className='text-xs'
+                        tooltipText='Copy content'
+                        tooltipCopiedText='Copied!'
+                        successMessage='Content copied to clipboard'
+                        errorMessage='Failed to copy content'
+                    />
                 </div>
             </div>
         </div>
