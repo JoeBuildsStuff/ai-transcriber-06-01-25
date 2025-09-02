@@ -8,9 +8,9 @@ const spinnerVariants = cva(
   {
     variants: {
       size: {
-        sm: "size-4 stroke-8",
-        default: "size-5 stroke-8",
-        lg: "size-6 stroke-8",
+        sm: "size-4 stroke-6",
+        default: "size-5 stroke-6",
+        lg: "size-6 stroke-6",
         xl: "size-8 stroke-8",
       },
       variant: {

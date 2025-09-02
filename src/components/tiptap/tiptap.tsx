@@ -17,7 +17,7 @@ import { createLowlight, common } from 'lowlight'
 import { useEffect, useState } from 'react'
 import { TiptapProps } from './types'
 import { CustomImage } from './custom-image-extension'
-import { deleteImageFromStorage } from './image-cleanup'
+import { deleteFileFromStorage } from './file-cleanup'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -54,7 +54,7 @@ const Tiptap = ({
   showDragHandle = true, 
   onChange, 
   onFileDrop,
-  imageUploadConfig,
+  fileUploadConfig,
   enableFileNodes = true
 }: TiptapProps) => {
   // Track the currently selected node for drag handle functionality
@@ -89,11 +89,11 @@ const Tiptap = ({
         ...(enableFileNodes ? [
           createFileHandlerConfig({ 
             onFileDrop,
-            imageUploadConfig: imageUploadConfig ? {
-              supabaseBucket: imageUploadConfig.supabaseBucket,
-              pathPrefix: imageUploadConfig.pathPrefix,
-              maxFileSize: imageUploadConfig.maxFileSize,
-              allowedMimeTypes: imageUploadConfig.allowedMimeTypes
+            fileUploadConfig: fileUploadConfig ? {
+              supabaseBucket: fileUploadConfig.supabaseBucket,
+              pathPrefix: fileUploadConfig.pathPrefix,
+              maxFileSize: fileUploadConfig.maxFileSize,
+              allowedMimeTypes: fileUploadConfig.allowedMimeTypes
             } : undefined
           })
         ] : []),
@@ -112,14 +112,14 @@ const Tiptap = ({
     content: content || ``,
     immediatelyRender: false,
     onDelete(params: { type: string; node?: { type: { name: string }; attrs?: { src?: string } }; [key: string]: unknown }) {
-      // Handle cleanup of deleted image nodes
+      // Handle cleanup of deleted image and file nodes
       const { type, node } = params
-      if (type === 'node' && node?.type?.name === 'image' && node?.attrs?.src) {
+      if (type === 'node' && node?.attrs?.src) {
         const src = node.attrs.src
         // Only cleanup Supabase file paths, not external URLs
         if (typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')) {
-          deleteImageFromStorage(src).catch(error => {
-            console.error('Failed to cleanup deleted image:', error)
+          deleteFileFromStorage(src).catch(error => {
+            console.error('Failed to cleanup deleted file:', error)
           })
         }
       }

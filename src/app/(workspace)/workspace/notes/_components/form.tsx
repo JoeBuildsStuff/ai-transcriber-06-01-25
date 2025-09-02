@@ -172,7 +172,7 @@ export default function NoteForm({
     // TODO: we were using @container to support responsive design for the form field lables
     // but its throwing off the tiptap bublemenu dropdown menu locations so we are going to remove it for now
     // <div className={cn("@container flex flex-col text-foreground w-full", className)}>
-    <div className={cn("flex flex-col text-foreground w-full", className)}>
+    <div className={cn("flex flex-col text-foreground w-full pt-1", className)}>
 
       <div className="flex flex-col gap-3 grid-rows-[auto_1fr] h-[calc(100vh-5.5rem)]">
         <div className="flex flex-col gap-3">
@@ -180,7 +180,7 @@ export default function NoteForm({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
               <Type className="size-4 shrink-0" strokeWidth={1.5} />
-              <span className="whitespace-nowrap @max-sm:hidden">Title</span>
+              <span className="whitespace-nowrap @max-sm:hidden font-light">Title</span>
             </div>
             <div className="flex-1 min-w-0">
               <InputSupabase
@@ -190,7 +190,7 @@ export default function NoteForm({
                 initialValue={initialTitle}
                 placeholder="Add note title..."
                 onNoteCreated={onNoteCreated}
-                className="border-none"
+                className="border-none bg-input/30 shadow-none text-sm font-light"
               />
             </div>
             <div className="shrink-0">
@@ -208,7 +208,7 @@ export default function NoteForm({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
               <Users className="size-4 shrink-0" strokeWidth={1.5} />
-              <span className="whitespace-nowrap @max-sm:hidden">Contacts</span>
+              <span className="whitespace-nowrap @max-sm:hidden font-light">Contacts</span>
             </div>
             <div className="flex-1 min-w-0">
               <ComboboxSupabase
@@ -260,7 +260,7 @@ export default function NoteForm({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
               <Calendar className="size-4 shrink-0" strokeWidth={1.5} />
-              <span className="whitespace-nowrap @max-sm:hidden">Meetings</span>
+              <span className="whitespace-nowrap @max-sm:hidden font-light">Meetings</span>
             </div>
             <div className="flex-1 min-w-0">
               <ComboboxSupabase
@@ -309,7 +309,7 @@ export default function NoteForm({
           <div className="flex items-start gap-2">
             <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] pt-3 text-muted-foreground">
               <File className="size-4 shrink-0" strokeWidth={1.5} />
-              <span className="whitespace-nowrap @max-sm:hidden">Content</span>
+              <span className="whitespace-nowrap @max-sm:hidden font-light">Content</span>
             </div> */}
             <div className="w-full h-full overflow-y-auto flex-1">
               <NotesContent

@@ -6,31 +6,75 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 import { 
-  Download, 
   File, 
-  X,
   AlertCircle,
-  Loader2,
   ExternalLink
 } from 'lucide-react'
 import { FileNodeAttributes } from './file-node'
+import { XIcon } from '../icons/x'
+import { DownloadIcon } from '../icons/download'
+import Spinner from '../ui/spinner'
 
 export const FileNodeView = ({ node, updateAttributes, deleteNode }: ReactNodeViewProps) => {
   const attrs = node.attrs as FileNodeAttributes
   const [error, setError] = useState<string | null>(null)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleDownload = () => {
-    if (!attrs.fileData) return
+  // Fetch download URL when component mounts
+  useEffect(() => {
+    const fetchDownloadUrl = async () => {
+      if (!attrs.src) {
+        setError('No file source provided')
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // If it's already a full URL, use it directly
+        if (attrs.src.startsWith('http')) {
+          setDownloadUrl(attrs.src)
+          setIsLoading(false)
+          return
+        }
+        
+        // For file paths, use our API to get a signed URL
+        const apiUrl = `/api/files/serve?path=${encodeURIComponent(attrs.src)}`
+        
+        const response = await fetch(apiUrl)
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(`Failed to fetch file: ${response.status} - ${errorData.error || 'Unknown error'}`)
+        }
+        
+        const data = await response.json()
+        if (data.fileUrl) {
+          setDownloadUrl(data.fileUrl)
+        } else {
+          throw new Error('Invalid response from file API')
+        }
+        
+        setIsLoading(false)
+      } catch (err) {
+        console.error('Error fetching file URL:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load file')
+        setIsLoading(false)
+      }
+    }
+
+    fetchDownloadUrl()
+  }, [attrs.src])
+
+  const handleDownload = async () => {
+    if (!downloadUrl) return
     
     try {
-      const byteCharacters = atob(attrs.fileData.split(',')[1])
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: attrs.fileType })
+      const response = await fetch(downloadUrl)
+      if (!response.ok) throw new Error('Download failed')
       
+      const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -46,21 +90,10 @@ export const FileNodeView = ({ node, updateAttributes, deleteNode }: ReactNodeVi
   }
 
   const handleOpenInBrowser = () => {
-    if (!attrs.fileData) return
+    if (!downloadUrl) return
     
     try {
-      const byteCharacters = atob(attrs.fileData.split(',')[1])
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: attrs.fileType })
-      
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-      // Note: We don't revoke the URL immediately as the browser needs it
-      // The browser will handle cleanup when the tab is closed
+      window.open(downloadUrl, '_blank')
     } catch (err) {
       console.error('Open in browser failed:', err)
       setError('Failed to open file in browser')
@@ -95,26 +128,29 @@ export const FileNodeView = ({ node, updateAttributes, deleteNode }: ReactNodeVi
               {/* Action buttons */}
               <div className="flex items-center">
                 {attrs.uploadStatus === 'uploading' && (
-                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <Spinner className="stroke-neutral-400 stroke-5"/>
                 )}
                 {attrs.uploadStatus === 'error' && (
                   <AlertCircle className="size-4 text-destructive" />
                 )}
+                {isLoading && (
+                  <span className="text-xs text-neutral-400">Loading...</span>
+                )}
                 {error && (
                   <span className="text-xs text-destructive mr-2">{error}</span>
                 )}
-                {attrs.fileData && (
+                {downloadUrl && !isLoading && (
                   <>
-                    <Button variant="ghost" size="sm" onClick={handleOpenInBrowser}>
+                    <Button variant="ghost" size="icon" onClick={handleOpenInBrowser}>
                       <ExternalLink className="size-4 text-muted-foreground" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={handleDownload}>
-                      <Download className="size-4 text-muted-foreground" />
+                    <Button variant="ghost" size="icon" onClick={handleDownload}>
+                      <DownloadIcon className="text-muted-foreground" />
                     </Button>
                   </>
                 )}
-                <Button variant="ghost" size="sm" onClick={handleDelete}>
-                  <X className="size-4 text-muted-foreground" />
+                <Button variant="ghost" size="icon" onClick={handleDelete}>
+                  <XIcon className="text-muted-foreground" />
                 </Button>
               </div>
             </div>

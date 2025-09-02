@@ -107,7 +107,7 @@ export default function ComboboxSupabase({
     <Popover>
       <PopoverTrigger 
         className={cn(
-          "w-full text-left bg-input/30 rounded-md py-2 px-2 truncate",
+          "w-full text-left bg-input/30 rounded-md py-2 px-2 truncate text-sm font-light",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           className
         )}

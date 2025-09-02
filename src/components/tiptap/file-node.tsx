@@ -5,11 +5,10 @@ import { ReactNodeViewRenderer } from '@tiptap/react'
 import { FileNodeView } from './file-node-view'
 
 export interface FileNodeAttributes {
-  src?: string
+  src: string // File path in Supabase storage
   filename: string
   fileSize: number
   fileType: string
-  fileData?: string // base64 or URL
   uploadStatus?: 'pending' | 'uploading' | 'completed' | 'error'
   previewType: 'image' | 'document' | 'file'
 }
@@ -32,7 +31,7 @@ export const FileNode = Node.create({
   addAttributes() {
     return {
       src: {
-        default: null,
+        default: '',
         parseHTML: (element: HTMLElement) => element.getAttribute('data-src'),
         renderHTML: (attributes: FileNodeAttributes) => ({
           'data-src': attributes.src,
@@ -57,13 +56,6 @@ export const FileNode = Node.create({
         parseHTML: (element: HTMLElement) => element.getAttribute('data-file-type'),
         renderHTML: (attributes: FileNodeAttributes) => ({
           'data-file-type': attributes.fileType,
-        }),
-      },
-      fileData: {
-        default: null,
-        parseHTML: (element: HTMLElement) => element.getAttribute('data-file-data'),
-        renderHTML: (attributes: FileNodeAttributes) => ({
-          'data-file-data': attributes.fileData,
         }),
       },
       uploadStatus: {

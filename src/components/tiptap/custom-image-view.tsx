@@ -31,20 +31,20 @@ export const CustomImageView = ({ node }: ReactNodeViewProps) => {
           return
         }
         
-        // For file paths, use our simplified API
-        const apiUrl = `/api/images/serve?path=${encodeURIComponent(src)}`
+        // For file paths, use our unified file API
+        const apiUrl = `/api/files/serve?path=${encodeURIComponent(src)}`
         
         const response = await fetch(apiUrl)
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          throw new Error(`Failed to fetch image: ${response.status} - ${errorData.error || 'Unknown error'}`)
+          throw new Error(`Failed to fetch file: ${response.status} - ${errorData.error || 'Unknown error'}`)
         }
         
         const data = await response.json()
-        if (data.imageUrl) {
-          setImageUrl(data.imageUrl)
+        if (data.fileUrl) {
+          setImageUrl(data.fileUrl)
         } else {
-          throw new Error('Invalid response from image API')
+          throw new Error('Invalid response from file API')
         }
         
         setIsLoading(false)
@@ -62,8 +62,8 @@ export const CustomImageView = ({ node }: ReactNodeViewProps) => {
     return (
       <NodeViewWrapper>
         <div className="flex items-center justify-center p-8 bg-muted rounded-lg">
-          <div className="text-center">
-            <Spinner />
+          <div className="text-center flex flex-col items-center">
+          <Spinner className="stroke-neutral-400 stroke-5"/>
             <p className="text-sm text-muted-foreground">Loading image...</p>
           </div>
         </div>

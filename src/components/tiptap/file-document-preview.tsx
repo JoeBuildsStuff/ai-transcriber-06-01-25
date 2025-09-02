@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 // Type definitions for docx-preview
@@ -28,37 +28,85 @@ declare module 'docx-preview' {
 }
 
 interface DocumentPreviewProps {
-  file: File
+  filePath: string
+  filename: string
+  fileType: string
+  fileSize: number
   onDownload?: () => void
 }
 
-export const DocumentPreview = ({ file, onDownload }: DocumentPreviewProps) => {
+export const DocumentPreview = ({ filePath, filename, fileType, fileSize, onDownload }: DocumentPreviewProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [textContent, setTextContent] = useState<string>('')
+  const [fileData, setFileData] = useState<ArrayBuffer | null>(null)
 
+  // Fetch file data when component mounts
   useEffect(() => {
-    const renderDocument = async () => {
-      if (!containerRef.current) return
-
-      setIsLoading(true)
-      setError(null)
+    const fetchFileData = async () => {
+      if (!filePath) {
+        setError('No file path provided')
+        setIsLoading(false)
+        return
+      }
 
       try {
-        if (file.type === 'text/plain') {
+        setIsLoading(true)
+        setError(null)
+        
+        // Get signed URL for the file
+        const apiUrl = `/api/files/serve?path=${encodeURIComponent(filePath)}`
+        const response = await fetch(apiUrl)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(`Failed to fetch file: ${response.status} - ${errorData.error || 'Unknown error'}`)
+        }
+        
+        const data = await response.json()
+        if (!data.fileUrl) {
+          throw new Error('Invalid response from file API')
+        }
+
+        // Fetch the actual file data
+        const fileResponse = await fetch(data.fileUrl)
+        if (!fileResponse.ok) {
+          throw new Error('Failed to fetch file content')
+        }
+
+        const arrayBuffer = await fileResponse.arrayBuffer()
+        setFileData(arrayBuffer)
+        setIsLoading(false)
+      } catch (err) {
+        console.error('Error fetching file data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load file')
+        setIsLoading(false)
+      }
+    }
+
+    fetchFileData()
+  }, [filePath])
+
+  // Render document when file data is available
+  useEffect(() => {
+    const renderDocument = async () => {
+      if (!containerRef.current || !fileData) return
+
+      try {
+        if (fileType === 'text/plain') {
           // Handle .txt files
-          const text = await file.text()
+          const decoder = new TextDecoder('utf-8')
+          const text = decoder.decode(fileData)
           setTextContent(text)
-          setIsLoading(false)
-        } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
           // Handle .docx files
           const { renderAsync } = await import('docx-preview')
           
           // Clear container
           containerRef.current.innerHTML = ''
           
-          await renderAsync(file, containerRef.current, {
+          await renderAsync(fileData, containerRef.current, {
             className: 'docx-wrapper',
             inWrapper: true,
             ignoreWidth: false,
@@ -69,18 +117,17 @@ export const DocumentPreview = ({ file, onDownload }: DocumentPreviewProps) => {
             experimental: false,
             trimXmlDeclaration: true,
           })
-          
-          setIsLoading(false)
         }
       } catch (err) {
         console.error('Error rendering document:', err)
         setError('Failed to preview document')
-        setIsLoading(false)
       }
     }
 
-    renderDocument()
-  }, [file])
+    if (fileData) {
+      renderDocument()
+    }
+  }, [fileData, fileType])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -97,9 +144,9 @@ export const DocumentPreview = ({ file, onDownload }: DocumentPreviewProps) => {
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-muted-foreground" />
             <div>
-              <CardTitle className="text-base font-medium">{file.name}</CardTitle>
+              <CardTitle className="text-base font-medium">{filename}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {formatFileSize(file.size)} • {file.type || 'Unknown type'}
+                {formatFileSize(fileSize)} • {fileType || 'Unknown type'}
               </p>
             </div>
           </div>
@@ -122,13 +169,13 @@ export const DocumentPreview = ({ file, onDownload }: DocumentPreviewProps) => {
         
         {error && (
           <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
             <p className="font-medium">Preview not available</p>
             <p className="text-sm">{error}</p>
           </div>
         )}
         
-        {!isLoading && !error && file.type === 'text/plain' && (
+        {!isLoading && !error && fileType === 'text/plain' && (
           <div className="bg-muted/30 rounded-md p-4">
             <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
               {textContent}
@@ -136,7 +183,7 @@ export const DocumentPreview = ({ file, onDownload }: DocumentPreviewProps) => {
           </div>
         )}
         
-        {!isLoading && !error && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
+        {!isLoading && !error && fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
           <div 
             ref={containerRef}
             className="docx-container prose prose-sm max-w-none [&_.docx-wrapper]:border-0 [&_.docx-wrapper]:shadow-none"
