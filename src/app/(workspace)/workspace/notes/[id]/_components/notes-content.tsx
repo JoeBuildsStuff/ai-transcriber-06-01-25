@@ -66,6 +66,14 @@ export default function NotesContent({ noteContent, noteId, onNoteIdChange }: No
           onChange={(newContent: string) => handleContentChange(newContent)}
           showFixedMenu={true}
           showBubbleMenu={true}
+          imageUploadConfig={{
+            supabaseBucket: 'ai-transcriber-images',
+            pathPrefix: 'notes',
+            maxFileSize: 5 * 1024 * 1024, // 5MB
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+            allowBase64: false // Disable base64, force upload to Supabase
+          }}
+          enableFileNodes={true}
         />
       </div>
       

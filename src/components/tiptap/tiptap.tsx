@@ -12,10 +12,12 @@ import { TableRow } from '@tiptap/extension-table/row'
 import { TableCell } from '@tiptap/extension-table/cell'
 import { TableHeader } from '@tiptap/extension-table/header'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
-import Image from '@tiptap/extension-image'
 import { FileNode } from '@/components/tiptap/file-node'
 import { createLowlight, common } from 'lowlight'
 import { useEffect, useState } from 'react'
+import { TiptapProps } from './types'
+import { CustomImage } from './custom-image-extension'
+import { deleteImageFromStorage } from './image-cleanup'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -43,18 +45,20 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   },
 })
 
-interface TiptapProps {
-    content?: string
-    showFixedMenu?: boolean
-    showBubbleMenu?: boolean
-    showDragHandle?: boolean
-    onChange?: (content: string) => void
-    onFileDrop?: (files: File[]) => void
-}
+// TiptapProps now imported from types.ts
 
-const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDragHandle = true, onChange, onFileDrop }: TiptapProps) => {
+const Tiptap = ({ 
+  content, 
+  showFixedMenu = true, 
+  showBubbleMenu = true, 
+  showDragHandle = true, 
+  onChange, 
+  onFileDrop,
+  imageUploadConfig,
+  enableFileNodes = true
+}: TiptapProps) => {
   // Track the currently selected node for drag handle functionality
-  const [selectedNode, setSelectedNode] = useState<{ type: { name: string } } | null>(null)
+  const [, setSelectedNode] = useState<{ type: { name: string } } | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -82,15 +86,44 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
         TableCell,
         TableHeader,
         Gapcursor,
-        Image.configure({
+        ...(enableFileNodes ? [
+          createFileHandlerConfig({ 
+            onFileDrop,
+            imageUploadConfig: imageUploadConfig ? {
+              supabaseBucket: imageUploadConfig.supabaseBucket,
+              pathPrefix: imageUploadConfig.pathPrefix,
+              maxFileSize: imageUploadConfig.maxFileSize,
+              allowedMimeTypes: imageUploadConfig.allowedMimeTypes
+            } : undefined
+          })
+        ] : []),
+        
+        CustomImage.configure({
           inline: true,
-          allowBase64: true,
+          allowBase64: false, // Always false - we store file paths, not base64
+          HTMLAttributes: {
+            class: 'tiptap-image',
+          }
         }),
-        FileNode,
-        createFileHandlerConfig({ onFileDrop }),
+        ...(enableFileNodes ? [
+          FileNode
+        ] : [])
     ],
     content: content || ``,
     immediatelyRender: false,
+    onDelete(params: { type: string; node?: { type: { name: string }; attrs?: { src?: string } }; [key: string]: unknown }) {
+      // Handle cleanup of deleted image nodes
+      const { type, node } = params
+      if (type === 'node' && node?.type?.name === 'image' && node?.attrs?.src) {
+        const src = node.attrs.src
+        // Only cleanup Supabase file paths, not external URLs
+        if (typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')) {
+          deleteImageFromStorage(src).catch(error => {
+            console.error('Failed to cleanup deleted image:', error)
+          })
+        }
+      }
+    },
     onUpdate: ({ editor }) => {
       if (onChange) {
         onChange(editor.getHTML())
@@ -105,7 +138,8 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
           return true
         }
         return false
-      }
+      },
+      // Remove custom paste handling - FileHandler extension handles this
     }
   })
 
@@ -115,7 +149,7 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
       // Compare the content and update only if it's different.
       // This prevents an infinite loop.
       if (content !== editorContent) {
-        editor.commands.setContent(content || '', { emitUpdate: false })
+        editor.commands.setContent((content as string) || '', { emitUpdate: false })
       }
     }
   }, [content, editor])
@@ -189,11 +223,11 @@ const Tiptap = ({ content, showFixedMenu = true, showBubbleMenu = true, showDrag
                 {showDragHandle && (
                   <DragHandle
                     editor={editor}
-                    onNodeChange={({ node, pos }) => {
+                    onNodeChange={({ node }) => {
                       setSelectedNode(node)
                       // You can add custom logic here to highlight the selected node
                       if (node) {
-                        console.log('Selected node:', node.type.name, 'at position:', pos, 'selectedNode:', selectedNode)
+                        // console.log('Selected node:', node.type.name)
                       }
                     }}
                   >
