@@ -3,13 +3,15 @@ import { createPersonContactTool, executeCreatePersonContact } from './create-pe
 import { searchPersonsTool, executeSearchPersons } from './search-persons'
 import { createMeetingTool, executeCreateMeeting } from './create-meeting'
 import { searchMeetingsTool, executeSearchMeetings } from './search-meetings'
+import { updatePersonTool, executeUpdatePersonContact } from './update-person'
 
 // Export all tool definitions
 export const availableTools: Anthropic.Tool[] = [
   createPersonContactTool,
   searchPersonsTool,
   createMeetingTool,
-  searchMeetingsTool
+  searchMeetingsTool,
+  updatePersonTool
 ]
 
 // Export all execution functions
@@ -17,8 +19,20 @@ export const toolExecutors: Record<string, (parameters: Record<string, unknown>)
   create_person_contact: executeCreatePersonContact,
   search_persons: executeSearchPersons,
   create_meeting: executeCreateMeeting,
-  search_meetings: executeSearchMeetings
+  search_meetings: executeSearchMeetings,
+  update_person_contact: executeUpdatePersonContact
 }
 
 // Re-export individual tools for direct access
-export { createPersonContactTool, executeCreatePersonContact, searchPersonsTool, executeSearchPersons, createMeetingTool, executeCreateMeeting, searchMeetingsTool, executeSearchMeetings }
+export { 
+  createPersonContactTool, 
+  executeCreatePersonContact, 
+  searchPersonsTool, 
+  executeSearchPersons, 
+  createMeetingTool, 
+  executeCreateMeeting, 
+  searchMeetingsTool, 
+  executeSearchMeetings,
+  updatePersonTool,
+  executeUpdatePersonContact
+}

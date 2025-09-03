@@ -9,6 +9,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `search-persons.ts` - Tool for searching person contacts
 - `create-meeting.ts` - Tool for creating new meetings
 - `search-meetings.ts` - Tool for searching existing meetings
+- `update-person.ts` - Tool for updating existing person contacts
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -93,6 +94,24 @@ Creates a new person contact in the database with their information including na
 - `description` (string) - Additional notes or description
 
 **Required:** At least `first_name` or `last_name`
+
+### update_person_contact
+Updates an existing person contact with new information. Use this when users want to modify contact details like name, email, phone, company, job title, location, or other information.
+
+**Parameters:**
+- `id` (string) - The unique identifier of the person contact to update
+- `first_name` (string, optional) - Updated first name of the person
+- `last_name` (string, optional) - Updated last name of the person
+- `_emails` (array of strings, optional) - Updated array of email addresses for the person
+- `_phones` (array of strings, optional) - Updated array of phone numbers for the person
+- `company_name` (string, optional) - Updated company name where the person works
+- `job_title` (string, optional) - Updated job title or position of the person
+- `city` (string, optional) - Updated city where the person is located
+- `state` (string, optional) - Updated state where the person is located
+- `linkedin` (string, optional) - Updated LinkedIn profile URL
+- `description` (string, optional) - Updated additional notes or description about the person
+
+**Required:** `id` - All other fields are optional and will only update if provided
 
 ### search_persons
 Search for persons by name, company, email, or phone number.

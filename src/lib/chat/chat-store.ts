@@ -302,7 +302,7 @@ export const useChatStore = create<ChatStore>()(
           const currentUsage = get().getStorageUsage()
           const messageSize = new Blob([JSON.stringify(message)]).size
           const estimatedNewSize = currentUsage.totalSize + messageSize
-          const maxSize = 4 * 1024 * 1024 // 4MB
+          const maxSize = 10 * 1024 * 1024 // 10MB
 
           if (estimatedNewSize > maxSize) {
             // Try to clear old sessions to make room
@@ -627,7 +627,7 @@ export const useChatStore = create<ChatStore>()(
           layoutMode: get().layoutMode,
         })]).size
 
-        const maxStorageSize = 4 * 1024 * 1024 // 4MB
+        const maxStorageSize = 10 * 1024 * 1024 // 10MB
         const usagePercentage = (totalSize / maxStorageSize) * 100
 
         return {
@@ -678,7 +678,7 @@ export const useChatStore = create<ChatStore>()(
         },
         setItem: (name: string, value: string) => {
           const size = new Blob([value]).size
-          const maxSize = 4 * 1024 * 1024 // 4MB
+          const maxSize =  10 * 1024 * 1024 // 10MB
           
           if (size > maxSize) {
             console.warn('Storage quota exceeded, clearing old data')
