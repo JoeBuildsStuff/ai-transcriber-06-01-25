@@ -15,7 +15,7 @@ import { XIcon } from '../icons/x'
 import { DownloadIcon } from '../icons/download'
 import Spinner from '../ui/spinner'
 
-export const FileNodeView = ({ node, updateAttributes, deleteNode }: ReactNodeViewProps) => {
+export const FileNodeView = ({ node, updateAttributes, deleteNode, selected }: ReactNodeViewProps) => {
   const attrs = node.attrs as FileNodeAttributes
   const [error, setError] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
@@ -116,44 +116,44 @@ export const FileNodeView = ({ node, updateAttributes, deleteNode }: ReactNodeVi
 
   return (
     <NodeViewWrapper>
-      <div className="my-4 max-w-4xl">
+      <div className={`my-4 rounded-lg ${selected ? 'ring-1 ring-foreground ring-offset-4 ring-offset-background' : ''}`}>
         <Card className="overflow-hidden px-2 m-0 py-1 rounded-lg">
           {/* Header with file info and actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <File className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium truncate text">{attrs.filename}</span>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="flex items-center">
-                {attrs.uploadStatus === 'uploading' && (
-                  <Spinner className="stroke-neutral-400 stroke-5"/>
-                )}
-                {attrs.uploadStatus === 'error' && (
-                  <AlertCircle className="size-4 text-destructive" />
-                )}
-                {isLoading && (
-                  <span className="text-xs text-neutral-400">Loading...</span>
-                )}
-                {error && (
-                  <span className="text-xs text-destructive mr-2">{error}</span>
-                )}
-                {downloadUrl && !isLoading && (
-                  <>
-                    <Button variant="ghost" size="icon" onClick={handleOpenInBrowser}>
-                      <ExternalLink className="size-4 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleDownload}>
-                      <DownloadIcon className="text-muted-foreground" />
-                    </Button>
-                  </>
-                )}
-                <Button variant="ghost" size="icon" onClick={handleDelete}>
-                  <XIcon className="text-muted-foreground" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <File className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium truncate text">{attrs.filename}</span>
             </div>
+            
+            {/* Action buttons */}
+            <div className="flex items-center">
+              {attrs.uploadStatus === 'uploading' && (
+                <Spinner className="stroke-neutral-400 stroke-5"/>
+              )}
+              {attrs.uploadStatus === 'error' && (
+                <AlertCircle className="size-4 text-destructive" />
+              )}
+              {isLoading && (
+                <span className="text-xs text-neutral-400">Loading...</span>
+              )}
+              {error && (
+                <span className="text-xs text-destructive mr-2">{error}</span>
+              )}
+              {downloadUrl && !isLoading && (
+                <>
+                  <Button variant="ghost" size="icon" onClick={handleOpenInBrowser}>
+                    <ExternalLink className="size-4 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={handleDownload}>
+                    <DownloadIcon className="text-muted-foreground" />
+                  </Button>
+                </>
+              )}
+              <Button variant="ghost" size="icon" onClick={handleDelete}>
+                <XIcon className="text-muted-foreground" />
+              </Button>
+            </div>
+          </div>
         </Card>
       </div>
     </NodeViewWrapper>

@@ -19,14 +19,28 @@ The system provides a single, consistent approach for handling all file types in
 4. **Security**: Centralized access control and authentication
 5. **Cost Efficiency**: Reduced database storage costs
 6. **Maintainability**: Unified codebase for all file operations
+7. **Developer Experience**: Single import point for all file operations
+8. **Error Handling**: Consistent error handling across all functions
+9. **Configuration**: Centralized file type and size configuration
+10. **Testing**: Easier to test and mock file operations
 
 ## 🏗️ **Architecture**
+
+### **Unified File Manager**
+
+The system now uses a consolidated `supabase-file-manager.ts` that provides:
+
+- **Single import point** for all file operations
+- **Consistent error handling** across all functions
+- **Unified interfaces** for upload, delete, and serve operations
+- **Backward compatibility** with legacy function names
+- **Centralized configuration** for file types and limits
 
 ### **Core Components**
 
 #### 1. **FileHandler Extension** (`file-handler.tsx`)
 - Intercepts all file drops and paste events
-- Uploads files to Supabase storage via `/api/files/upload`
+- Uploads files to Supabase storage via unified file manager
 - Determines appropriate node type (Image vs FileNode)
 - Inserts nodes with file paths (not binary data)
 
@@ -44,15 +58,17 @@ The system provides a single, consistent approach for handling all file types in
 
 #### 4. **CustomImageView** (`custom-image-view.tsx`)
 - Renders images stored in Supabase storage
-- Uses the same `/api/files/serve` endpoint
+- Uses unified file manager for signed URLs
 - Consistent with the unified file system
 
 #### 5. **DocumentPreview** (`file-document-preview.tsx`)
 - Renders document previews from Supabase storage
 - Supports `.txt`, `.docx`, and `.pdf` files
-- Fetches file data via signed URLs
+- Fetches file data via unified file manager
 
 ### **API Routes**
+
+The system uses these API endpoints, but all interactions are now handled through the unified file manager:
 
 #### **`/api/files/upload`**
 - Uploads all file types to Supabase storage
@@ -118,6 +134,7 @@ Example: 401cc145-0c7b-4825-a14b-090c8ba30f7e/notes/1756851600392-document.pdf
 ```typescript
 import { createFileHandlerConfig } from './file-handler'
 import { FileNode } from './file-node'
+import { createFileUploader } from './supabase-file-manager'
 
 const fileHandler = createFileHandlerConfig({
   fileUploadConfig: {
@@ -164,6 +181,8 @@ const extensions = [
 ### **Editor Configuration**
 
 ```typescript
+import { deleteFile } from './supabase-file-manager'
+
 const editor = useEditor({
   extensions,
   onDelete: ({ type, node }) => {
@@ -173,7 +192,7 @@ const editor = useEditor({
       
       // Only cleanup Supabase file paths, not external URLs
       if (typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')) {
-        deleteFileFromStorage(src).catch(error => {
+        deleteFile(src).catch(error => {
           console.error('Failed to cleanup deleted file:', error)
         })
       }
@@ -186,7 +205,7 @@ const editor = useEditor({
 
 ### **Upload Flow**
 1. User drops/pastes file → FileHandler intercepts
-2. FileHandler calls `uploadFileToSupabase()`
+2. FileHandler calls unified file manager's `uploadFile()`
 3. Upload API stores in Supabase, returns file path
 4. FileHandler inserts appropriate node with `src: filePath`
 5. Node renders using file path, fetches signed URL on demand
@@ -194,13 +213,13 @@ const editor = useEditor({
 ### **Display Flow**
 1. File node has `src` attribute with file path
 2. FileNodeView/CustomImageView component loads
-3. Fetches signed URL from `/api/files/serve`
+3. Fetches signed URL via unified file manager
 4. Displays content using signed URL
 
 ### **Cleanup Flow**
 1. User deletes file node → `onDelete` event fires
 2. Event handler extracts deleted node's `src` attribute
-3. `deleteFileFromStorage()` calls delete API
+3. Unified file manager's `deleteFile()` calls delete API
 4. File removed from Supabase storage
 
 ## 🛡️ **Security**
@@ -219,15 +238,34 @@ const editor = useEditor({
 
 ## 🧹 **Cleanup System**
 
-### **Functions**
+### **Unified File Operations**
+
 ```typescript
-import { deleteFileFromStorage, cleanupFiles } from './file-cleanup'
+import { 
+  uploadFile, 
+  deleteFile, 
+  deleteFiles, 
+  getFileUrl,
+  createFileUploader 
+} from './supabase-file-manager'
+
+// Upload a file
+const result = await uploadFile(file, { pathPrefix: 'notes' })
 
 // Delete single file
-await deleteFileFromStorage(filePath)
+await deleteFile(filePath)
 
 // Delete multiple files
-await cleanupFiles([filePath1, filePath2, filePath3])
+await deleteFiles([filePath1, filePath2, filePath3])
+
+// Get signed URL for serving
+const urlResult = await getFileUrl(filePath)
+
+// Create custom uploader
+const customUploader = createFileUploader({ 
+  maxFileSize: 5 * 1024 * 1024, // 5MB
+  pathPrefix: 'documents' 
+})
 ```
 
 ### **Automatic Cleanup**
@@ -293,6 +331,8 @@ await cleanupFiles([filePath1, filePath2, filePath3])
 - All files now use `ai-transcriber-files` bucket
 - Unified API endpoints (`/api/files/*`)
 - Single cleanup system for all file types
+- **Consolidated file operations** into `supabase-file-manager.ts`
+
 
 ### **Backward Compatibility**
 - Existing image handling continues to work

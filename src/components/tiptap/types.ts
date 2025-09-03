@@ -30,10 +30,3 @@ export interface FileUploadResult {
   filePath?: string
   error?: string
 }
-
-// Keep ImageUploadResult for backward compatibility
-export interface ImageUploadResult {
-  success: boolean
-  url?: string
-  error?: string
-}

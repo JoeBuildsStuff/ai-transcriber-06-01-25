@@ -1,5 +1,3 @@
-import { ImageUploadResult } from './types'
-
 export interface SupabaseFileUploadOptions {
   bucket: string
   pathPrefix?: string
@@ -96,26 +94,6 @@ export async function uploadFileToSupabase(
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }
-  }
-}
-
-// Keep the image upload function for backward compatibility
-export async function uploadImageToSupabase(
-  file: File,
-  options: Partial<SupabaseFileUploadOptions> = {}
-): Promise<ImageUploadResult> {
-  const result = await uploadFileToSupabase(file, options)
-  
-  if (result.success) {
-    return {
-      success: true,
-      url: result.filePath || result.url
-    }
-  }
-  
-  return {
-    success: false,
-    error: result.error
   }
 }
 

@@ -1,16 +1,41 @@
 'use client'
 
 import { NodeViewWrapper, ReactNodeViewProps } from '@tiptap/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ImageIcon, AlertCircle } from 'lucide-react'
 import Spinner from '../ui/spinner'
 
-export const CustomImageView = ({ node }: ReactNodeViewProps) => {
+export const CustomImageView = ({ node, selected }: ReactNodeViewProps) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isResizing, setIsResizing] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [startWidth, setStartWidth] = useState(0)
+  const [localWidth, setLocalWidth] = useState<number | null>(null)
   
+  const imageRef = useRef<HTMLImageElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const src = node.attrs.src
+  const width = localWidth !== null ? localWidth : (node.attrs.width || 'auto')
+  const height = node.attrs.height || 'auto'
+
+  // Initialize localWidth from stored data attribute on mount
+  useEffect(() => {
+    if (wrapperRef.current) {
+      const storedWidth = wrapperRef.current.getAttribute('data-image-width')
+      if (storedWidth && !localWidth) {
+        setLocalWidth(parseInt(storedWidth, 10))
+      }
+    }
+  }, [])
+
+  // Store width in data attribute when it changes
+  useEffect(() => {
+    if (wrapperRef.current && localWidth !== null) {
+      wrapperRef.current.setAttribute('data-image-width', localWidth.toString())
+    }
+  }, [localWidth])
 
   useEffect(() => {
     const fetchImageUrl = async () => {
@@ -58,6 +83,48 @@ export const CustomImageView = ({ node }: ReactNodeViewProps) => {
     fetchImageUrl()
   }, [src])
 
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+    setStartX(e.clientX)
+    if (imageRef.current) {
+      setStartWidth(imageRef.current.offsetWidth)
+    }
+  }, [])
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !imageRef.current) return
+    
+    const deltaX = e.clientX - startX
+    const newWidth = Math.max(100, startWidth + deltaX) // Minimum 100px width
+    
+    // Update local state for immediate visual feedback
+    setLocalWidth(newWidth)
+    
+    // Update the DOM directly for smooth resizing
+    if (imageRef.current) {
+      imageRef.current.style.width = `${newWidth}px`
+    }
+  }, [isResizing, startX, startWidth])
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false)
+    // Don't call updateAttributes - it triggers node replacement and deletion
+    // The localWidth state will persist the visual change
+  }, [])
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove)
+      document.addEventListener('mouseup', handleResizeEnd)
+      
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove)
+        document.removeEventListener('mouseup', handleResizeEnd)
+      }
+    }
+  }, [isResizing, handleResizeMove, handleResizeEnd])
+
   if (isLoading) {
     return (
       <NodeViewWrapper>
@@ -100,13 +167,40 @@ export const CustomImageView = ({ node }: ReactNodeViewProps) => {
 
   return (
     <NodeViewWrapper>
-      <div className="my-4">
+      <div ref={wrapperRef} className=" inline-block">
         <img
+          ref={imageRef}
           src={imageUrl}
           alt=""
-          className="max-w-full h-auto rounded-lg shadow-sm"
-          style={{ maxHeight: '500px' }}
+          className={`max-w-full h-auto rounded-lg ${selected ? 'ring-1 ring-foreground ring-offset-4 ring-offset-background ' : ''}`}
+          style={{ 
+            width: typeof width === 'number' ? `${width}px` : width,
+            height: typeof height === 'number' ? `${height}px` : height
+          }}
         />
+        
+        {/* Resize handles - only show when selected */}
+        {selected && (
+          <>
+            {/* Left handle */}
+            <div
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-4 h-8 cursor-ew-resize bg-foreground/20 hover:bg-foreground/40 rounded-full flex items-center justify-center"
+              onMouseDown={handleResizeStart}
+              style={{ cursor: 'ew-resize' }}
+            >
+              <div className="w-1 h-4 bg-foreground/60 rounded-full" />
+            </div>
+            
+            {/* Right handle */}
+            <div
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-4 h-8 cursor-ew-resize bg-foreground/20 hover:bg-foreground/40 rounded-full flex items-center justify-center"
+              onMouseDown={handleResizeStart}
+              style={{ cursor: 'ew-resize' }}
+            >
+              <div className="w-1 h-4 bg-foreground/60 rounded-full" />
+            </div>
+          </>
+        )}
       </div>
     </NodeViewWrapper>
   )

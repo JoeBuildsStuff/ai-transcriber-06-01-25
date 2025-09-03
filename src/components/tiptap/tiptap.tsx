@@ -16,8 +16,9 @@ import { FileNode } from '@/components/tiptap/file-node'
 import { createLowlight, common } from 'lowlight'
 import { useEffect, useState } from 'react'
 import { TiptapProps } from './types'
-import { CustomImage } from './custom-image-extension'
-import { deleteFileFromStorage } from './file-cleanup'
+import { Image } from '@tiptap/extension-image'
+import { CustomImageView } from './custom-image-view'
+import { deleteFile } from './supabase-file-manager'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
@@ -44,8 +45,6 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
     return ReactNodeViewRenderer(CodeBlock)
   },
 })
-
-// TiptapProps now imported from types.ts
 
 const Tiptap = ({ 
   content, 
@@ -98,7 +97,11 @@ const Tiptap = ({
           })
         ] : []),
         
-        CustomImage.configure({
+        Image.extend({
+          addNodeView() {
+            return ReactNodeViewRenderer(CustomImageView)
+          },
+        }).configure({
           inline: true,
           allowBase64: false, // Always false - we store file paths, not base64
           HTMLAttributes: {
@@ -118,7 +121,7 @@ const Tiptap = ({
         const src = node.attrs.src
         // Only cleanup Supabase file paths, not external URLs
         if (typeof src === 'string' && !src.startsWith('http') && !src.startsWith('data:')) {
-          deleteFileFromStorage(src).catch(error => {
+          deleteFile(src).catch((error: unknown) => {
             console.error('Failed to cleanup deleted file:', error)
           })
         }
@@ -139,7 +142,6 @@ const Tiptap = ({
         }
         return false
       },
-      // Remove custom paste handling - FileHandler extension handles this
     }
   })
 
