@@ -155,8 +155,9 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       if (onSendMessage) {
         await onSendMessage(content, attachments)
       } else {
-        // Determine if we should use Cerebras API based on model selection
+        // Determine which API to use based on model selection
         const isCerebrasModel = model?.startsWith('gpt-oss-120b')
+        const isOpenAIModel = model?.startsWith('gpt-5')
         
         if (isCerebrasModel) {
           // Use Cerebras API
@@ -203,8 +204,53 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           }
           
           addMessage(assistantMessage)
+        } else if (isOpenAIModel) {
+          // Use OpenAI API
+          const openaiFormData = new FormData()
+          openaiFormData.append('message', content)
+          openaiFormData.append('context', JSON.stringify(currentContext))
+          openaiFormData.append('messages', JSON.stringify(messages.slice(-10)))
+          if (model) {
+            openaiFormData.append('model', model)
+          }
+          if (reasoningEffort) {
+            openaiFormData.append('reasoning_effort', reasoningEffort)
+          }
+          
+          // Add attachments if any
+          if (attachments && attachments.length > 0) {
+            attachments.forEach((attachment, index) => {
+              openaiFormData.append(`attachment-${index}`, attachment.file)
+              openaiFormData.append(`attachment-${index}-name`, attachment.name)
+              openaiFormData.append(`attachment-${index}-type`, attachment.type)
+              openaiFormData.append(`attachment-${index}-size`, attachment.size.toString())
+            })
+            openaiFormData.append('attachmentCount', attachments.length.toString())
+          }
+
+          const response = await fetch('/api/chat/openai', {
+            method: 'POST',
+            body: openaiFormData,
+          })
+
+          if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.status}`)
+          }
+
+          const result = await response.json()
+          
+          // Add the assistant message with tool calls and citations if available
+          const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+            role: 'assistant',
+            content: result.message || 'I apologize, but I couldn\'t generate a response.',
+            suggestedActions: result.actions || [],
+            toolCalls: result.toolCalls || undefined,
+            citations: result.citations || undefined
+          }
+          
+          addMessage(assistantMessage)
         } else {
-          // Default API call
+          // Default API call (Anthropic)
           await sendToAPI(content, currentContext, attachments, model, reasoningEffort)
         }
       }

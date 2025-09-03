@@ -59,14 +59,15 @@ export function ChatInput() {
     }
 
     try {
-      // Determine if we should use Cerebras API based on model selection
+      // Determine which API to use based on model selection
       const isCerebrasModel = selectedModel.startsWith('gpt-oss-120b')
+      const isOpenAIModel = selectedModel.startsWith('gpt-5')
       
-      if (isCerebrasModel) {
-        // Use Cerebras API with reasoning effort
+      if (isCerebrasModel || isOpenAIModel) {
+        // Use Cerebras or OpenAI API with reasoning effort
         await sendMessage(messageContent, currentAttachments, selectedModel, reasoningEffort)
       } else {
-        // Use regular chat API
+        // Use regular chat API (Anthropic)
         await sendMessage(messageContent, currentAttachments, selectedModel)
       }
     } finally {
@@ -257,11 +258,14 @@ export function ChatInput() {
                     <SelectItem value="claude-sonnet-4-20250514" className="font-light text-xs">Sonnet 4</SelectItem>
                     <SelectItem value="claude-opus-4-1-20250805" className="font-light text-xs">Opus 4.1</SelectItem>
                     <SelectItem value="gpt-oss-120b" className="font-light text-xs">GPT-OSS-120B</SelectItem>
+                    <SelectItem value="gpt-5" className="font-light text-xs">GPT-5</SelectItem>
+                    <SelectItem value="gpt-5-mini" className="font-light text-xs">GPT-5 Mini</SelectItem>
+                    <SelectItem value="gpt-5-nano" className="font-light text-xs">GPT-5 Nano</SelectItem>
                   </SelectContent>
                 </Select>
 
-                {/* Reasoning Effort Selector (only show for Cerebras models) */}
-                {selectedModel.startsWith('gpt-oss-120b') && (
+                {/* Reasoning Effort Selector (show for Cerebras and OpenAI models) */}
+                {(selectedModel.startsWith('gpt-oss-120b') || selectedModel.startsWith('gpt-5')) && (
                   <Select
                     value={reasoningEffort}
                     onValueChange={(value: 'low' | 'medium' | 'high') => setReasoningEffort(value)}
