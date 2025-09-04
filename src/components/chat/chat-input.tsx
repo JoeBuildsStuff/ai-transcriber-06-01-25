@@ -41,7 +41,7 @@ export function ChatInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage } = useChat()
-  const { isLoading } = useChatStore()
+  const { isLoading, layoutMode } = useChatStore()
   const [selectedModel, setSelectedModel] = useState('gpt-oss-120b')
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
 
@@ -252,7 +252,7 @@ export function ChatInput() {
   const canSend = (input.trim().length > 0 || attachments.length > 0) && !isLoading
 
   return (
-    <div className="p-2">
+    <div className={layoutMode === 'fullpage' ? 'p-0' : 'p-2'}>
       <div className="border border-border rounded-xl">
         <div className="flex flex-col gap-2 items-center relative">
             <Textarea

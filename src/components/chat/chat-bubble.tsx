@@ -14,6 +14,9 @@ export function ChatBubble() {
       // Open in the previously saved layout mode
       if (layoutMode === 'inset') {
         setLayoutMode('inset') // This will set isMaximized=true, isMinimized=false, isOpen=true
+      } else if (layoutMode === 'fullpage') {
+        // Don't open bubble if in full page mode
+        return
       } else {
         setOpen(true)
         setMinimized(false)
@@ -44,8 +47,8 @@ export function ChatBubble() {
     setMaximized(false)
   }
 
-  // Show bubble when chat is closed or minimized
-  const showBubble = !isOpen || isMinimized
+  // Show bubble when chat is closed or minimized, but not in full page mode
+  const showBubble = (!isOpen || isMinimized) && layoutMode !== 'fullpage'
 
   if (!showBubble) {
     return null

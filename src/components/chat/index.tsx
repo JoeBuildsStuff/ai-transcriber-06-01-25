@@ -2,6 +2,7 @@
 export { ChatProvider } from './chat-provider'
 export { ChatBubble } from './chat-bubble'
 export { ChatPanel } from './chat-panel'
+export { ChatFullPage } from './chat-fullpage'
 export { ChatMessage, ChatMessageLoading } from './chat-message'
 export { ChatInput } from './chat-input'
 export { ChatHeader } from './chat-header'

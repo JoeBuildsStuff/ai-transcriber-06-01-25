@@ -9,8 +9,9 @@ The chat system is built with a layered architecture:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    UI Components                           │
-│  chat-bubble.tsx  chat-panel.tsx  chat-message.tsx       │
-│  chat-header.tsx  chat-input.tsx  chat-history.tsx       │
+│  chat-bubble.tsx  chat-panel.tsx  chat-fullpage.tsx      │
+│  chat-header.tsx  chat-input.tsx  chat-message.tsx       │
+│  chat-messages-list.tsx  chat-history.tsx                │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
@@ -72,18 +73,40 @@ The main chat interface container.
 **Layout Modes:**
 - `floating`: Standard floating panel
 - `inset`: Integrated into layout (maximized)
+- `fullpage`: Full page dedicated chat interface
 
-### 4. Chat Header (`chat-header.tsx`)
+### 4. Chat Full Page (`chat-fullpage.tsx`)
+A dedicated full-page chat interface for focused conversations.
+
+**Features:**
+- Full viewport height and width
+- Toggle group for switching between layout modes
+- Centered content with max-width constraint
+- Back navigation to workspace
+- Same functionality as regular chat panel
+
+**Layout Mode Toggle:**
+- **Floating Mode**: `PictureInPicture2` icon - Returns to floating panel
+- **Inset Mode**: `PanelRight` icon - Returns to inset layout
+- **Full Page Mode**: `LaptopMinimal` icon - Current mode (refresh)
+
+**Navigation:**
+- Accessible via `/workspace/chat/[session-id]` route
+- Automatic session switching and layout mode setting
+- Seamless integration with existing chat store
+
+### 5. Chat Header (`chat-header.tsx`)
 The top bar of the chat panel with navigation and controls.
 
 **Features:**
 - Session title editing
 - Chat history navigation
-- Layout mode switching
+- Layout mode switching (floating, inset, fullpage)
 - Clear chat functionality
 - Dropdown menu with actions
+- Full page navigation option
 
-### 5. Chat Messages List (`chat-messages-list.tsx`)
+### 6. Chat Messages List (`chat-messages-list.tsx`)
 Displays the conversation history with auto-scrolling.
 
 **Features:**
@@ -92,7 +115,7 @@ Displays the conversation history with auto-scrolling.
 - Empty state with call-to-action
 - Smooth scrolling animations
 
-### 6. Chat Message (`chat-message.tsx`)
+### 7. Chat Message (`chat-message.tsx`)
 Individual message component with different styles for user/assistant/system.
 
 **Message Types:**
@@ -105,7 +128,7 @@ Individual message component with different styles for user/assistant/system.
 - Suggested actions as buttons
 - Loading placeholder component
 
-### 7. Chat Input (`chat-input.tsx`)
+### 8. Chat Input (`chat-input.tsx`)
 The message input area with auto-resize and send functionality.
 
 **Features:**
@@ -115,6 +138,7 @@ The message input area with auto-resize and send functionality.
 - Disabled state when processing
 - **File attachment support** with drag-and-drop
 - **Attachment preview** with file info and delete functionality
+- **Conditional padding** based on layout mode (p-0 for fullpage, p-2 for others)
 
 **File Attachments:**
 - Click paperclip icon to select files
@@ -141,7 +165,7 @@ interface Attachment {
 await sendMessage("Analyze this document", attachments)
 ```
 
-### 8. Chat History (`chat-history.tsx`)
+### 9. Chat History (`chat-history.tsx`)
 Session management interface showing all chat sessions.
 
 **Features:**
@@ -171,6 +195,7 @@ interface ChatStore {
   isMaximized: boolean
   isLoading: boolean
   showHistory: boolean
+  layoutMode: 'floating' | 'inset' | 'fullpage'
   
   // Context
   currentContext: PageContext | null
@@ -280,6 +305,51 @@ Configuration and constants for the chat system.
 - Message roles and action types
 - Storage keys and default messages
 - Context analysis patterns
+
+## Full Page Chat Mode
+
+### Route-Based Chat Sessions
+The chat system supports dedicated full-page sessions accessible via URL routing.
+
+**Route Structure:**
+```
+/workspace/chat/[session-id]
+```
+
+**Features:**
+- Direct access to specific chat sessions
+- Full viewport utilization for focused conversations
+- Toggle group for switching between layout modes
+- Automatic session switching and state management
+- Seamless navigation back to workspace
+
+**Implementation:**
+```tsx
+// Page component: app/(workspace)/workspace/chat/[id]/page.tsx
+export default function ChatPage() {
+  const params = useParams()
+  const chatId = params.id as string
+  const { switchToSession, setLayoutMode } = useChatStore()
+
+  useEffect(() => {
+    if (chatId) {
+      switchToSession(chatId)
+      setLayoutMode('fullpage')
+    }
+  }, [chatId, switchToSession, setLayoutMode])
+
+  return (
+    <ChatProvider>
+      <ChatFullPage />
+    </ChatProvider>
+  )
+}
+```
+
+**Navigation Methods:**
+1. **From Chat Header**: Layout dropdown → "Full Page" option
+2. **Direct URL**: Navigate to `/workspace/chat/[session-id]`
+3. **Programmatic**: `router.push('/workspace/chat/' + sessionId)`
 
 ## Integration with Data Tables
 

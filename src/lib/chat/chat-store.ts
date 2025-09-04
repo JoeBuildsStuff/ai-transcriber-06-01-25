@@ -86,7 +86,7 @@ interface ChatStore {
   isLoading: boolean
   showHistory: boolean
   currentContext: PageContext | null
-  layoutMode: 'floating' | 'inset'
+  layoutMode: 'floating' | 'inset' | 'fullpage'
 
   // Computed properties (will be updated whenever state changes)
   currentSession: ChatSession | null
@@ -121,7 +121,7 @@ interface ChatStore {
   setLoading: (loading: boolean) => void
   toggleChat: () => void
   setShowHistory: (show: boolean) => void
-  setLayoutMode: (mode: 'floating' | 'inset') => void
+  setLayoutMode: (mode: 'floating' | 'inset' | 'fullpage') => void
 
   // Context management
   updatePageContext: (context: PageContext) => void
@@ -595,7 +595,7 @@ export const useChatStore = create<ChatStore>()(
           layoutMode: mode,
           isMaximized: mode === 'inset',
           isMinimized: false,
-          isOpen: true
+          isOpen: mode !== 'fullpage'
         })
       },
 

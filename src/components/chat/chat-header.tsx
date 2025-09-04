@@ -1,6 +1,6 @@
 'use client'
 
-import { MessageSquareOff, SquarePen, Ellipsis, PanelRight, PictureInPicture2 } from 'lucide-react'
+import { MessageSquareOff, SquarePen, Ellipsis, PanelRight, PictureInPicture2, LaptopMinimal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/lib/chat/chat-store'
@@ -24,6 +24,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronLeftIcon } from '../icons/chevron-left'
 import { DownloadIcon } from '../icons/download'
 import { XIcon } from '../icons/x'
+import { useRouter } from 'next/navigation'
 
 export function ChatHeader() {
   const { setOpen, setMinimized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle, layoutMode, setLayoutMode } = useChatStore()
@@ -31,6 +32,7 @@ export function ChatHeader() {
   const [editTitle, setEditTitle] = useState('')
   const [isConfirmingClear, setIsConfirmingClear] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const handleClose = () => {
     setOpen(false)
@@ -62,8 +64,15 @@ export function ChatHeader() {
     setShowHistory(true)
   }
 
-  const handleLayoutChange = (mode: 'floating' | 'inset') => {
-    setLayoutMode(mode)
+  const handleLayoutChange = (mode: 'floating' | 'inset' | 'fullpage') => {
+    if (mode === 'fullpage') {
+      // Navigate to full page chat
+      if (currentSession) {
+        router.push(`/workspace/chat/${currentSession.id}`)
+      }
+    } else {
+      setLayoutMode(mode)
+    }
   }
 
   const handleTitleClick = () => {
@@ -177,6 +186,10 @@ export function ChatHeader() {
                     <>
                       <PanelRight className="mr-4 size-4 text-muted-foreground" />Inset
                     </>
+                  ) : layoutMode === 'fullpage' ? (
+                    <>
+                      <LaptopMinimal className="mr-4 size-4 text-muted-foreground" />Full Page
+                    </>
                   ) : (
                     <>
                       <PictureInPicture2 className="mr-4 size-4 text-muted-foreground" />Floating
@@ -185,7 +198,7 @@ export function ChatHeader() {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    <DropdownMenuRadioGroup value={layoutMode} onValueChange={(value) => handleLayoutChange(value as 'floating' | 'inset')}>
+                    <DropdownMenuRadioGroup value={layoutMode} onValueChange={(value) => handleLayoutChange(value as 'floating' | 'inset' | 'fullpage')}>
                       <DropdownMenuRadioItem value="inset">
                         <PanelRight className="size-4 shrink-0 text-muted-foreground" />
                         Inset
@@ -195,6 +208,11 @@ export function ChatHeader() {
                         <PictureInPicture2 className="size-4 shrink-0 text-muted-foreground" />
                         Floating
                         <DropdownMenuShortcut>⌘↓</DropdownMenuShortcut>
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="fullpage">
+                        <LaptopMinimal className="size-4 shrink-0 text-muted-foreground" />
+                        Full Page
+                        <DropdownMenuShortcut>⌘F</DropdownMenuShortcut>
                       </DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuSubContent>
