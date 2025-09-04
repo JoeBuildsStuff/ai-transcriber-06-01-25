@@ -3,9 +3,10 @@
 import { cn } from '@/lib/utils'
 import { type UseSupabaseUploadReturn } from '@/hooks/use-supabase-upload'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, File, Loader2, Upload, X } from 'lucide-react'
+import { CheckCircle, File, Upload, X } from 'lucide-react'
 import { createContext, type PropsWithChildren, useCallback, useContext } from 'react'
 import Image from 'next/image'
+import Spinner from './ui/spinner'
 
 export const formatBytes = (
   bytes: number,
@@ -170,7 +171,7 @@ const DropzoneContent = ({ className }: { className?: string }) => {
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
                 Uploading...
               </>
             ) : (

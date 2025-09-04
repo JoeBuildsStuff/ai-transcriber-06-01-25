@@ -22,7 +22,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AudioLines, Calendar, ChevronRight, Loader2, Plus, Presentation, Users, File } from "lucide-react"
+import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File } from "lucide-react"
+import Spinner from "@/components/ui/spinner"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -278,7 +279,7 @@ export function AppSidebar() {
                           aria-label={item.actionAriaLabel}
                         >
                           {item.isActionLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
                           ) : (
                             <Plus className="h-4 w-4 text-muted-foreground" />
                           )}
@@ -296,7 +297,7 @@ export function AppSidebar() {
             <SidebarGroup className="flex-grow min-h-0">
               <SidebarGroupLabel className="flex items-center justify-between">
                 <span>Meetings</span>
-                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoading && <Spinner className="stroke-5 size-4 stroke-muted-foreground" />}
               </SidebarGroupLabel>
               <SidebarGroupContent className="flex-1 min-h-0">
                 <ScrollArea className="h-full">

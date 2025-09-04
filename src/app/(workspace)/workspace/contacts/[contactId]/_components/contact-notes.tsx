@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { updateContactNotes } from "../../_lib/actions"
 import { toast } from "sonner"
-import { Loader2, Save, RotateCcw, Check } from "lucide-react"
+import { Save, RotateCcw, Check } from "lucide-react"
 import Tiptap from "@/components/tiptap/tiptap"
 import { Badge } from "@/components/ui/badge"
+import Spinner from "@/components/ui/spinner"
 
 interface ContactNotesProps {
   contactNotes: string | null | undefined
@@ -143,7 +144,7 @@ export default function ContactNotes({ contactNotes, contactId }: ContactNotesPr
               variant={saveStatus === 'saved' ? 'blue' : 'green'}
             >
               {saveStatus === 'saving' ? (
-                <Loader2 className="size-4 shrink-0 animate-spin" />
+                <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
               ) : saveStatus === 'saved' ? (
                 <Check className="size-4 shrink-0" />
               ) : (

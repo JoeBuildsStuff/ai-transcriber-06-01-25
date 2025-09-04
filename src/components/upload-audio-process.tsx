@@ -4,7 +4,7 @@ import { useState, useCallback, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useDropzone } from 'react-dropzone'
 import { Button } from "@/components/ui/button"
-import { Upload, X, AudioLines, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Upload, X, AudioLines, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from '@/lib/utils'
 import {
   Stepper,
@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DeepgramWord, FileProcessingState, FormattedTranscriptGroup, TranscriptionData } from '@/types'
+import Spinner from './ui/spinner'
 
 const supabase = createClient()
 
@@ -404,7 +405,7 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
                 )}
 
                 {['uploading', 'transcribing', 'summarizing'].includes(fs.status) && (
-                  <Loader2 size={20} className="animate-spin" />
+                  <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
                 )}
 
                 {fs.status === 'complete' && fs.meetingId && (

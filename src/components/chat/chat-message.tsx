@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, CopyIcon, Lightbulb, Loader2, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, CopyIcon, Lightbulb, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -19,6 +19,7 @@ import { formatToolCallArguments, formatToolCallResult } from '@/lib/chat/utils'
 import { useState } from 'react'
 import { useChatStore } from '@/lib/chat/chat-store'
 import Image from 'next/image'
+import Spinner from '@/components/ui/spinner'
 
 // Import highlight.js styles
 import 'highlight.js/styles/github-dark.css'
@@ -180,8 +181,8 @@ export function ChatMessageLoading() {
           "rounded-bl-sm",
           "flex items-center gap-2"
         )}>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-muted-foreground">Thinking...</span>
+          <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
+          {/* <span className="text-muted-foreground">Thinking...</span> */}
         </div>
       </div>
     </div>

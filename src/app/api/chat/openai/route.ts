@@ -194,6 +194,12 @@ Guidelines:
 - Extract information like title, meeting date/time, location, description from user requests for meetings
 - For meeting searches, extract participant names, date ranges, and titles from user queries
 
+Image Processing Capabilities:
+- You can analyze and understand images that users upload
+- When processing meeting invitations, business cards, or other documents from images, extract all relevant information
+- For business cards, extract contact information like name, title, company, email, phone, address
+- For meeting invitations or calendar screenshots, extract meeting details like title, date/time, location, participants, agenda
+
 Meeting Creation Guidelines:
 - When processing meeting invitations or calendar events from images:
   - Extract the meeting title from the title field
@@ -223,13 +229,36 @@ if a tool responds with a url to the record, please include the url in the respo
       content: newUserMessage
     };
 
-    // Add attachment information as text for now (OpenAI doesn't support file uploads in chat completions)
+    // Process attachments - OpenAI supports images via base64 data URLs
     if (attachments.length > 0) {
-      const attachmentInfo = attachments.map(attachment => 
-        `File: ${attachment.name} (${attachment.type}, ${formatFileSize(attachment.size)})`
-      ).join('\n');
-      
-      newUserContent.content = `${newUserMessage}\n\nAttachments:\n${attachmentInfo}`;
+      const contentBlocks: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+        { type: 'text', text: newUserMessage }
+      ];
+
+      for (const attachment of attachments) {
+        if (attachment.type.startsWith('image/')) {
+          // Convert image to base64 data URL
+          const arrayBuffer = await attachment.file.arrayBuffer();
+          const base64 = Buffer.from(arrayBuffer).toString('base64');
+          const dataUrl = `data:${attachment.type};base64,${base64}`;
+          
+          contentBlocks.push({
+            type: 'image_url',
+            image_url: {
+              url: dataUrl,
+              detail: 'auto' // Let the model decide detail level
+            }
+          });
+        } else {
+          // Non-image files as text description
+          contentBlocks.push({
+            type: 'text',
+            text: `\n\nFile attachment: ${attachment.name} (${attachment.type}, ${formatFileSize(attachment.size)})`
+          });
+        }
+      }
+
+      newUserContent.content = contentBlocks;
     }
     
     const messagesForAPI: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [

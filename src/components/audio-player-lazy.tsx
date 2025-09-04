@@ -3,7 +3,7 @@
 // NOTE: Created this component so that audio files are only retrieved if use attempts to play it.  
 // TODO: have to click play 2x to work?
 
-import { Pause, Play, RotateCcw, RotateCw, Volume2, Loader2 } from "lucide-react";
+import { Pause, Play, RotateCcw, RotateCw, Volume2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import {
@@ -14,6 +14,7 @@ import {
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Card, CardContent } from "./ui/card";
 import { toast } from "sonner";
+import Spinner from "./ui/spinner";
 
 interface LazyAudioPlayerProps {
   meetingId: string;
@@ -218,7 +219,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
               </Button>
               <Button variant="ghost" onClick={togglePlayPause} disabled={isLoadingAudio}>
                 {isLoadingAudio ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
                 ) : isPlaying ? (
                   <Pause className="w-4 h-4" />
                 ) : (
