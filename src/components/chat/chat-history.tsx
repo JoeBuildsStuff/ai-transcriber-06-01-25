@@ -49,7 +49,7 @@ export function ChatHistory() {
             onClick={handleNewChat}
             title="New chat"
           >
-            <SquarePen className="size-4" strokeWidth={1.5}/>
+            <SquarePen className="size-4" strokeWidth={1}/>
           </Button>
         </div>
         <div className="flex items-center gap-1">
@@ -70,11 +70,11 @@ export function ChatHistory() {
         <div className="p-1">
           {sessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1.5}/>
-              <p className="text-sm text-muted-foreground mb-4">No chat history yet</p>
-              <Button className="flex items-center" variant="outline" size="sm" onClick={handleNewChat}>
-                <span>Start chat</span>
-                <ChevronRight className="size-4" />
+              <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1}/>
+              <p className="text-sm text-muted-foreground mb-4 font-light">No chat history yet</p>
+              <Button className="flex items-center " variant="outline" size="sm" onClick={handleNewChat}>
+                <span className="font-light">Start chat</span>
+                <ChevronRight className="size-4" strokeWidth={1}/>
               </Button>
             </div>
           ) : (

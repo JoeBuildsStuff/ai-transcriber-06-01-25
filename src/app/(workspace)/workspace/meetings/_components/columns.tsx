@@ -1,13 +1,12 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { ArrowUpRight, Calendar, CheckCircle, Circle, Clock4, Timer, Type, Users } from "lucide-react"
+import { Calendar, CheckCircle, Circle, Clock4, Timer, Type, Users } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { MeetingsList } from "../../meetings/[id]/_lib/validations"
 import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
 
 export const columns: ColumnDef<MeetingsList>[] = [
   {
@@ -46,17 +45,18 @@ export const columns: ColumnDef<MeetingsList>[] = [
     ),
     cell: ({ row }) => {
       const title = row.getValue("title") as string
+      const meetingId = row.original.id
+
       return (
         <div className="flex items-center gap-2">
-        <Link 
-          href={`/workspace/meetings/${row.original.id}`}
-          className="hover:underline cursor-pointer"
-        >
-          <span className="flex items-center gap-1">
-            {title || "Untitled Meeting"} <ArrowUpRight className="size-4" strokeWidth={1.5} />
-          </span>
-        </Link>
-      </div>
+          <Badge 
+            variant="green" 
+            className="text-sm font-light"
+            href={`/workspace/meetings/${meetingId}`}
+          >
+            {title || "Untitled Meeting"}
+          </Badge>
+        </div>
       )
     },
     meta: {
@@ -184,7 +184,7 @@ export const columns: ColumnDef<MeetingsList>[] = [
       }
 
       return (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {speakers.map((speaker, index) => {
             // Use contact name if available, otherwise fall back to speaker_name
             const displayName = speaker.first_name && speaker.last_name 
@@ -196,8 +196,8 @@ export const columns: ColumnDef<MeetingsList>[] = [
               return (
                 <Badge 
                   key={index} 
-                  variant="outline" 
-                  className="text-xs mb-1"
+                  variant="blue" 
+                  className="text-sm font-light "
                   href={`/workspace/contacts/${speaker.contact_id}`}
                 >
                   {displayName}
@@ -205,9 +205,9 @@ export const columns: ColumnDef<MeetingsList>[] = [
               )
             }
             
-            // Otherwise, render as regular badge
+            // Otherwise, render as gray badge for unassociated speakers
             return (
-              <Badge key={index} variant="outline" className="text-xs mb-1">
+              <Badge key={index} variant="gray" className="text-sm font-light">
                 {displayName}
               </Badge>
             )

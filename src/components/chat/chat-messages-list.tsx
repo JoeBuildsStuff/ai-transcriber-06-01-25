@@ -27,8 +27,8 @@ export function ChatMessagesList({ onActionClick }: ChatMessagesListProps = {}) 
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="flex flex-col items-center space-y-2">
-        <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1.5}/>
-        <p className="text-sm text-muted-foreground mb-4">Start a conversation</p>
+        <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1}/>
+        <p className="text-sm text-muted-foreground mb-4 font-light">Start a conversation</p>
         </div>
       </div>
     )
