@@ -9,7 +9,8 @@ import {
   FileArchive,
   FileSpreadsheet,
   Headphones,
-  Image
+  Image,
+  FileImage
 } from 'lucide-react'
 
 
@@ -36,6 +37,7 @@ export function ChatInput() {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage } = useChat()
@@ -93,9 +95,7 @@ export function ChatInput() {
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    
+  const processFiles = (files: File[]) => {
     const newAttachments: Attachment[] = files.map(file => ({
       id: crypto.randomUUID(),
       file,
@@ -105,6 +105,11 @@ export function ChatInput() {
     }))
     
     setAttachments(prev => [...prev, ...newAttachments])
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    processFiles(files)
     
     // Reset file input
     if (fileInputRef.current) {
@@ -122,6 +127,47 @@ export function ChatInput() {
 
   const closeAttachmentModal = () => {
     setSelectedAttachment(null)
+  }
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const files: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) {
+          files.push(file)
+        }
+      }
+    }
+
+    if (files.length > 0) {
+      e.preventDefault()
+      processFiles(files)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      processFiles(files)
+    }
   }
 
   const getFileIcon = (attachment: Attachment) => {
@@ -214,14 +260,39 @@ export function ChatInput() {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask question..."
+              onPaste={handlePaste}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              placeholder={isDragOver ? "" : "Ask question..."}
               disabled={isLoading}
               rows={1}
-              className="resize-none rounded-xl border-none pb-12 bg-muted/50"
+              className={`font-light resize-none rounded-xl border-none pb-12 transition-all duration-200 ${
+                isDragOver 
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-transparent' 
+                  : 'bg-muted/50'
+              }`}
               // pr-20 and pb-8 add right and bottom padding to avoid overlap with floating buttons
             />
+            
+            {/* Dashed border overlay when dragging */}
+            {isDragOver && (
+              <div className="absolute inset-0.5 border-2 border-dashed border-blue-400 dark:border-blue-500 rounded-lg pointer-events-none z-10" />
+            )}
+            
+            {/* Centered drop text overlay */}
+            {isDragOver && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div className="flex items-center gap-2 text-blue-400 dark:text-blue-500 font-light">
+                  <FileImage className="size-4 shrink-0" /><span>Drop files here...</span>
+                </div>
+              </div>
+            )}
+            
             {/* Actions */}
-            <div className="flex gap-2 items-center absolute bottom-2 right-2 w-full justify-between">
+            <div className={`flex gap-2 items-center absolute bottom-2 right-2 w-full justify-between transition-opacity duration-200 ${
+              isDragOver ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}>
               {/* Left side buttons */}
               <div className="flex gap-2 items-center ml-4">
                 <input
