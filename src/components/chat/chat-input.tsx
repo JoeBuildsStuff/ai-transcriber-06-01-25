@@ -306,7 +306,7 @@ export function ChatInput() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-full border-none w-8"
+                  className="rounded-full border-none w-8 bg-input/40"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading}
                 >
@@ -321,7 +321,7 @@ export function ChatInput() {
                   onValueChange={setSelectedModel}
                   disabled={isLoading}
                 >
-                  <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs" >
+                  <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs bg-input/40" >
                     <SelectValue placeholder="Model" />
                   </SelectTrigger>
                   <SelectContent>
@@ -342,7 +342,7 @@ export function ChatInput() {
                     onValueChange={(value: 'low' | 'medium' | 'high') => setReasoningEffort(value)}
                     disabled={isLoading}
                   >
-                    <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs" >
+                    <SelectTrigger size="sm" className="w-fit border-none text-muted-foreground shadow-none font-light text-xs bg-input/40" >
                       <SelectValue placeholder="Reasoning" />
                     </SelectTrigger>
                     <SelectContent className="font-light text-xs">

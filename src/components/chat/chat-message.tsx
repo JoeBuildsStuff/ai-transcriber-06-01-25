@@ -305,7 +305,7 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
         {!isSystem && message.toolCalls && message.toolCalls.length > 0 && (
           <div className="space-y-2 mb-2 w-72">
             {message.toolCalls.map((toolCall) => (
-              <Collapsible key={toolCall.id} className="rounded-lg px-3 py-2 text-sm break-words bg-muted text-foreground rounded-bl-sm">
+              <Collapsible key={toolCall.id} className="rounded-lg px-3 py-2 text-sm break-words text-foreground font-light border border-border">
                 <CollapsibleTrigger asChild>
                   <button className="flex items-center justify-between w-full cursor-pointer group">
                     <div className="flex items-center gap-2">
@@ -411,8 +411,8 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
               "bg-muted text-foreground",
             ],
             !isUser && !isSystem && [
-              "bg-muted text-foreground",
-              "rounded-bl-sm"
+              "text-foreground",
+              // "rounded-bl-sm"
             ],
             isSystem && [
               "bg-muted/50 text-muted-foreground text-xs",

@@ -110,7 +110,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
     }
 
     return (
-        <Card className="h-full p-1 gap-2" ref={transcriptRef}>
+        <Card className="h-full p-1 gap-0" ref={transcriptRef}>
             <CopyButton
                 textToCopy={getTranscriptText()}
                 successMessage="Transcript copied to clipboard"
