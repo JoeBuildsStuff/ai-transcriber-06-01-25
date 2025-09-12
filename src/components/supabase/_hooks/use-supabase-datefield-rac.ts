@@ -20,25 +20,48 @@ function isTemporaryId(id: string): boolean {
 }
 
 // Helper function to convert DateValue to ISO string
-function dateValueToISO(dateValue: DateValue | null): string | null {
+function dateValueToISO(dateValue: DateValue | null, existingTimeISO?: string | null): string | null {
   if (!dateValue) return null
   try {
-    return dateValue.toDate('UTC').toISOString()
+    // If we have an existing time, preserve it by updating only the date part
+    if (existingTimeISO) {
+      const existingDate = new Date(existingTimeISO)
+      // Create a new date with the selected date but preserve the time
+      const newDate = new Date(dateValue.year, dateValue.month - 1, dateValue.day, 
+                               existingDate.getHours(), existingDate.getMinutes(), 
+                               existingDate.getSeconds(), existingDate.getMilliseconds())
+      return newDate.toISOString()
+    }
+    
+    // No existing time, create date at noon in user's timezone to avoid timezone shift issues
+    const localDate = new Date(dateValue.year, dateValue.month - 1, dateValue.day, 12, 0, 0, 0)
+    return localDate.toISOString()
   } catch {
     return null
   }
 }
 
 // Helper function to convert TimeValue to ISO string
-function timeValueToISO(timeValue: TimeValue | null): string | null {
+function timeValueToISO(timeValue: TimeValue | null, existingDateISO?: string | null): string | null {
   if (!timeValue) return null
   try {
-    // Create a base date and set the time
-    const baseDate = new Date()
-    baseDate.setHours(timeValue.hour || 0)
-    baseDate.setMinutes(timeValue.minute || 0)
-    baseDate.setSeconds(timeValue.second || 0)
-    baseDate.setMilliseconds(timeValue.millisecond || 0)
+    let baseDate: Date
+    
+    // If we have an existing date, preserve the date part
+    if (existingDateISO) {
+      const existingDate = new Date(existingDateISO)
+      // Create new date with existing date but new time
+      baseDate = new Date(existingDate.getFullYear(), existingDate.getMonth(), existingDate.getDate(),
+                          timeValue.hour || 0, timeValue.minute || 0, 
+                          timeValue.second || 0, timeValue.millisecond || 0)
+    } else {
+      // No existing date, use today's date in local timezone
+      const today = new Date()
+      baseDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(),
+                          timeValue.hour || 0, timeValue.minute || 0, 
+                          timeValue.second || 0, timeValue.millisecond || 0)
+    }
+    
     return baseDate.toISOString()
   } catch {
     return null
@@ -51,7 +74,7 @@ function isoToDateValue(isoString: string | null): DateValue | null {
   try {
     const date = new Date(isoString)
     if (isNaN(date.getTime())) return null
-    // Convert to CalendarDate for date-only values
+    // Convert to CalendarDate for date-only values using local timezone
     const year = date.getFullYear()
     const month = date.getMonth() + 1
     const day = date.getDate()
@@ -67,7 +90,7 @@ function isoToTimeValue(isoString: string | null): TimeValue | null {
   try {
     const date = new Date(isoString)
     if (isNaN(date.getTime())) return null
-    // Convert to Time for time-only values
+    // Convert to Time for time-only values using local timezone
     const hour = date.getHours()
     const minute = date.getMinutes()
     const second = date.getSeconds()
@@ -95,7 +118,22 @@ export function useSupabaseDateField({
   const updateMutation = useMutation({
     mutationFn: async (newValue: DateValue | null) => {
       const client = createClient()
-      const isoValue = dateValueToISO(newValue)
+      
+      // Fetch current value from database to preserve time when updating date
+      let currentValue = initialValue
+      const targetId = realId || id
+      
+      if (!isTemporaryId(id)) {
+        const { data } = await client
+          .from(table)
+          .select(field)
+          .eq("id", targetId)
+          .single()
+        
+        currentValue = data?.[field as keyof typeof data] as string || initialValue
+      }
+      
+      const isoValue = dateValueToISO(newValue, currentValue)
       
       // If it's a temporary ID, we need to create the record first
       if (isTemporaryId(id) && !realId) {
@@ -116,9 +154,6 @@ export function useSupabaseDateField({
         return isoValue
       }
 
-      // Use the real ID for updates
-      const targetId = realId || id
-      
       const { error } = await client
         .from(table)
         .update({ [field]: isoValue })
@@ -215,7 +250,22 @@ export function useSupabaseTimeField({
   const updateMutation = useMutation({
     mutationFn: async (newValue: TimeValue | null) => {
       const client = createClient()
-      const isoValue = timeValueToISO(newValue)
+      
+      // Fetch current value from database to preserve date when updating time
+      let currentValue = initialValue
+      const targetId = realId || id
+      
+      if (!isTemporaryId(id)) {
+        const { data } = await client
+          .from(table)
+          .select(field)
+          .eq("id", targetId)
+          .single()
+        
+        currentValue = data?.[field as keyof typeof data] as string || initialValue
+      }
+      
+      const isoValue = timeValueToISO(newValue, currentValue)
       
       // If it's a temporary ID, we need to create the record first
       if (isTemporaryId(id) && !realId) {
@@ -236,9 +286,6 @@ export function useSupabaseTimeField({
         return isoValue
       }
 
-      // Use the real ID for updates
-      const targetId = realId || id
-      
       const { error } = await client
         .from(table)
         .update({ [field]: isoValue })
