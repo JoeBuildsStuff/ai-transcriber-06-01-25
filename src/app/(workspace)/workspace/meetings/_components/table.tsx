@@ -19,7 +19,7 @@ export default async function DataTableMeetings({
     console.error(error)
   }
 
-  const pageCount = Math.ceil((count ?? 0) / (pagination?.pageSize ?? 10))
+  const pageCount = Math.ceil((count ?? 0) / (pagination?.pageSize ?? 50))
   const initialState = {
     ...parseSearchParams(searchParams),
     columnVisibility: {

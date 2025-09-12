@@ -83,7 +83,7 @@ export function parseSearchParams(searchParams: SearchParams): Partial<DataTable
 
   // Parse pagination
   const page = searchParams.page ? parseInt(searchParams.page as string) - 1 : 0;
-  const pageSize = searchParams.pageSize ? parseInt(searchParams.pageSize as string) : 10;
+  const pageSize = searchParams.pageSize ? parseInt(searchParams.pageSize as string) : 50;
   state.pagination = {
     pageIndex: Math.max(0, page),
     pageSize: Math.max(1, pageSize),
@@ -152,7 +152,7 @@ export function serializeTableState(state: DataTableState): DataTableSearchParam
   if (state.pagination.pageIndex > 0) {
     params.page = (state.pagination.pageIndex + 1).toString();
   }
-  if (state.pagination.pageSize !== 10) {
+  if (state.pagination.pageSize !== 50) {
     params.pageSize = state.pagination.pageSize.toString();
   }
 
