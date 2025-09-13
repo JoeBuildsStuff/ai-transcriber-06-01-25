@@ -19,9 +19,13 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
   const sort = sorting ?? []
   const filters = columnFilters ?? []
 
-  // Check if we have a speakers_new filter
+  // Check if we have a speakers filter
   const speakersFilter = filters.find(filter => filter.id === 'speakers')
   const hasSpeakersFilter = !!speakersFilter
+  
+  // Check if we have an attendees filter
+  const attendeesFilter = filters.find(filter => filter.id === 'attendees')
+  const hasAttendeesFilter = !!attendeesFilter
 
   let meetingIds: string[] = []
   
@@ -70,6 +74,97 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
     // Extract unique meeting IDs
     meetingIds = [...new Set(speakersData?.map(s => s.meeting_id) || [])]
   }
+  
+  // If we have an attendees filter, get the meeting IDs from meeting_attendees
+  if (hasAttendeesFilter && attendeesFilter) {
+    const { operator, value } = attendeesFilter.value as { operator: string, value: unknown }
+    const searchValue = String(value).toLowerCase()
+    
+    // Use a simpler approach - search in contacts table first, then get meeting IDs
+    let contactsQuery = supabase
+      .schema("ai_transcriber")
+      .from("new_contacts")
+      .select("id")
+    
+    switch (operator) {
+      case "iLike":
+        // Search for contacts where first_name or last_name contains the search value
+        // If search value contains a space, split it and search for first_name AND last_name
+        if (searchValue.includes(' ')) {
+          const [firstName, lastName] = searchValue.split(' ', 2)
+          contactsQuery = contactsQuery
+            .ilike('first_name', `%${firstName}%`)
+            .ilike('last_name', `%${lastName}%`)
+        } else {
+          contactsQuery = contactsQuery.or(`first_name.ilike.%${searchValue}%,last_name.ilike.%${searchValue}%`)
+        }
+        break
+      case "notILike":
+        contactsQuery = contactsQuery
+          .not('first_name', 'ilike', `%${searchValue}%`)
+          .not('last_name', 'ilike', `%${searchValue}%`)
+        break
+      case "eq":
+        // If search value contains a space, split it and search for first_name AND last_name
+        if (searchValue.includes(' ')) {
+          const [firstName, lastName] = searchValue.split(' ', 2)
+          contactsQuery = contactsQuery
+            .eq('first_name', firstName)
+            .eq('last_name', lastName)
+        } else {
+          contactsQuery = contactsQuery.or(`first_name.eq.${searchValue},last_name.eq.${searchValue}`)
+        }
+        break
+      case "ne":
+        contactsQuery = contactsQuery
+          .not('first_name', 'eq', searchValue)
+          .not('last_name', 'eq', searchValue)
+        break
+      case "isEmpty":
+        // For isEmpty, we need to find meetings that have no attendees
+        break
+      case "isNotEmpty":
+        // For isNotEmpty, we need to find meetings that have at least one attendee
+        break
+      default:
+        break
+    }
+    
+    const { data: contactsData, error: contactsError } = await contactsQuery
+    
+    if (contactsError) {
+      console.error("Error fetching contact data:", contactsError)
+      return { data: [], count: 0, error: contactsError }
+    }
+    
+    if (contactsData && contactsData.length > 0) {
+      // Now get meeting IDs for these contacts
+      const contactIds = contactsData.map(c => c.id)
+      const { data: attendeesData, error: attendeesError } = await supabase
+        .schema("ai_transcriber")
+        .from("meeting_attendees")
+        .select("meeting_id")
+        .in('contact_id', contactIds)
+      
+      if (attendeesError) {
+        console.error("Error fetching attendee data:", attendeesError)
+        return { data: [], count: 0, error: attendeesError }
+      }
+      
+      // Extract unique meeting IDs from attendees
+      const attendeeMeetingIds = [...new Set(attendeesData?.map(a => a.meeting_id) || [])]
+      
+      // If we already have speaker meeting IDs, intersect them; otherwise use attendee IDs
+      if (hasSpeakersFilter && meetingIds.length > 0) {
+        meetingIds = meetingIds.filter(id => attendeeMeetingIds.includes(id))
+      } else {
+        meetingIds = attendeeMeetingIds
+      }
+    } else {
+      // No contacts found, so no meetings match
+      meetingIds = []
+    }
+  }
 
   let query = supabase
     .schema("ai_transcriber")
@@ -94,11 +189,11 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
       )
     `, { count: "exact" })
 
-  // Apply meeting ID filter if we have speaker filter results
-  if (hasSpeakersFilter && meetingIds.length > 0) {
+  // Apply meeting ID filter if we have speaker or attendee filter results
+  if ((hasSpeakersFilter || hasAttendeesFilter) && meetingIds.length > 0) {
     query = query.in('id', meetingIds)
-  } else if (hasSpeakersFilter && meetingIds.length === 0) {
-    // If no meetings match the speaker filter, return empty results
+  } else if ((hasSpeakersFilter || hasAttendeesFilter) && meetingIds.length === 0) {
+    // If no meetings match the speaker/attendee filter, return empty results
     return { data: [], count: 0, error: null }
   }
 
@@ -146,8 +241,8 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
     query = query.order("meeting_at", { ascending: false })
   }
 
-  // Filtering - exclude speakers filter since we handled it above
-  const nonSpeakersFilters = filters.filter(filter => filter.id !== 'speakers')
+  // Filtering - exclude speakers and attendees filters since we handled them above
+  const nonSpeakersFilters = filters.filter(filter => filter.id !== 'speakers' && filter.id !== 'attendees')
   
   nonSpeakersFilters.forEach(filter => {
     const { id: columnId, value: filterValue } = filter
@@ -175,6 +270,12 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
           break
         case "gt":
           query = query.gt(columnId, value)
+          break
+        case "gte":
+          query = query.gte(columnId, value)
+          break
+        case "lte":
+          query = query.lte(columnId, value)
           break
         case "inArray":
           query = query.in(columnId, value as (string | number)[])

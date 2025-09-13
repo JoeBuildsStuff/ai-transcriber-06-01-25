@@ -8,9 +8,17 @@ export const searchMeetingsTool: Anthropic.Tool = {
   input_schema: {
     type: 'object' as const,
     properties: {
+      speakerName: {
+        type: 'string',
+        description: 'Name of a meeting speaker to search for (e.g., "john smith") - searches in meeting_speakers table'
+      },
+      attendeeName: {
+        type: 'string',
+        description: 'Name of a meeting attendee to search for (e.g., "john smith") - searches in meeting_attendees table via contacts'
+      },
       participantName: {
         type: 'string',
-        description: 'Name of a meeting participant to search for (e.g., "john smith")'
+        description: 'DEPRECATED: Use speakerName or attendeeName instead. Name of a meeting participant to search for (e.g., "john smith")'
       },
       dateFrom: {
         type: 'string',
@@ -36,9 +44,16 @@ export const searchMeetingsTool: Anthropic.Tool = {
 // Function execution logic for the search_meetings tool
 export async function executeSearchMeetings(parameters: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
-    const { participantName, dateFrom, dateTo, title, limit = 10 } = parameters
+    // Filter out client-specific parameters
+    const { speakerName, attendeeName, participantName, dateFrom, dateTo, title, limit = 10 } = Object.fromEntries(
+      Object.entries(parameters).filter(([key]) => 
+        !['client_tz', 'client_utc_offset', 'client_now_iso'].includes(key)
+      )
+    )
     
     // Type-safe parameter extraction
+    const speakerNameStr = typeof speakerName === 'string' ? speakerName : undefined
+    const attendeeNameStr = typeof attendeeName === 'string' ? attendeeName : undefined
     const participantNameStr = typeof participantName === 'string' ? participantName : undefined
     const dateFromStr = typeof dateFrom === 'string' ? dateFrom : undefined
     const dateToStr = typeof dateTo === 'string' ? dateTo : undefined
@@ -59,8 +74,30 @@ export async function executeSearchMeetings(parameters: Record<string, unknown>)
       value: { operator: string; value: unknown };
     }> = []
     
-    // Add participant name filter if provided
-    if (participantNameStr) {
+    // Add speaker name filter if provided
+    if (speakerNameStr) {
+      columnFilters.push({
+        id: 'speakers',
+        value: {
+          operator: 'iLike',
+          value: speakerNameStr.toLowerCase()
+        }
+      })
+    }
+    
+    // Add attendee name filter if provided
+    if (attendeeNameStr) {
+      columnFilters.push({
+        id: 'attendees',
+        value: {
+          operator: 'iLike',
+          value: attendeeNameStr.toLowerCase()
+        }
+      })
+    }
+    
+    // Add legacy participant name filter if provided (for backward compatibility)
+    if (participantNameStr && !speakerNameStr && !attendeeNameStr) {
       columnFilters.push({
         id: 'speakers',
         value: {
@@ -87,7 +124,7 @@ export async function executeSearchMeetings(parameters: Record<string, unknown>)
         id: 'meeting_at',
         value: {
           operator: 'gte',
-          value: dateFromStr
+          value: dateFromStr + 'T00:00:00.000Z' // Start of day in UTC
         }
       })
     }
@@ -97,7 +134,7 @@ export async function executeSearchMeetings(parameters: Record<string, unknown>)
         id: 'meeting_at',
         value: {
           operator: 'lte',
-          value: dateToStr
+          value: dateToStr + 'T23:59:59.999Z' // End of day in UTC
         }
       })
     }
@@ -127,39 +164,28 @@ export async function executeSearchMeetings(parameters: Record<string, unknown>)
       meeting_url: `/workspace/meetings/${meeting.id}`
     }))
     
-    // Check if we found any meetings within the date range
-    const meetingsInDateRange = formattedMeetings.filter(meeting => {
-      if (!dateFromStr && !dateToStr) return true
-      
-      // Skip meetings without a valid meeting_at date
-      if (!meeting.meeting_at) return false
-      
-      const meetingDate = new Date(meeting.meeting_at)
-      const fromDate = dateFromStr ? new Date(dateFromStr) : null
-      const toDate = dateToStr ? new Date(dateToStr) : null
-      
-      if (fromDate && meetingDate < fromDate) return false
-      if (toDate && meetingDate > toDate) return false
-      return true
-    })
+    // Since we're now filtering at the database level with proper UTC timestamps,
+    // all returned meetings should already be within the date range
+    const meetingsInDateRange = formattedMeetings
     
     return {
       success: true,
       data: {
         meetings: meetingsInDateRange,
         total_count: result.count,
-        meetings_in_date_range: meetingsInDateRange.length,
         search_criteria: {
-          participantName: participantNameStr || 'Any participant',
+          speakerName: speakerNameStr || 'Any speaker',
+          attendeeName: attendeeNameStr || 'Any attendee',
+          participantName: participantNameStr || 'Any participant (legacy)',
           dateFrom: dateFromStr || 'Any date',
           dateTo: dateToStr || 'Any date',
           title: titleStr || 'Any title'
         },
         debug_info: {
           total_meetings_found: result.count,
-          meetings_with_participant: formattedMeetings.length,
-          meetings_in_date_range: meetingsInDateRange.length,
-          date_range_applied: !!(dateFromStr || dateToStr)
+          meetings_returned: formattedMeetings.length,
+          date_range_applied: !!(dateFromStr || dateToStr),
+          database_filters_applied: columnFilters.length
         }
       }
     }

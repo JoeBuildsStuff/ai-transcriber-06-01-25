@@ -68,9 +68,12 @@ export async function executeUpdatePersonContact(parameters: Record<string, unkn
       return { success: false, error: 'Contact ID is required' }
     }
 
-    // Filter out undefined values to only update provided fields
+    // Filter out undefined values and client-specific parameters to only update provided fields
     const filteredData = Object.fromEntries(
-      Object.entries(updateData).filter(([, value]) => value !== undefined)
+      Object.entries(updateData).filter(([key, value]) => 
+        value !== undefined && 
+        !['client_tz', 'client_utc_offset', 'client_now_iso'].includes(key)
+      )
     )
 
     if (Object.keys(filteredData).length === 0) {
