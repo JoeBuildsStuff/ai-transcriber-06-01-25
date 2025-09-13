@@ -10,6 +10,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `create-meeting.ts` - Tool for creating new meetings
 - `search-meetings.ts` - Tool for searching existing meetings
 - `update-person.ts` - Tool for updating existing person contacts
+- `update-meeting.ts` - Tool for updating existing meetings
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -112,6 +113,19 @@ Updates an existing person contact with new information. Use this when users wan
 - `description` (string, optional) - Updated additional notes or description about the person
 
 **Required:** `id` - All other fields are optional and will only update if provided
+
+### update_meeting
+Updates an existing meeting with new information such as title, meeting date/time, location, review status, or summary.
+
+**Parameters:**
+- `id` (string) - The unique identifier of the meeting to update
+- `title` (string, optional) - Updated title of the meeting
+- `meeting_at` (string, optional) - Updated meeting date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
+- `location` (string, optional) - Updated location (e.g., room, Zoom, address)
+- `meeting_reviewed` (boolean, optional) - Whether the meeting has been reviewed
+- `summary` (string, optional) - Updated plain-text summary for the meeting
+
+**Required:** `id` - All other fields are optional and only applied if provided
 
 ### search_persons
 Search for persons by name, company, email, or phone number.

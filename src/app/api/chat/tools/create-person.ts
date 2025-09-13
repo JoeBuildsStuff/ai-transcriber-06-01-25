@@ -64,7 +64,19 @@ export async function executeCreatePersonContact(parameters: Record<string, unkn
     }
     
     const result = await createPerson(parameters)
-    return result
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: {
+          message: 'Contact created successfully',
+          contact: result.data,
+          url: `/workspace/contacts/${result.data.id}`
+        }
+      }
+    } else {
+      return { success: false, error: result.error || 'Failed to create contact' }
+    }
   } catch (error) {
     console.error('Create person contact execution error:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' }

@@ -1,5 +1,6 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { searchPersons, searchPersonsByFields } from '@/app/(workspace)/workspace/contacts/_lib/queries'
+import type { PersonWithRelations } from '@/app/(workspace)/workspace/contacts/_lib/validations'
 
 // Tool definition for searching persons
 export const searchPersonsTool: Anthropic.Tool = {
@@ -45,10 +46,21 @@ export async function executeSearchPersons(parameters: Record<string, unknown>):
     // If a general search term is provided, use the simple search
     if (searchTerm && typeof searchTerm === 'string') {
       const result = await searchPersons(searchTerm, limit as number || 10)
+      if (result.data && Array.isArray(result.data)) {
+        const dataWithUrls = result.data.map((person: PersonWithRelations) => ({
+          ...person,
+          url: `/workspace/contacts/${person.id}`
+        }))
+        return {
+          success: !result.error,
+          data: dataWithUrls,
+          error: result.error?.message,
+        }
+      }
       return {
         success: !result.error,
         data: result.data,
-        error: result.error?.message
+        error: result.error?.message,
       }
     }
     
@@ -76,10 +88,21 @@ export async function executeSearchPersons(parameters: Record<string, unknown>):
     }
     
     const result = await searchPersonsByFields(searchCriteria, limit as number || 10)
+    if (result.data && Array.isArray(result.data)) {
+      const dataWithUrls = result.data.map((person: PersonWithRelations) => ({
+        ...person,
+        url: `/workspace/contacts/${person.id}`
+      }))
+      return {
+        success: !result.error,
+        data: dataWithUrls,
+        error: result.error?.message,
+      }
+    }
     return {
       success: !result.error,
       data: result.data,
-      error: result.error?.message
+      error: result.error?.message,
     }
   } catch (error) {
     console.error('Search persons execution error:', error)

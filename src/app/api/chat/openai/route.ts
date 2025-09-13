@@ -192,15 +192,18 @@ async function getOpenAIResponse(
 When users ask to create or add a new person contact, use the create_person_contact function with the provided information. Extract as much relevant information as possible from the user's request.
 When users ask to update an existing person contact, use the update_person_contact function with the contact ID and the fields to update.
 When users ask to create a new meeting, use the create_meeting function. This creates a meeting that can be populated with audio files, notes, and other details later.
+When users ask to update an existing meeting, use the update_meeting function with the meeting ID and the fields to update (title, date/time, location, reviewed status, summary).
 When users ask about meetings they have had with specific people or during specific time periods, use the search_meetings function to find relevant meetings.
 
 Guidelines:
 - Use the create_person_contact function when users want to add new contacts
 - Use the update_person_contact function when users want to modify existing contacts (e.g., "update Joe Smith's email to joe.smith@newcompany.com")
 - Use the create_meeting function when users want to create a new meeting
+- Use the update_meeting function when users want to modify existing meetings
 - Use the search_meetings function when users ask about existing meetings (e.g., "what meetings have I had with Joe Taylor in the past week?")
 - Extract information like name, email, phone, company, job title, location from user requests for contacts
 - Extract information like title, meeting date/time, location, description from user requests for meetings
+- For meeting updates, extract title, meeting date/time (with timezone), location, reviewed status, and/or summary
 - For meeting searches, extract participant names, date ranges, and titles from user queries
 
 Image Processing Capabilities:
