@@ -43,6 +43,23 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     if (reasoningEffort) {
       formData.append('reasoning_effort', reasoningEffort)
     }
+
+    // Attach client timezone context
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+      const offsetMinutes = new Date().getTimezoneOffset()
+      const sign = offsetMinutes <= 0 ? '+' : '-'
+      const abs = Math.abs(offsetMinutes)
+      const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+      const mm = String(abs % 60).padStart(2, '0')
+      const offset = `${sign}${hh}:${mm}`
+      const d = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const localISO = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${offset}`
+      formData.append('client_tz', tz)
+      formData.append('client_utc_offset', offset)
+      formData.append('client_now_iso', localISO)
+    } catch {}
     
     // Add attachments if any
     if (attachments && attachments.length > 0) {
@@ -171,6 +188,23 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           if (reasoningEffort) {
             cerebrasFormData.append('reasoning_effort', reasoningEffort)
           }
+
+          // Attach client timezone context
+          try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+            const offsetMinutes = new Date().getTimezoneOffset()
+            const sign = offsetMinutes <= 0 ? '+' : '-'
+            const abs = Math.abs(offsetMinutes)
+            const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+            const mm = String(abs % 60).padStart(2, '0')
+            const offset = `${sign}${hh}:${mm}`
+            const d = new Date()
+            const pad = (n: number) => String(n).padStart(2, '0')
+            const localISO = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${offset}`
+            cerebrasFormData.append('client_tz', tz)
+            cerebrasFormData.append('client_utc_offset', offset)
+            cerebrasFormData.append('client_now_iso', localISO)
+          } catch {}
           
           // Add attachments if any
           if (attachments && attachments.length > 0) {
@@ -216,6 +250,23 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           if (reasoningEffort) {
             openaiFormData.append('reasoning_effort', reasoningEffort)
           }
+
+          // Attach client timezone context
+          try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+            const offsetMinutes = new Date().getTimezoneOffset()
+            const sign = offsetMinutes <= 0 ? '+' : '-'
+            const abs = Math.abs(offsetMinutes)
+            const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+            const mm = String(abs % 60).padStart(2, '0')
+            const offset = `${sign}${hh}:${mm}`
+            const d = new Date()
+            const pad = (n: number) => String(n).padStart(2, '0')
+            const localISO = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${offset}`
+            openaiFormData.append('client_tz', tz)
+            openaiFormData.append('client_utc_offset', offset)
+            openaiFormData.append('client_now_iso', localISO)
+          } catch {}
           
           // Add attachments if any
           if (attachments && attachments.length > 0) {

@@ -19,6 +19,9 @@ interface ChatAPIRequest {
     type: string
     size: number
   }>
+  clientTz?: string
+  clientOffset?: string
+  clientNowIso?: string
 }
 
 interface ChatAPIResponse {
@@ -65,6 +68,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       const contextStr = formData.get('context') as string
       const messagesStr = formData.get('messages') as string
       const model = formData.get('model') as string
+      // Client locale/timezone hints
+      const clientTz = (formData.get('client_tz') as string) || ''
+      const clientOffset = (formData.get('client_utc_offset') as string) || ''
+      const clientNowIso = (formData.get('client_now_iso') as string) || ''
       const attachmentCount = parseInt(formData.get('attachmentCount') as string || '0')
       
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
@@ -84,13 +91,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
         }
       }
       
-      body = { message, context, messages, model, attachments }
+      body = { message, context, messages, model, attachments, clientTz, clientOffset, clientNowIso } as unknown as ChatAPIRequest
     } else {
       // Handle JSON request (backward compatibility)
       body = await request.json()
     }
 
-    const { message, context, messages = [], model, attachments = [] } = body
+    const { message, context, messages = [], model, attachments = [], clientTz = '', clientOffset = '', clientNowIso = '' } = body
 
     // Validate input
     if (!message || typeof message !== 'string') {
@@ -100,7 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       )
     }
 
-    const response = await getLLMResponse(messages, message, context || null, attachments, model)
+    const response = await getLLMResponse(messages, message, context || null, attachments, model, clientTz, clientOffset, clientNowIso)
 
     return NextResponse.json(response)
   } catch (error) {
@@ -158,7 +165,10 @@ async function getLLMResponse(
   newUserMessage: string,
   context: PageContext | null,
   attachments: Array<{ file: File; name: string; type: string; size: number }> = [],
-  model?: string
+  model?: string,
+  clientTz: string = '',
+  clientOffset: string = '',
+  clientNowIso: string = ''
 ): Promise<ChatAPIResponse> {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -199,6 +209,11 @@ Meeting Creation Guidelines:
   - Include any personal messages, agenda items, or meeting notes from the invitation body
 
 if a tool responds with a url to the record, please include the url in the response for quick navigation for the user.  use markdown to format the url.`
+    
+    // Provide user locale/timezone context to the model
+    if (clientTz || clientOffset || clientNowIso) {
+      systemPrompt += `\n\nUser Locale Context:\n- Timezone: ${clientTz || 'unknown'}\n- UTC offset (at request): ${clientOffset || 'unknown'}\n- Local time at request: ${clientNowIso || 'unknown'}`
+    }
     
     if (context) {
       systemPrompt += `\n\n## Current Page Context:\n- Total items: ${context.totalCount}\n- Current filters: ${JSON.stringify(context.currentFilters, null, 2)}\n- Current sorting: ${JSON.stringify(context.currentSort, null, 2)}\n- Visible data sample: ${JSON.stringify(context.visibleData.slice(0, 3), null, 2)}`
@@ -319,14 +334,20 @@ if a tool responds with a url to the record, please include the url in the respo
       const toolResults = await Promise.all(
         toolUseBlocks.map(async (toolUseBlock) => {
           if (toolUseBlock.type === 'tool_use') {
-            const functionResult = await executeFunctionCall(toolUseBlock.name, toolUseBlock.input as Record<string, unknown>);
+            const augmentedInput = {
+              ...(toolUseBlock.input as Record<string, unknown>),
+              client_tz: clientTz,
+              client_utc_offset: clientOffset,
+              client_now_iso: clientNowIso,
+            };
+            const functionResult = await executeFunctionCall(toolUseBlock.name, augmentedInput);
             allToolResults.push(functionResult);
             
             // Store tool call information
             allToolCalls.push({
               id: toolUseBlock.id,
               name: toolUseBlock.name,
-              arguments: toolUseBlock.input as Record<string, unknown>,
+              arguments: augmentedInput,
               result: functionResult
             });
             

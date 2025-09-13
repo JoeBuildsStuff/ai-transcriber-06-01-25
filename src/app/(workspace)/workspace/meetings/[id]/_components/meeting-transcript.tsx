@@ -110,9 +110,12 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
     }
 
     return (
-        <Card className="h-full p-1 gap-0 relative" ref={transcriptRef}>
+        <Card className="h-full p-1 gap-0" ref={transcriptRef}>
             {/* Position the copy button using a wrapper to avoid hover-induced reflow/flicker */}
-            <div className="absolute top-15 right-1 z-99">
+            <ScrollArea className="h-full overflow-y-auto relative">
+
+            {/* Copy button */}
+            <div className="absolute top-1 right-1 z-99">
                 <CopyButton
                     textToCopy={getTranscriptText()}
                     successMessage="Transcript copied to clipboard"
@@ -121,7 +124,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
                     size="sm"
                 />
             </div>
-            <ScrollArea className="h-full overflow-y-auto">
+
             {/* Speaker badges row */}
             <SpeakerBadgeHeader 
                 meetingSpeakers={meetingSpeakers} 

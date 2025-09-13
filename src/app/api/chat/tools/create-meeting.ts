@@ -52,10 +52,27 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
   try {
     // Extract parameters from the LLM request
     const title = parameters.title as string | undefined
-    const meeting_at = parameters.meeting_at as string | undefined
+    let meeting_at = parameters.meeting_at as string | undefined
     const location = parameters.location as string | undefined
     const description = parameters.description as string | undefined
     const participants = parameters.participants as Array<{ firstName: string; lastName: string }> | undefined
+    
+    // Client timezone hints injected by the API layer
+    const client_utc_offset = (parameters.client_utc_offset as string) || ''
+    const client_now_iso = (parameters.client_now_iso as string) || ''
+
+    // If meeting_at is missing, fall back to client's current local ISO (includes offset)
+    if (!meeting_at || !String(meeting_at).trim()) {
+      meeting_at = client_now_iso || undefined
+    } else {
+      // If provided value lacks timezone info, append client's UTC offset if available
+      const hasTimezone = /[zZ]|([+-]\d{2}:?\d{2})$/.test(meeting_at)
+      if (!hasTimezone && client_utc_offset) {
+        // Normalize to "YYYY-MM-DDTHH:mm[:ss][.sss]" + offset
+        // If meeting_at already has a trailing 'Z', remove (handled by hasTimezone check, but safe)
+        meeting_at = meeting_at.replace(/[zZ]$/, '') + client_utc_offset
+      }
+    }
     
     // Call the enhanced createMeeting action with parameters
     const result = await createMeeting({

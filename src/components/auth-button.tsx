@@ -4,6 +4,7 @@ import {
   ChevronsUpDown,
   LogOut,
   Moon,
+  Settings,
   Sun,
 } from "lucide-react"
 import Link from "next/link"
@@ -113,24 +114,28 @@ export function AuthButton() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem className="font-light">
+              <Settings className="size-4" strokeWidth={1.5}/>
+              <span className="font-light">Settings</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
               {resolvedTheme === "dark" ? (
                 <>
-                  <Sun className="h-[1.2rem] w-[1.2rem] mr-2" />
-                  <span>Toggle Light Mode</span>
+                  <Sun className="size-4" strokeWidth={1.5}/>
+                  <span className="font-light">Toggle Light Mode</span>
                 </>
               ) : (
                 <>
-                  <Moon className="h-[1.2rem] w-[1.2rem] mr-2" />
-                  <span>Toggle Dark Mode</span>
+                  <Moon className="size-4" strokeWidth={1.5}/>
+                  <span className="font-light">Toggle Dark Mode</span>
                 </>
               )}
               <span className="sr-only">Toggle Theme</span>
           
             </DropdownMenuItem>
             <DropdownMenuItem onClick={async () => await signOut()}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <LogOut className="size-4" strokeWidth={1.5}/>
+              <span className="font-light">Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

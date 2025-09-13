@@ -24,6 +24,9 @@ interface CerebrasAPIRequest {
     type: string
     size: number
   }>
+  clientTz?: string
+  clientOffset?: string
+  clientNowIso?: string
 }
 
 interface CerebrasAPIResponse {
@@ -120,6 +123,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       const temperature = parseFloat(formData.get('temperature') as string || '1')
       const topP = parseFloat(formData.get('top_p') as string || '1')
       const attachmentCount = parseInt(formData.get('attachmentCount') as string || '0')
+      const clientTz = (formData.get('client_tz') as string) || ''
+      const clientOffset = (formData.get('client_utc_offset') as string) || ''
+      const clientNowIso = (formData.get('client_now_iso') as string) || ''
       
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
       const messages = messagesStr ? JSON.parse(messagesStr) : []
@@ -148,7 +154,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
         max_completion_tokens: maxCompletionTokens,
         temperature,
         top_p: topP,
-        attachments 
+        attachments,
+        clientTz,
+        clientOffset,
+        clientNowIso 
       }
     } else {
       // Handle JSON request
@@ -165,7 +174,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       max_completion_tokens = 65536,
       temperature = 1,
       top_p = 1,
-      attachments = [] 
+      attachments = [],
+      clientTz = '',
+      clientOffset = '',
+      clientNowIso = '' 
     } = body
 
     // Validate input
@@ -193,7 +205,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       stream,
       max_completion_tokens,
       temperature,
-      top_p
+      top_p,
+      clientTz,
+      clientOffset,
+      clientNowIso
     )
 
     return NextResponse.json(response)
@@ -240,7 +255,10 @@ async function getCerebrasResponse(
   stream: boolean = false,
   max_completion_tokens: number = 65536,
   temperature: number = 1,
-  top_p: number = 1
+  top_p: number = 1,
+  clientTz: string = '',
+  clientOffset: string = '',
+  clientNowIso: string = ''
 ): Promise<CerebrasAPIResponse> {
   try {
     // 1. System Prompt
@@ -273,6 +291,11 @@ Guidelines:
 - Use the search_persons function when users want to find existing contacts
 
 if a tool responds with a url to the record, please include the url in the response for quick navigation for the user. use markdown to format the url.`
+
+    // Provide user locale/timezone context to the model
+    if (clientTz || clientOffset || clientNowIso) {
+      systemPrompt += `\n\nUser Locale Context:\n- Timezone: ${clientTz || 'unknown'}\n- UTC offset (at request): ${clientOffset || 'unknown'}\n- Local time at request: ${clientNowIso || 'unknown'}`
+    }
     
     if (context) {
       systemPrompt += `\n\n## Current Page Context:\n- Total items: ${context.totalCount}\n- Current filters: ${JSON.stringify(context.currentFilters, null, 2)}\n- Current sorting: ${JSON.stringify(context.currentSort, null, 2)}\n- Visible data sample: ${JSON.stringify(context.visibleData.slice(0, 3), null, 2)}`
@@ -424,16 +447,23 @@ if a tool responds with a url to the record, please include the url in the respo
           // Execute all tools in parallel
           const toolResults = await Promise.all(
             message.tool_calls.map(async (toolCall) => {
+              const baseArgs = JSON.parse(toolCall.function.arguments);
+              const augmentedArgs = {
+                ...baseArgs,
+                client_tz: clientTz,
+                client_utc_offset: clientOffset,
+                client_now_iso: clientNowIso,
+              };
               const functionResult = await executeFunctionCall(
                 toolCall.function.name, 
-                JSON.parse(toolCall.function.arguments)
+                augmentedArgs
               );
               
               // Store tool call information
               allToolCalls.push({
                 id: toolCall.id,
                 name: toolCall.function.name,
-                arguments: JSON.parse(toolCall.function.arguments),
+                arguments: augmentedArgs,
                 result: functionResult
               });
               
