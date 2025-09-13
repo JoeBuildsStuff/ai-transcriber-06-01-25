@@ -10,6 +10,7 @@ export interface ToolCall {
     data?: unknown
     error?: string
   }
+  reasoning?: string // Reasoning associated with this specific tool call
 }
 
 export interface ChatMessage {
@@ -17,6 +18,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: Date
+  reasoning?: string // Reasoning steps from Cerebras API
   attachments?: Array<{
     id: string
     name: string

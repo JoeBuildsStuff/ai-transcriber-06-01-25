@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, CopyIcon, Lightbulb, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, CopyIcon, Lightbulb, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon, Brain } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -124,6 +124,47 @@ const CitationPopover = ({ citationNumber, citation }: {
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+// Reasoning component
+const ReasoningDisplay = ({ reasoning }: { reasoning: string }) => {
+  return (
+    <div className="mb-2 w-72">
+      <Collapsible className="rounded-lg px-3 py-2 text-sm break-words text-foreground font-light border border-border">
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between w-full cursor-pointer group">
+            <div className="flex items-center gap-2">
+              <Brain className="size-4 shrink-0" strokeWidth={1.5}/>
+              <span className="text-muted-foreground group-hover:underline text-sm">
+                Reasoning
+              </span>
+            </div>
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" strokeWidth={1.5}/>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-2">
+            <div className="flex flex-col gap-1 bg-background/30 p-2 rounded-md relative">
+              <pre className="text-xs p-1 overflow-x-auto whitespace-pre-wrap break-words max-w-full">
+                {reasoning}
+              </pre>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-0 right-0 h-6 w-6 p-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(reasoning)
+                  toast.success("Reasoning copied to clipboard")
+                }}
+              >
+                <CopyIcon className="size-3" strokeWidth={1.5}/>
+              </Button>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   )
 }
 
@@ -301,73 +342,86 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
             </div>
         )}
 
-        {/* Tool calls - shown before the response for non-system messages */}
+        {/* Reasoning - shown before tool calls and content for non-system messages */}
+        {!isSystem && message.reasoning && (
+          <ReasoningDisplay reasoning={message.reasoning} />
+        )}
+
+        {/* Tool calls with individual reasoning - shown before the response for non-system messages */}
         {!isSystem && message.toolCalls && message.toolCalls.length > 0 && (
           <div className="space-y-2 mb-2 w-72">
             {message.toolCalls.map((toolCall) => (
-              <Collapsible key={toolCall.id} className="rounded-lg px-3 py-2 text-sm break-words text-foreground font-light border border-border">
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full cursor-pointer group">
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="size-4 shrink-0" strokeWidth={1.5}/>
-                      <span className="text-muted-foreground group-hover:underline text-sm">
-                        {toolCall.name}
-                      </span>
-                    </div>
-                    <ChevronDown className="size-4 shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" strokeWidth={1.5}/>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-2 mt-2">
-                    {/* Tool Arguments */}
-                    <div className="flex flex-col gap-1 bg-background/30 p-2 rounded-md relative">
+              <div key={toolCall.id} className="space-y-2">
+                {/* Reasoning for this specific tool call */}
+                {toolCall.reasoning && (
+                  <ReasoningDisplay reasoning={toolCall.reasoning} />
+                )}
+                
+                {/* Tool call */}
+                <Collapsible className="rounded-lg px-3 py-2 text-sm break-words text-foreground font-light border border-border">
+                  <CollapsibleTrigger asChild>
+                    <button className="flex items-center justify-between w-full cursor-pointer group">
                       <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-xs font-medium">Request:</span>
+                        <Lightbulb className="size-4 shrink-0" strokeWidth={1.5}/>
+                        <span className="text-muted-foreground group-hover:underline text-sm">
+                          {toolCall.name}
+                        </span>
                       </div>
-                      <pre className="text-xs p-2 overflow-x-auto whitespace-pre-wrap break-words max-w-full">
-                        {formatToolCallArguments(toolCall.arguments)}
-                      </pre>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0"
-                        onClick={() => {
-                          navigator.clipboard.writeText(formatToolCallArguments(toolCall.arguments))
-                          toast.success("Arguments copied to clipboard")
-                        }}
-                      >
-                        <CopyIcon className="size-3" strokeWidth={1.5}/>
-                      </Button>
-                    </div>
-
-                    {/* Tool Result */}
-                    {toolCall.result && (
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" strokeWidth={1.5}/>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-2 mt-2">
+                      {/* Tool Arguments */}
                       <div className="flex flex-col gap-1 bg-background/30 p-2 rounded-md relative">
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground text-xs font-medium">
-                            Result: {toolCall.result.success ? 'Success' : 'Error'}
-                          </span>
+                          <span className="text-muted-foreground text-xs font-medium">Request:</span>
                         </div>
                         <pre className="text-xs p-2 overflow-x-auto whitespace-pre-wrap break-words max-w-full">
-                          {formatToolCallResult(toolCall.result)}
+                          {formatToolCallArguments(toolCall.arguments)}
                         </pre>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="absolute top-1 right-1 h-6 w-6 p-0"
                           onClick={() => {
-                            const content = formatToolCallResult(toolCall.result)
-                            navigator.clipboard.writeText(content)
-                            toast.success("Result copied to clipboard")
+                            navigator.clipboard.writeText(formatToolCallArguments(toolCall.arguments))
+                            toast.success("Arguments copied to clipboard")
                           }}
                         >
                           <CopyIcon className="size-3" strokeWidth={1.5}/>
                         </Button>
                       </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+
+                      {/* Tool Result */}
+                      {toolCall.result && (
+                        <div className="flex flex-col gap-1 bg-background/30 p-2 rounded-md relative">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground text-xs font-medium">
+                              Result: {toolCall.result.success ? 'Success' : 'Error'}
+                            </span>
+                          </div>
+                          <pre className="text-xs p-2 overflow-x-auto whitespace-pre-wrap break-words max-w-full">
+                            {formatToolCallResult(toolCall.result)}
+                          </pre>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-1 right-1 h-6 w-6 p-0"
+                            onClick={() => {
+                              const content = formatToolCallResult(toolCall.result)
+                              navigator.clipboard.writeText(content)
+                              toast.success("Result copied to clipboard")
+                            }}
+                          >
+                            <CopyIcon className="size-3" strokeWidth={1.5}/>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
             ))}
           </div>
         )}

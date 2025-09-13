@@ -31,6 +31,7 @@ interface CerebrasAPIRequest {
 
 interface CerebrasAPIResponse {
   message: string
+  reasoning?: string
   stream?: ReadableStream
   rawResponse?: unknown
   toolCalls?: Array<{
@@ -63,6 +64,7 @@ interface CerebrasResponse {
   choices?: Array<{
     message?: {
       content?: string
+      reasoning?: string
       tool_calls?: Array<{
         id: string
         function: {
@@ -310,7 +312,7 @@ if a tool responds with a url to the record, please include the url in the respo
     type CerebrasMessage = 
       | { role: 'system'; content: string }
       | { role: 'user'; content: string }
-      | { role: 'assistant'; content: string; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
+      | { role: 'assistant'; content: string; reasoning?: string; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
       | { role: 'tool'; content: string; tool_call_id: string };
 
     const cerebrasHistory: CerebrasMessage[] = [
@@ -368,7 +370,9 @@ if a tool responds with a url to the record, please include the url in the respo
         data?: unknown
         error?: string
       }
+      reasoning?: string // Associate reasoning with each tool call
     }> = [];
+    const allReasoningSteps: string[] = []; // Collect reasoning from all intermediate responses
 
     while (maxIterations > 0) {
       // 6. Make the API call
@@ -435,10 +439,16 @@ if a tool responds with a url to the record, please include the url in the respo
 
         // Check for tool calls
         if (message.tool_calls && message.tool_calls.length > 0) {
-          // Save the assistant's message exactly as returned (including tool_calls)
+          // Collect reasoning from this intermediate response
+          if (message.reasoning) {
+            allReasoningSteps.push(message.reasoning);
+          }
+          
+          // Save the assistant's message exactly as returned (including tool_calls and reasoning)
           currentMessages.push({
             role: 'assistant',
             content: message.content || '',
+            reasoning: message.reasoning,
             tool_calls: message.tool_calls.map(tc => ({
               id: tc.id,
               type: 'function' as const,
@@ -461,12 +471,13 @@ if a tool responds with a url to the record, please include the url in the respo
                 augmentedArgs
               );
               
-              // Store tool call information
+              // Store tool call information with associated reasoning
               allToolCalls.push({
                 id: toolCall.id,
                 name: toolCall.function.name,
                 arguments: augmentedArgs,
-                result: functionResult
+                result: functionResult,
+                reasoning: message.reasoning // Associate the reasoning from this response with this tool call
               });
               
               return {
@@ -493,9 +504,11 @@ if a tool responds with a url to the record, please include the url in the respo
     if (finalResponse) {
       const typedResponse = finalResponse as CerebrasResponse;
       const content = typedResponse.choices?.[0]?.message?.content || 'No response generated';
+      const finalReasoning = typedResponse.choices?.[0]?.message?.reasoning;
 
       return {
         message: content,
+        reasoning: finalReasoning, // Only include final reasoning, tool call reasoning is now associated with each tool call
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
         rawResponse: finalResponse
       };

@@ -228,10 +228,11 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
 
           const result = await response.json()
           
-          // Add the assistant message with tool calls and citations if available
+          // Add the assistant message with tool calls, citations, and reasoning if available
           const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
             role: 'assistant',
             content: result.message || 'I apologize, but I couldn\'t generate a response.',
+            reasoning: result.reasoning || undefined,
             suggestedActions: result.actions || [],
             toolCalls: result.toolCalls || undefined,
             citations: result.citations || undefined
@@ -290,10 +291,11 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
 
           const result = await response.json()
           
-          // Add the assistant message with tool calls and citations if available
+          // Add the assistant message with tool calls, citations, and reasoning if available
           const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
             role: 'assistant',
             content: result.message || 'I apologize, but I couldn\'t generate a response.',
+            reasoning: result.reasoning || undefined,
             suggestedActions: result.actions || [],
             toolCalls: result.toolCalls || undefined,
             citations: result.citations || undefined
