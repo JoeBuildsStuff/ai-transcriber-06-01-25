@@ -93,6 +93,9 @@ interface ChatStore {
   // Computed properties (will be updated whenever state changes)
   currentSession: ChatSession | null
   messages: ChatMessage[]
+  // Per-message branch history: map user message id -> branches and active selection
+  messageBranches: Record<string, { branches: ChatMessage[][], activeIndex: number }>
+  currentBranchRootId: string | null
 
   // Session CRUD operations
   createSession: (title?: string) => string
@@ -111,6 +114,11 @@ interface ChatStore {
   copyMessage: (messageId: string) => void
   editMessage: (messageId: string, newContent: string) => void
   retryMessage: (messageId: string, onRetry: (content: string) => void) => void
+
+  // Branch navigation
+  getBranchStatus: (messageId: string) => { current: number, total: number }
+  goToPreviousMessageList: (messageId: string) => void
+  goToNextMessageList: (messageId: string) => void
 
   // Tool call operations
   addToolCalls: (messageId: string, toolCalls: ToolCall[]) => void
@@ -180,6 +188,8 @@ export const useChatStore = create<ChatStore>()(
       currentSession: null,
       messages: [],
       layoutMode: 'floating',
+      messageBranches: {},
+      currentBranchRootId: null,
 
       // Session CRUD operations
       createSession: (title?: string) => {
@@ -343,11 +353,31 @@ export const useChatStore = create<ChatStore>()(
 
           const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
 
+          // If branching is active, update the active branch tail with new messages after the root
+          let messageBranches = state.messageBranches
+          const rootId = state.currentBranchRootId
+          if (rootId && currentSession) {
+            const rootIndex = currentSession.messages.findIndex(m => m.id === rootId)
+            if (rootIndex !== -1) {
+              const tail = currentSession.messages.slice(rootIndex + 1)
+              const entry = messageBranches[rootId]
+              if (entry) {
+                const branches = entry.branches.slice()
+                branches[entry.activeIndex] = tail
+                messageBranches = {
+                  ...messageBranches,
+                  [rootId]: { branches, activeIndex: entry.activeIndex }
+                }
+              }
+            }
+          }
+
           return {
             sessions: updatedSessions,
             currentSessionId,
             currentSession,
             messages,
+            messageBranches,
           }
         })
       },
@@ -455,46 +485,149 @@ export const useChatStore = create<ChatStore>()(
       retryMessage: (messageId: string, onRetry: (content: string) => void) => {
         const state = get()
         const message = state.messages.find(msg => msg.id === messageId)
-        if (message && message.role === 'user') {
-          // Remove the user message and its assistant response
-          const messageIndex = state.messages.findIndex(msg => msg.id === messageId)
-          if (messageIndex !== -1) {
-            set((state) => {
-              const updatedSessions = state.sessions.map(session =>
-                session.id === state.currentSessionId
-                  ? {
-                    ...session,
-                    messages: session.messages.filter((_, index) => index < messageIndex),
-                    updatedAt: new Date(),
-                  }
-                  : session
-              )
+        if (!message || message.role !== 'user') return
 
-              const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+        const currentSession = state.currentSession
+        if (!currentSession) return
 
-              return {
-                sessions: updatedSessions,
-                currentSession,
-                messages,
+        const messageIndex = currentSession.messages.findIndex(m => m.id === messageId)
+        if (messageIndex === -1) return
+
+        const existingTail = currentSession.messages.slice(messageIndex + 1)
+
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === state.currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.slice(0, messageIndex + 1), // keep the edited user message
+                updatedAt: new Date(),
               }
-            })
+              : session
+          )
 
-            // Call the retry callback if provided, otherwise just add the message back
-            if (onRetry) {
-              onRetry(message.content)
-            } else {
-              // Fallback: add the message back to trigger a new API call
-              setTimeout(() => {
-                const { addMessage } = useChatStore.getState()
-                addMessage({
-                  role: 'user',
-                  content: message.content,
-                  context: message.context
-                })
-              }, 100)
-            }
+          const existing = state.messageBranches[messageId]
+          let branches: ChatMessage[][]
+          let activeIndex: number
+          if (!existing) {
+            branches = [existingTail, []]
+            activeIndex = 1
+          } else {
+            branches = existing.branches.map(b => b.slice())
+            branches.push([])
+            activeIndex = branches.length - 1
           }
+
+          const newBranches = {
+            ...state.messageBranches,
+            [messageId]: { branches, activeIndex }
+          }
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+            messageBranches: newBranches,
+            currentBranchRootId: messageId,
+          }
+        })
+
+        if (onRetry) {
+          onRetry(message.content)
+        } else {
+          setTimeout(() => {
+            const { addMessage } = useChatStore.getState()
+            addMessage({
+              role: 'user',
+              content: message.content,
+              context: message.context
+            })
+          }, 100)
         }
+      },
+
+      getBranchStatus: (messageId: string) => {
+        const entry = get().messageBranches[messageId]
+        if (!entry) return { current: 0, total: 0 }
+        return { current: entry.activeIndex + 1, total: entry.branches.length }
+      },
+
+      goToPreviousMessageList: (messageId: string) => {
+        const { currentSession, messageBranches, currentSessionId } = get()
+        const entry = messageBranches[messageId]
+        if (!currentSession || !entry) return
+        if (entry.branches.length === 0) return
+
+        const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
+        if (rootIndex === -1) return
+
+        const newIndex = Math.max(0, entry.activeIndex - 1)
+        const newTail = entry.branches[newIndex] || []
+
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.slice(0, rootIndex + 1).concat(newTail),
+                updatedAt: new Date(),
+              }
+              : session
+          )
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+            messageBranches: {
+              ...state.messageBranches,
+              [messageId]: { branches: entry.branches, activeIndex: newIndex }
+            },
+            currentBranchRootId: messageId,
+          }
+        })
+      },
+
+      goToNextMessageList: (messageId: string) => {
+        const { currentSession, messageBranches, currentSessionId } = get()
+        const entry = messageBranches[messageId]
+        if (!currentSession || !entry) return
+        if (entry.branches.length === 0) return
+
+        const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
+        if (rootIndex === -1) return
+
+        const newIndex = Math.min(entry.branches.length - 1, entry.activeIndex + 1)
+        const newTail = entry.branches[newIndex] || []
+
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === currentSessionId
+              ? {
+                ...session,
+                messages: session.messages.slice(0, rootIndex + 1).concat(newTail),
+                updatedAt: new Date(),
+              }
+              : session
+          )
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
+
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+            messageBranches: {
+              ...state.messageBranches,
+              [messageId]: { branches: entry.branches, activeIndex: newIndex }
+            },
+            currentBranchRootId: messageId,
+          }
+        })
       },
 
       addToolCalls: (messageId: string, toolCalls: ToolCall[]) => {
@@ -734,6 +867,8 @@ export const useChatStore = create<ChatStore>()(
         })), // Keep last 10 sessions
         currentSessionId: state.currentSessionId,
         layoutMode: state.layoutMode,
+        messageBranches: state.messageBranches,
+        currentBranchRootId: state.currentBranchRootId,
       }),
       // Transform dates back when loading from storage
       onRehydrateStorage: () => (state) => {
@@ -753,6 +888,14 @@ export const useChatStore = create<ChatStore>()(
             const { currentSession, messages } = computeCurrentSessionAndMessages(state.sessions, state.currentSessionId)
             state.currentSession = currentSession
             state.messages = messages
+          }
+
+          // Ensure branch maps exist
+          if (!('messageBranches' in state) || !state.messageBranches) {
+            ;(state as unknown as ChatStore).messageBranches = {}
+          }
+          if (!('currentBranchRootId' in state)) {
+            ;(state as unknown as ChatStore).currentBranchRootId = null
           }
         }
       },

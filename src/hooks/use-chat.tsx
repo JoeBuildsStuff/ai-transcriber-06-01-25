@@ -99,7 +99,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   }, [addMessage])
 
   // Handle sending a new message
-  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high') => {
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high', options?: { skipUserAdd?: boolean }) => {
     if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
     // Ensure we have a current session
@@ -136,35 +136,37 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       })
     )
 
-    // Add user message immediately
-    const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-      role: 'user',
-      content: content.trim() || 'Sent with attachments',
-      attachments: processedAttachments,
-      context: currentContext ? {
-        filters: currentContext.currentFilters,
-        data: {
-          totalCount: currentContext.totalCount,
-          visibleDataSample: currentContext.visibleData.slice(0, 3) // Limit context data
-        }
-      } : undefined
-    }
+    // Add user message unless explicitly skipped (used when resending an edited message)
+    if (!options?.skipUserAdd) {
+      const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+        role: 'user',
+        content: content.trim() || 'Sent with attachments',
+        attachments: processedAttachments,
+        context: currentContext ? {
+          filters: currentContext.currentFilters,
+          data: {
+            totalCount: currentContext.totalCount,
+            visibleDataSample: currentContext.visibleData.slice(0, 3) // Limit context data
+          }
+        } : undefined
+      }
 
-    try {
-      addMessage(userMessage)
-    } catch (error) {
-      console.error('Failed to add message due to storage quota:', error)
-      toast.error('Storage quota exceeded', {
-        description: 'Old sessions have been cleared to make room for your message.',
-        duration: 6000,
-      })
-      // Add a system message to inform the user
-      addMessage({
-        role: 'system',
-        content: '⚠️ Storage quota exceeded. Some old chat sessions have been automatically cleared to make room for new messages.',
-      })
-      // Try to add the user message again
-      addMessage(userMessage)
+      try {
+        addMessage(userMessage)
+      } catch (error) {
+        console.error('Failed to add message due to storage quota:', error)
+        toast.error('Storage quota exceeded', {
+          description: 'Old sessions have been cleared to make room for your message.',
+          duration: 6000,
+        })
+        // Add a system message to inform the user
+        addMessage({
+          role: 'system',
+          content: '⚠️ Storage quota exceeded. Some old chat sessions have been automatically cleared to make room for new messages.',
+        })
+        // Try to add the user message again
+        addMessage(userMessage)
+      }
     }
 
     // Set loading state

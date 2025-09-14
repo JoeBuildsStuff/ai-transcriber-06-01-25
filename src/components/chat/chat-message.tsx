@@ -254,9 +254,8 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
       // After updating the message content, trim chat history to this point
       // and resend the edited message to get a fresh assistant reply.
       retryMessage(message.id, (content) => {
-        // Use the possibly-updated content provided by the retry callback
-        // so history + new text are sent to the API.
-        sendMessage(content)
+        // Resend using the existing user message (no new user bubble)
+        sendMessage(content, undefined, undefined, undefined, { skipUserAdd: true })
       })
     }
     setIsEditing(false)

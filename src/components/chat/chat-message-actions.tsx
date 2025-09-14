@@ -1,6 +1,6 @@
 import { ChatMessage } from "@/types/chat";
 import { Button } from "../ui/button";
-import { Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { useChatStore } from "@/lib/chat/chat-store";
 import { useChat } from "@/hooks/use-chat";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ interface ChatMessageActionsProps {
 }
 
 export default function ChatMessageActions({ message, onEdit }: ChatMessageActionsProps) {
-  const { retryMessage } = useChatStore()
+  const { retryMessage, getBranchStatus, goToPreviousMessageList, goToNextMessageList } = useChatStore()
   const { sendMessage } = useChat()
 
   const handleRetry = () => {
@@ -32,7 +32,8 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
     }
 
     retryMessage(targetMessageId, (content) => {
-      sendMessage(content)
+      // Resend using the existing user message (keep place, no new bubble)
+      sendMessage(content, undefined, undefined, undefined, { skipUserAdd: true })
     })
     toast.success("Retrying message...")
   }
@@ -49,6 +50,7 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
 
   return (
     <TooltipProvider>
+      {/* Show copy button for all messages */}
       <div className="flex">
         <CopyButton
           textToCopy={message.content}
@@ -112,6 +114,7 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
         
         {/* Show Edit for user messages */}
         {message.role === 'user' && onEdit && (
+          <>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -127,6 +130,34 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
               Edit
             </TooltipContent>
           </Tooltip>
+          {(() => {
+            const { current, total } = getBranchStatus(message.id)
+            if (total <= 0) return null
+            return (
+              <div className="flex items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
+                  onClick={() => goToPreviousMessageList(message.id)}
+                  disabled={current <= 1}
+                >
+                  <ChevronLeft className="size-5 shrink-0" strokeWidth={1.5} />
+                </Button>
+                <span className="text-muted-foreground text-sm">{current} / {total}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="p-1 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
+                  onClick={() => goToNextMessageList(message.id)}
+                  disabled={current >= total}
+                >
+                  <ChevronRight className="size-5 shrink-0" strokeWidth={1.5} />
+                </Button>
+              </div>
+            )
+          })()}
+          </>
         )}
       </div>
     </TooltipProvider>
