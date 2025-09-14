@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, CopyIcon, Lightbulb, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon, Brain } from 'lucide-react'
+import { ChevronDown, CopyIcon, Lightbulb, FileText, FileVideo, File, FileArchive, FileSpreadsheet, Headphones, Image as ImageIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -130,40 +130,38 @@ const CitationPopover = ({ citationNumber, citation }: {
 // Reasoning component
 const ReasoningDisplay = ({ reasoning }: { reasoning: string }) => {
   return (
-    <div className="mb-2 w-72">
-      <Collapsible className="rounded-lg px-3 py-2 text-sm break-words text-foreground font-light border border-border">
-        <CollapsibleTrigger asChild>
-          <button className="flex items-center justify-between w-full cursor-pointer group">
-            <div className="flex items-center gap-2">
-              <Brain className="size-4 shrink-0" strokeWidth={1.5}/>
-              <span className="text-muted-foreground group-hover:underline text-sm">
-                Reasoning
-              </span>
-            </div>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground group-data-[state=open]:rotate-180 transition-transform" strokeWidth={1.5}/>
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="mt-2">
-            <div className="flex flex-col gap-1 bg-background/30 p-2 rounded-md relative">
-              <pre className="text-xs p-1 overflow-x-auto whitespace-pre-wrap break-words max-w-full">
-                {reasoning}
-              </pre>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-0 right-0 h-6 w-6 p-0"
-                onClick={() => {
-                  navigator.clipboard.writeText(reasoning)
-                  toast.success("Reasoning copied to clipboard")
-                }}
-              >
-                <CopyIcon className="size-3" strokeWidth={1.5}/>
-              </Button>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+    <div className="mb-2 w-72 prose prose-sm max-w-none dark:prose-invert rounded-lg px-3 py-2 text-sm break-words">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          code: ({ children, ...props }) => {
+            const isInline = !props.className?.includes('language-')
+            return isInline ? (
+              <code className={cn(
+                "px-1.5 py-0.5 rounded text-xs font-mono border",
+                "bg-muted/60 border-muted-foreground/20"
+              )} {...props}>
+                {children}
+              </code>
+            ) : (
+              <code className="text-xs font-mono" {...props}>
+                {children}
+              </code>
+            )
+          },
+          pre: ({ children }) => (
+            <pre className={cn(
+              "p-3 rounded-md overflow-x-auto my-2 border text-xs",
+              "bg-muted/60 border-muted-foreground/20"
+            )}>
+              {children}
+            </pre>
+          ),
+        }}
+      >
+        {reasoning}
+      </ReactMarkdown>
     </div>
   )
 }
@@ -219,7 +217,7 @@ export function ChatMessageLoading() {
         <div className={cn(
           "rounded-lg px-3 py-2 text-sm",
           "bg-muted text-foreground",
-          "rounded-bl-sm",
+          // "rounded-bl-sm",
           "flex items-center gap-2"
         )}>
           <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
@@ -239,9 +237,9 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
   const { editMessage } = useChatStore()
 
   // Debug tool calls
-  if (message.toolCalls && message.toolCalls.length > 0) {
-    console.log('🔧 Message has tool calls:', message.toolCalls)
-  }
+  // if (message.toolCalls && message.toolCalls.length > 0) {
+  //   console.log('🔧 Message has tool calls:', message.toolCalls)
+  // }
 
   const handleEdit = () => {
     setIsEditing(true)
@@ -458,84 +456,87 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
             </div>
           </div>
         ) : (
-          <div className={cn(
-            "rounded-lg px-3 py-2 text-sm",
-            "break-words",
-            isUser && [
-              "bg-muted text-foreground",
-            ],
-            !isUser && !isSystem && [
-              "text-foreground",
-              // "rounded-bl-sm"
-            ],
-            isSystem && [
-              "bg-muted/50 text-muted-foreground text-xs",
-              "italic px-4 py-1 rounded-full"
-            ]
-          )}>
-            {isSystem ? (
-              message.content
-            ) : (
-              <div className={cn(
-                "prose prose-sm max-w-none",
-                "dark:prose-invert"
-              )}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeHighlight]}
-                  components={{
-                    // Only override what's absolutely necessary
-                    code: ({ children, ...props }) => {
-                      const isInline = !props.className?.includes('language-')
-                      return isInline ? (
-                        <code className={cn(
-                          "px-1.5 py-0.5 rounded text-xs font-mono border",
+          // Only render message bubble if there's content or it's a system message
+          message.content.trim() || isSystem ? (
+            <div className={cn(
+              "rounded-lg px-3 py-2 text-sm",
+              "break-words",
+              isUser && [
+                "bg-muted text-foreground",
+              ],
+              !isUser && !isSystem && [
+                "text-foreground",
+                // "rounded-bl-sm"
+              ],
+              isSystem && [
+                "bg-muted/50 text-muted-foreground text-xs",
+                "italic px-4 py-1 rounded-full"
+              ]
+            )}>
+              {isSystem ? (
+                message.content
+              ) : (
+                <div className={cn(
+                  "prose prose-sm max-w-none",
+                  "dark:prose-invert"
+                )}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      // Only override what's absolutely necessary
+                      code: ({ children, ...props }) => {
+                        const isInline = !props.className?.includes('language-')
+                        return isInline ? (
+                          <code className={cn(
+                            "px-1.5 py-0.5 rounded text-xs font-mono border",
+                            "bg-muted/60 border-muted-foreground/20"
+                          )} {...props}>
+                            {children}
+                          </code>
+                        ) : (
+                          <code className="text-xs font-mono" {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      pre: ({ children }) => (
+                        <pre className={cn(
+                          "p-3 rounded-md overflow-x-auto my-2 border text-xs",
                           "bg-muted/60 border-muted-foreground/20"
-                        )} {...props}>
+                        )}>
                           {children}
-                        </code>
-                      ) : (
-                        <code className="text-xs font-mono" {...props}>
-                          {children}
-                        </code>
-                      )
-                    },
-                    pre: ({ children }) => (
-                      <pre className={cn(
-                        "p-3 rounded-md overflow-x-auto my-2 border text-xs",
-                        "bg-muted/60 border-muted-foreground/20"
-                      )}>
-                        {children}
-                      </pre>
-                    ),
-                    // Custom text renderer to handle inline citations
-                    p: ({ children }) => {
-                      if (typeof children === 'string') {
-                        return <p>{renderTextWithCitations(children, message.citations || [])}</p>
-                      }
-                      return <p>{children}</p>
-                    },
-                    // Handle list items to process citations within them
-                    li: ({ children }) => {
-                      if (typeof children === 'string') {
-                        return <li>{renderTextWithCitations(children, message.citations || [])}</li>
-                      }
-                      return <li>{children}</li>
-                    },
-                    // Also handle text nodes that aren't in paragraphs
-                    text: ({ children }) => {
-                      if (typeof children === 'string') {
-                        return renderTextWithCitations(children, message.citations || [])
-                      }
-                      return children
-                    },
-                  }}
-                >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
+                        </pre>
+                      ),
+                      // Custom text renderer to handle inline citations
+                      p: ({ children }) => {
+                        if (typeof children === 'string') {
+                          return <p>{renderTextWithCitations(children, message.citations || [])}</p>
+                        }
+                        return <p>{children}</p>
+                      },
+                      // Handle list items to process citations within them
+                      li: ({ children }) => {
+                        if (typeof children === 'string') {
+                          return <li>{renderTextWithCitations(children, message.citations || [])}</li>
+                        }
+                        return <li>{children}</li>
+                      },
+                      // Also handle text nodes that aren't in paragraphs
+                      text: ({ children }) => {
+                        if (typeof children === 'string') {
+                          return renderTextWithCitations(children, message.citations || [])
+                        }
+                        return children
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          ) : null
         )}
 
         {/* Only show actions when not editing */}

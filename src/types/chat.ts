@@ -119,7 +119,29 @@ export interface ChatAPIRequest {
 
 export interface ChatAPIResponse {
   message: string
+  reasoning?: string // Reasoning associated with the final response this supports cerebras 
   actions?: ChatAction[]
+  functionResult?: {
+    success: boolean
+    data?: unknown
+    error?: string
+  }
+  toolCalls?: Array<{
+    id: string
+    name: string
+    arguments: Record<string, unknown>
+    result?: {
+      success: boolean
+      data?: unknown
+      error?: string
+    }
+    reasoning?: string // Reasoning associated with this specific tool call this supports anthropic 
+  }>
+  citations?: Array<{
+    url: string
+    title: string
+    cited_text: string
+  }>
   error?: string
 }
 

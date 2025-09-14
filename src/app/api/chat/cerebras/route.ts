@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { ChatMessage, PageContext } from '@/types/chat'
 import Cerebras from '@cerebras/cerebras_cloud_sdk'
 import { availableTools, toolExecutors } from '../tools'
+import { createClient as supabaseClient } from '@/lib/supabase/server';
 
 // Initialize Cerebras client
 const cerebras = new Cerebras({
@@ -107,6 +108,17 @@ async function executeFunctionCall(functionName: string, parameters: Record<stri
 
 export async function POST(request: NextRequest): Promise<NextResponse<CerebrasAPIResponse>> {
   try {
+
+    // Check authentication
+    const supabase = await supabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json(
+        { message: 'User not authenticated' },
+        { status: 401 }
+      )
+    }
+
     let body: CerebrasAPIRequest
 
     // Check if the request is multipart/form-data (file upload)
