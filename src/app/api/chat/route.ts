@@ -109,20 +109,29 @@ function buildChatApiResponse(
   allToolResults: Array<{ success: boolean; data?: unknown; error?: string }>,
 ): ChatAPIResponse {
   const textBlocks = resp.content.filter((b) => b.type === 'text') as TextBlock[]
-  const messageText = textBlocks.map((b) => b.text).join('').trim()
 
-  // Extract web search citations if Anthropic returns embedded citation objects on text blocks
+  // Build message text with inline citation markers like [1][2] and collect metadata
   const citations: NonNullable<ChatAPIResponse['citations']> = []
-  for (const tb of textBlocks) {
-    const cits = (tb.citations || []).filter((c) => c.type === 'web_search_result_location')
-    for (const c of cits) {
-      citations.push({
-        url: c.url || '',
-        title: c.title || '',
-        cited_text: c.cited_text || '',
-      })
-    }
-  }
+  const messageText = textBlocks
+    .map((tb) => {
+      let blockText = tb.text || ''
+      const cits = (tb.citations || []).filter((c) => c.type === 'web_search_result_location')
+      if (cits.length > 0) {
+        const markers: string[] = []
+        for (const c of cits) {
+          citations.push({
+            url: c.url || '',
+            title: c.title || '',
+            cited_text: c.cited_text || '',
+          })
+          markers.push(`[${citations.length}]`)
+        }
+        blockText += markers.join('')
+      }
+      return blockText
+    })
+    .join('')
+    .trim()
 
   // First successful custom tool result (legacy convenience)
   const firstSuccess = allToolResults.find((r) => r.success)
@@ -218,6 +227,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       clientOffset,
       clientNowIso,
     )
+
+console.log('response', response)
 
     return NextResponse.json(response)
   } catch (error) {

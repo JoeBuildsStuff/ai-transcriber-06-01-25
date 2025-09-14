@@ -23,6 +23,7 @@ import { XIcon } from '../icons/x'
 import { ArrowUpIcon } from '../icons/arrow-up'
 import { AttachFileIcon } from '../icons/attach-file'
 import { LowMediumHighIcon } from '../icons/low-medium-high'
+
 import Spinner from '@/components/ui/spinner'
 
 export interface Attachment {
@@ -361,7 +362,7 @@ export function ChatInput() {
                   className="rounded-full border-none w-8 [&_svg]:!w-5 [&_svg]:!h-5"
                 >
                   {isLoading ? (
-                    <Spinner />
+                    <Spinner variant="blue" />
                   ) : (
                     <ArrowUpIcon/>
                   )}
