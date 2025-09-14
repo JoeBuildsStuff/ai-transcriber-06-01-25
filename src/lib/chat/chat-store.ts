@@ -94,7 +94,7 @@ interface ChatStore {
   currentSession: ChatSession | null
   messages: ChatMessage[]
   // Per-message branch history: map user message id -> branches and active selection
-  messageBranches: Record<string, { branches: ChatMessage[][], activeIndex: number }>
+  messageBranches: Record<string, { branches: ChatMessage[][], signatures: string[], activeIndex: number }>
   currentBranchRootId: string | null
 
   // Session CRUD operations
@@ -119,6 +119,11 @@ interface ChatStore {
   getBranchStatus: (messageId: string) => { current: number, total: number }
   goToPreviousMessageList: (messageId: string) => void
   goToNextMessageList: (messageId: string) => void
+
+  // Assistant-level variant navigation (within current prompt content)
+  getAssistantVariantStatus: (messageId: string) => { current: number, total: number }
+  goToPreviousVariant: (messageId: string) => void
+  goToNextVariant: (messageId: string) => void
 
   // Tool call operations
   addToolCalls: (messageId: string, toolCalls: ToolCall[]) => void
@@ -366,7 +371,7 @@ export const useChatStore = create<ChatStore>()(
                 branches[entry.activeIndex] = tail
                 messageBranches = {
                   ...messageBranches,
-                  [rootId]: { branches, activeIndex: entry.activeIndex }
+                  [rootId]: { branches, signatures: entry.signatures, activeIndex: entry.activeIndex }
                 }
               }
             }
@@ -507,20 +512,25 @@ export const useChatStore = create<ChatStore>()(
           )
 
           const existing = state.messageBranches[messageId]
+          const signature = (state.messages.find(m => m.id === messageId)?.content || '').trim()
           let branches: ChatMessage[][]
+          let signatures: string[]
           let activeIndex: number
           if (!existing) {
             branches = [existingTail, []]
+            signatures = [signature, signature]
             activeIndex = 1
           } else {
             branches = existing.branches.map(b => b.slice())
             branches.push([])
+            signatures = existing.signatures.slice()
+            signatures.push(signature)
             activeIndex = branches.length - 1
           }
 
           const newBranches = {
             ...state.messageBranches,
-            [messageId]: { branches, activeIndex }
+            [messageId]: { branches, signatures, activeIndex }
           }
 
           const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
@@ -549,9 +559,30 @@ export const useChatStore = create<ChatStore>()(
       },
 
       getBranchStatus: (messageId: string) => {
+        // User-level status: count distinct signatures and current position among them
         const entry = get().messageBranches[messageId]
         if (!entry) return { current: 0, total: 0 }
-        return { current: entry.activeIndex + 1, total: entry.branches.length }
+        const order: string[] = []
+        entry.signatures.forEach(sig => {
+          if (!order.includes(sig)) order.push(sig)
+        })
+        if (order.length === 0) return { current: 0, total: 0 }
+        const currentSig = entry.signatures[entry.activeIndex]
+        const pos = Math.max(0, order.indexOf(currentSig))
+        return { current: pos + 1, total: order.length }
+      },
+
+      getAssistantVariantStatus: (messageId: string) => {
+        // messageId here refers to the USER message id (root)
+        const entry = get().messageBranches[messageId]
+        if (!entry) return { current: 0, total: 0 }
+        const activeSig = entry.signatures[entry.activeIndex]
+        const filtered = entry.signatures
+          .map((sig, idx) => ({ sig, idx }))
+          .filter(x => x.sig === activeSig)
+          .map(x => x.idx)
+        const position = filtered.indexOf(entry.activeIndex)
+        return { current: position + 1, total: filtered.length }
       },
 
       goToPreviousMessageList: (messageId: string) => {
@@ -563,7 +594,18 @@ export const useChatStore = create<ChatStore>()(
         const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
         if (rootIndex === -1) return
 
-        const newIndex = Math.max(0, entry.activeIndex - 1)
+        // Move to previous distinct signature group
+        const sigOrder: string[] = []
+        entry.signatures.forEach(sig => { if (!sigOrder.includes(sig)) sigOrder.push(sig) })
+        if (sigOrder.length <= 1) return
+        const currentSig = entry.signatures[entry.activeIndex]
+        const sigPos = sigOrder.indexOf(currentSig)
+        const newSig = sigOrder[Math.max(0, sigPos - 1)]
+        const candidateIndices = entry.signatures
+          .map((sig, idx) => ({ sig, idx }))
+          .filter(x => x.sig === newSig)
+          .map(x => x.idx)
+        const newIndex = candidateIndices.length ? Math.max(...candidateIndices) : entry.activeIndex
         const newTail = entry.branches[newIndex] || []
 
         set((state) => {
@@ -585,7 +627,7 @@ export const useChatStore = create<ChatStore>()(
             messages,
             messageBranches: {
               ...state.messageBranches,
-              [messageId]: { branches: entry.branches, activeIndex: newIndex }
+              [messageId]: { branches: entry.branches, signatures: entry.signatures, activeIndex: newIndex }
             },
             currentBranchRootId: messageId,
           }
@@ -601,7 +643,18 @@ export const useChatStore = create<ChatStore>()(
         const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
         if (rootIndex === -1) return
 
-        const newIndex = Math.min(entry.branches.length - 1, entry.activeIndex + 1)
+        // Move to next distinct signature group
+        const sigOrder: string[] = []
+        entry.signatures.forEach(sig => { if (!sigOrder.includes(sig)) sigOrder.push(sig) })
+        if (sigOrder.length <= 1) return
+        const currentSig = entry.signatures[entry.activeIndex]
+        const sigPos = sigOrder.indexOf(currentSig)
+        const newSig = sigOrder[Math.min(sigOrder.length - 1, sigPos + 1)]
+        const candidateIndices = entry.signatures
+          .map((sig, idx) => ({ sig, idx }))
+          .filter(x => x.sig === newSig)
+          .map(x => x.idx)
+        const newIndex = candidateIndices.length ? Math.max(...candidateIndices) : entry.activeIndex
         const newTail = entry.branches[newIndex] || []
 
         set((state) => {
@@ -623,7 +676,85 @@ export const useChatStore = create<ChatStore>()(
             messages,
             messageBranches: {
               ...state.messageBranches,
-              [messageId]: { branches: entry.branches, activeIndex: newIndex }
+              [messageId]: { branches: entry.branches, signatures: entry.signatures, activeIndex: newIndex }
+            },
+            currentBranchRootId: messageId,
+          }
+        })
+      },
+
+      goToPreviousVariant: (messageId: string) => {
+        const { currentSession, messageBranches, currentSessionId } = get()
+        const entry = messageBranches[messageId]
+        if (!currentSession || !entry) return
+        if (entry.branches.length === 0) return
+
+        const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
+        if (rootIndex === -1) return
+
+        const activeSig = entry.signatures[entry.activeIndex]
+        const filtered = entry.signatures
+          .map((sig, idx) => ({ sig, idx }))
+          .filter(x => x.sig === activeSig)
+          .map(x => x.idx)
+        const pos = filtered.indexOf(entry.activeIndex)
+        if (pos <= 0) return
+        const newIndex = filtered[pos - 1]
+        const newTail = entry.branches[newIndex] || []
+
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === currentSessionId
+              ? { ...session, messages: session.messages.slice(0, rootIndex + 1).concat(newTail), updatedAt: new Date() }
+              : session
+          )
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+            messageBranches: {
+              ...state.messageBranches,
+              [messageId]: { branches: entry.branches, signatures: entry.signatures, activeIndex: newIndex }
+            },
+            currentBranchRootId: messageId,
+          }
+        })
+      },
+
+      goToNextVariant: (messageId: string) => {
+        const { currentSession, messageBranches, currentSessionId } = get()
+        const entry = messageBranches[messageId]
+        if (!currentSession || !entry) return
+        if (entry.branches.length === 0) return
+
+        const rootIndex = currentSession.messages.findIndex(m => m.id === messageId)
+        if (rootIndex === -1) return
+
+        const activeSig = entry.signatures[entry.activeIndex]
+        const filtered = entry.signatures
+          .map((sig, idx) => ({ sig, idx }))
+          .filter(x => x.sig === activeSig)
+          .map(x => x.idx)
+        const pos = filtered.indexOf(entry.activeIndex)
+        if (pos === -1 || pos >= filtered.length - 1) return
+        const newIndex = filtered[pos + 1]
+        const newTail = entry.branches[newIndex] || []
+
+        set((state) => {
+          const updatedSessions = state.sessions.map(session =>
+            session.id === currentSessionId
+              ? { ...session, messages: session.messages.slice(0, rootIndex + 1).concat(newTail), updatedAt: new Date() }
+              : session
+          )
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
+          return {
+            sessions: updatedSessions,
+            currentSession,
+            messages,
+            messageBranches: {
+              ...state.messageBranches,
+              [messageId]: { branches: entry.branches, signatures: entry.signatures, activeIndex: newIndex }
             },
             currentBranchRootId: messageId,
           }
@@ -896,6 +1027,23 @@ export const useChatStore = create<ChatStore>()(
           }
           if (!('currentBranchRootId' in state)) {
             ;(state as unknown as ChatStore).currentBranchRootId = null
+          }
+
+          // Ensure signatures exist for each entry if an older state is loaded
+          const store = state as unknown as ChatStore
+          if (store.messageBranches) {
+            Object.keys(store.messageBranches).forEach((key) => {
+              const entry = store.messageBranches[key] as unknown as { branches: ChatMessage[][]; signatures?: string[]; activeIndex: number }
+              if (!entry.signatures || entry.signatures.length !== entry.branches.length) {
+                entry.signatures = entry.branches.map(() => '')
+              }
+              // write back
+              ;(store.messageBranches as Record<string, { branches: ChatMessage[][]; signatures: string[]; activeIndex: number }>)[key] = {
+                branches: entry.branches,
+                signatures: entry.signatures,
+                activeIndex: entry.activeIndex,
+              }
+            })
           }
         }
       },

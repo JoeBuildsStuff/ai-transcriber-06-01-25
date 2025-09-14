@@ -71,8 +71,8 @@ export function ChatBubble() {
         onClick={handleToggle}
       >
         <Button
-          variant="outline"
-          className="rounded-full size-12 bg-background shadow-md [&_svg]:!w-6 [&_svg]:!h-6"
+          variant="blue"
+          className="rounded-full size-12 bg-background shadow-md [&_svg]:!w-6 [&_svg]:!h-6 ring-blue-600"
         >
           <MessageSquareIcon />
         </Button>

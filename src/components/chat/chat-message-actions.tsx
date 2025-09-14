@@ -17,7 +17,7 @@ interface ChatMessageActionsProps {
 }
 
 export default function ChatMessageActions({ message, onEdit }: ChatMessageActionsProps) {
-  const { retryMessage, getBranchStatus, goToPreviousMessageList, goToNextMessageList } = useChatStore()
+  const { retryMessage, getBranchStatus, getAssistantVariantStatus, goToPreviousMessageList, goToNextMessageList, goToPreviousVariant, goToNextVariant } = useChatStore()
   const { sendMessage } = useChat()
 
   const handleRetry = () => {
@@ -61,7 +61,7 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
           className="p-2 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
         />
         
-        {/* Show Retry, Upvote, and Downvote for assistant messages */}
+        {/* Show Retry, Upvote, Downvote, and Response navigation for assistant messages */}
         {message.role === 'assistant' && (
           <>
             <Tooltip>
@@ -109,6 +109,38 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
                 Retry
               </TooltipContent>
             </Tooltip>
+            {(() => {
+              // Assistant-level navigation should cycle variants for the same prompt content only
+              const { messages } = useChatStore.getState()
+              const idx = messages.findIndex(m => m.id === message.id)
+              const prevUser = [...messages].slice(0, idx).reverse().find(m => m.role === 'user')
+              if (!prevUser) return null
+              const { current, total } = getAssistantVariantStatus(prevUser.id)
+              if (total <= 1) return null
+              return (
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-1 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
+                    onClick={() => goToPreviousVariant(prevUser.id)}
+                    disabled={current <= 1}
+                  >
+                    <ChevronLeft className="size-5 shrink-0" strokeWidth={1.5} />
+                  </Button>
+                  <span className="text-muted-foreground text-sm">{current} / {total}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-1 m-0 h-fit w-fit text-muted-foreground hover:text-primary"
+                    onClick={() => goToNextVariant(prevUser.id)}
+                    disabled={current >= total}
+                  >
+                    <ChevronRight className="size-5 shrink-0" strokeWidth={1.5} />
+                  </Button>
+                </div>
+              )
+            })()}
           </>
         )}
         
@@ -132,7 +164,7 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
           </Tooltip>
           {(() => {
             const { current, total } = getBranchStatus(message.id)
-            if (total <= 0) return null
+            if (total <= 1) return null
             return (
               <div className="flex items-center gap-0.5">
                 <Button
