@@ -18,6 +18,7 @@ import { toast } from 'sonner'
 import { formatToolCallArguments, formatToolCallResult } from '@/lib/chat/utils'
 import { useState } from 'react'
 import { useChatStore } from '@/lib/chat/chat-store'
+import { useChat } from '@/hooks/use-chat'
 import Image from 'next/image'
 import Spinner from '@/components/ui/spinner'
 
@@ -234,7 +235,8 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
   const [selectedAttachment, setSelectedAttachment] = useState<MessageAttachment | null>(null)
-  const { editMessage } = useChatStore()
+  const { editMessage, retryMessage } = useChatStore()
+  const { sendMessage } = useChat()
 
   // Debug tool calls
   // if (message.toolCalls && message.toolCalls.length > 0) {
@@ -249,6 +251,13 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
     if (editContent.trim() !== message.content) {
       editMessage(message.id, editContent.trim())
       toast.success("Message updated")
+      // After updating the message content, trim chat history to this point
+      // and resend the edited message to get a fresh assistant reply.
+      retryMessage(message.id, (content) => {
+        // Use the possibly-updated content provided by the retry callback
+        // so history + new text are sent to the API.
+        sendMessage(content)
+      })
     }
     setIsEditing(false)
   }

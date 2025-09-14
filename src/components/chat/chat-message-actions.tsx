@@ -21,7 +21,17 @@ export default function ChatMessageActions({ message, onEdit }: ChatMessageActio
   const { sendMessage } = useChat()
 
   const handleRetry = () => {
-    retryMessage(message.id, (content) => {
+    // If retry is clicked on an assistant message, retry the preceding user message
+    const { messages } = useChatStore.getState()
+    let targetMessageId = message.id
+
+    if (message.role === 'assistant') {
+      const idx = messages.findIndex(m => m.id === message.id)
+      const prevUser = [...messages].slice(0, idx).reverse().find(m => m.role === 'user')
+      if (prevUser) targetMessageId = prevUser.id
+    }
+
+    retryMessage(targetMessageId, (content) => {
       sendMessage(content)
     })
     toast.success("Retrying message...")

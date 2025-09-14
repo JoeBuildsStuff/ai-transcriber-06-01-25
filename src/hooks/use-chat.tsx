@@ -36,7 +36,9 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     const formData = new FormData()
     formData.append('message', content)
     formData.append('context', JSON.stringify(context))
-    formData.append('messages', JSON.stringify(messages.slice(-10))) // Send last 10 messages for context
+    // Always read latest messages from the store to avoid stale closures
+    const { messages: latestMessages } = useChatStore.getState()
+    formData.append('messages', JSON.stringify(latestMessages.slice(-10))) // Send last 10 messages for context
     if (model) {
       formData.append('model', model)
     }
@@ -94,7 +96,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     }
     
     addMessage(assistantMessage)
-  }, [messages, addMessage])
+  }, [addMessage])
 
   // Handle sending a new message
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high') => {
@@ -182,7 +184,8 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           const cerebrasFormData = new FormData()
           cerebrasFormData.append('message', content)
           cerebrasFormData.append('context', JSON.stringify(currentContext))
-          cerebrasFormData.append('messages', JSON.stringify(messages.slice(-10)))
+          const { messages: latestMessages } = useChatStore.getState()
+          cerebrasFormData.append('messages', JSON.stringify(latestMessages.slice(-10)))
           if (model) {
             cerebrasFormData.append('model', model)
           }
@@ -245,7 +248,8 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           const openaiFormData = new FormData()
           openaiFormData.append('message', content)
           openaiFormData.append('context', JSON.stringify(currentContext))
-          openaiFormData.append('messages', JSON.stringify(messages.slice(-10)))
+          const { messages: latestMessages } = useChatStore.getState()
+          openaiFormData.append('messages', JSON.stringify(latestMessages.slice(-10)))
           if (model) {
             openaiFormData.append('model', model)
           }
