@@ -343,6 +343,7 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
         {/* Reasoning - shown before tool calls and content for non-system messages */}
         {!isSystem && message.reasoning && (
           <ReasoningDisplay reasoning={message.reasoning} />
+          
         )}
 
         {/* Tool calls with individual reasoning - shown before the response for non-system messages */}
@@ -353,6 +354,7 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
                 {/* Reasoning for this specific tool call */}
                 {toolCall.reasoning && (
                   <ReasoningDisplay reasoning={toolCall.reasoning} />
+                  
                 )}
                 
                 {/* Tool call */}

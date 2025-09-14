@@ -228,8 +228,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       clientNowIso,
     )
 
-console.log('response', response)
-
     return NextResponse.json(response)
   } catch (error) {
     console.error('Chat API error:', error)
@@ -390,6 +388,8 @@ User Locale Context:
       messages: currentMessages,
     })
 
+    console.log('resp', resp)
+
     const stopReason = resp.stop_reason // <- drive behavior from this
     const content = resp.content
 
@@ -433,7 +433,7 @@ User Locale Context:
           result: correspondingResult
             ? { success: true, data: correspondingResult.content || [] }
             : undefined,
-          reasoning: reasoningText || undefined,
+          reasoning: st.name === 'web_search' ? undefined : (reasoningText || undefined),
         })
       }
     }

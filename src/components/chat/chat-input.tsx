@@ -250,7 +250,7 @@ export function ChatInput() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const canSend = (input.trim().length > 0 || attachments.length > 0) && !isLoading
+  // const canSend = (input.trim().length > 0 || attachments.length > 0) && !isLoading
 
   return (
     <div className={layoutMode === 'fullpage' ? 'p-0' : 'p-2'}>
@@ -357,8 +357,9 @@ export function ChatInput() {
                 {/* Send button */}
                 <Button
                   onClick={handleSend}
-                  disabled={!canSend}
+                  // disabled={!canSend}
                   size="sm"
+                  variant="blue"
                   className="rounded-full border-none w-8 [&_svg]:!w-5 [&_svg]:!h-5"
                 >
                   {isLoading ? (
