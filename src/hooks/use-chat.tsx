@@ -5,6 +5,7 @@ import { useChatStore } from '@/lib/chat/chat-store'
 import { toast } from 'sonner'
 import type { ChatMessage, ChatAction, PageContext } from '@/types/chat'
 import type { Attachment } from '@/components/chat/chat-input'
+import { Json } from '@/types/supabase'
 import {
   createChatSession,
   addChatMessage,
@@ -26,18 +27,14 @@ interface ChatAttachmentRow {
 interface ChatSuggestedActionRow {
   type: 'filter' | 'sort' | 'navigate' | 'create' | 'function_call'
   label: string
-  payload: Record<string, unknown>
+  payload: Json
 }
 
 interface ChatToolCallRow {
   id: string
   name: string
-  arguments: Record<string, unknown>
-  result?: {
-    success: boolean
-    data?: unknown
-    error?: string
-  }
+  arguments: Json
+  result?: Json
   reasoning?: string
 }
 
@@ -47,13 +44,9 @@ interface ChatMessageRow {
   content: string
   created_at: string
   reasoning?: string
-  context?: Record<string, unknown>
-  function_result?: {
-    success: boolean
-    data?: unknown
-    error?: string
-  }
-  citations?: Array<{ url: string; title: string; cited_text: string }>
+  context?: Json
+  function_result?: Json
+  citations?: Json
   chat_attachments?: ChatAttachmentRow[]
   chat_suggested_actions?: ChatSuggestedActionRow[]
   chat_tool_calls?: ChatToolCallRow[]
@@ -119,7 +112,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       createdAt: new Date(session.created_at),
       updatedAt: new Date(session.updated_at),
       messages: [],
-      context: session.context ?? undefined,
+      context: session.context as unknown as PageContext | undefined,
     })
     setCurrentSessionIdFromServer(session.id)
     return session.id
@@ -135,7 +128,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     const rows = res.data || []
 
     const allMessages: ChatMessage[] = []
-    for (const m of rows as ChatMessageRow[]) {
+    for (const m of rows as unknown as ChatMessageRow[]) {
       // Map attachments and sign URLs
       const attachments = Array.isArray(m.chat_attachments)
         ? await Promise.all(
@@ -168,15 +161,24 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
         timestamp: new Date(m.created_at),
         reasoning: m.reasoning || undefined,
         attachments,
-        context: m.context || undefined,
+        context: m.context ? { 
+          filters: (m.context as Record<string, unknown>)?.filters as Record<string, unknown> || {}, 
+          data: (m.context as Record<string, unknown>)?.data as Record<string, unknown> || {} 
+        } : undefined,
         suggestedActions: Array.isArray(m.chat_suggested_actions)
-          ? m.chat_suggested_actions.map((a: ChatSuggestedActionRow) => ({ type: a.type, label: a.label, payload: a.payload }))
+          ? m.chat_suggested_actions.map((a: ChatSuggestedActionRow) => ({ type: a.type, label: a.label, payload: a.payload as Record<string, unknown> }))
           : undefined,
-        functionResult: m.function_result || undefined,
+        functionResult: m.function_result as { success: boolean; data?: unknown; error?: string } | undefined,
         toolCalls: Array.isArray(m.chat_tool_calls)
-          ? m.chat_tool_calls.map((t: ChatToolCallRow) => ({ id: t.id, name: t.name, arguments: t.arguments, result: t.result || undefined, reasoning: t.reasoning || undefined }))
+          ? m.chat_tool_calls.map((t: ChatToolCallRow) => ({ 
+              id: t.id, 
+              name: t.name, 
+              arguments: t.arguments as Record<string, unknown>, 
+              result: t.result as { success: boolean; data?: unknown; error?: string } | undefined, 
+              reasoning: t.reasoning || undefined 
+            }))
           : undefined,
-        citations: m.citations || undefined,
+        citations: m.citations as Array<{ url: string; title: string; cited_text: string }> | undefined,
       })
     }
 
@@ -255,8 +257,8 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       content: assistantMessage.content,
       reasoning: assistantMessage.reasoning || null,
       context: null,
-      functionResult: assistantMessage.functionResult || null,
-      citations: assistantMessage.citations || null,
+      functionResult: assistantMessage.functionResult as Json || null,
+      citations: assistantMessage.citations as Json || null,
     })
     if (!('error' in addRes) && addRes.data) {
       if (result.toolCalls?.length) {
@@ -303,7 +305,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
         sessionId: sid,
         role: 'user',
         content: content.trim() || 'Sent with attachments',
-        context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } : null,
+        context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } as Json : null,
       })
 
       console.log('res', res)
@@ -396,7 +398,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
             role: 'assistant',
             content: assistantMessage.content,
             reasoning: assistantMessage.reasoning || null,
-            citations: assistantMessage.citations || null,
+            citations: assistantMessage.citations as Json || null,
           })
           if (!('error' in res2) && res2.data) {
             if (result.toolCalls?.length) {
@@ -475,7 +477,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
             role: 'assistant',
             content: assistantMessage.content,
             reasoning: assistantMessage.reasoning || null,
-            citations: assistantMessage.citations || null,
+            citations: assistantMessage.citations as Json || null,
           })
           if (!('error' in res3) && res3.data) {
             if (result.toolCalls?.length) {
@@ -499,7 +501,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       // Always clear loading state
       setLoading(false)
     }
-  }, [currentContext, currentSessionId, ensureSession, addMessage, onSendMessage, isLoading, setLoading, sendToAPI, refreshMessages])
+  }, [currentContext, ensureSession, onSendMessage, isLoading, setLoading, sendToAPI, refreshMessages])
 
   // Handle action clicks
   const handleActionClick = useCallback((action: ChatAction) => {
