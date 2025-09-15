@@ -275,8 +275,33 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high', options?: { skipUserAdd?: boolean }) => {
     if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
-    // Ensure we have a server-backed session
+    // Ensure we have a server-backed session first so optimistic add targets the right session
     const sid = await ensureSession()
+
+    // Optimistically add the user's message to the UI (before uploads/DB)
+    let tempUserMessageId: string | null = null
+    if (!options?.skipUserAdd) {
+      const trimmed = content.trim() || 'Sent with attachments'
+      const prevLen = useChatStore.getState().messages.length
+      const localAttachments = (attachments || []).map(a => ({
+        id: crypto.randomUUID(),
+        name: a.name,
+        size: a.size,
+        type: a.type,
+        // Show instant preview for images; use blob URL to avoid heavy base64
+        data: a.type.startsWith('image/') ? URL.createObjectURL(a.file) : undefined,
+      }))
+      addMessage({
+        role: 'user',
+        content: trimmed,
+        attachments: localAttachments,
+        context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } : undefined,
+      })
+      const newMessages = useChatStore.getState().messages
+      if (newMessages.length > prevLen) tempUserMessageId = newMessages[newMessages.length - 1]?.id || null
+      // Immediately show assistant typing spinner while processing backend work
+      setLoading(true)
+    }
 
     // Upload attachments to Supabase Storage
     const uploaded: Array<{ name: string; mime_type: string; size: number; storage_path: string }> = []
@@ -299,27 +324,33 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       }
     }
 
-    // Add user message unless explicitly skipped (used when resending an edited message)
+    // Persist user message to DB unless explicitly skipped (used when resending an edited message)
     if (!options?.skipUserAdd) {
-      const res = await addChatMessage({
-        sessionId: sid,
-        role: 'user',
-        content: content.trim() || 'Sent with attachments',
-        context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } as Json : null,
-      })
+      try {
+        const res = await addChatMessage({
+          sessionId: sid,
+          role: 'user',
+          content: content.trim() || 'Sent with attachments',
+          context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } as Json : null,
+        })
 
-      console.log('res', res)
-      
-      if (!('error' in res) && res.data && uploaded.length > 0) {
-        await addChatAttachments(res.data.id, uploaded)
+        if (!('error' in res) && res.data && uploaded.length > 0) {
+          await addChatAttachments(res.data.id, uploaded)
+        }
+        await refreshMessages(sid) // replaces the optimistic entry with canonical data
+      } catch (err) {
+        // Roll back optimistic message on failure
+        if (tempUserMessageId) deleteMessage(tempUserMessageId)
+        console.error('Failed to persist user message:', err)
+        toast.error('Failed to send message')
+        // Stop the typing indicator if we started it
+        setLoading(false)
+        return
       }
-      await refreshMessages(sid)
     }
 
- 
-
-    // Set loading state
-    setLoading(true)
+    // If we didn't set loading above (e.g., skipUserAdd path), enable it now
+    if (options?.skipUserAdd) setLoading(true)
 
     try {
       // Call custom send handler if provided, otherwise use default API call
@@ -501,7 +532,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       // Always clear loading state
       setLoading(false)
     }
-  }, [currentContext, ensureSession, onSendMessage, isLoading, setLoading, sendToAPI, refreshMessages])
+  }, [currentContext, ensureSession, onSendMessage, isLoading, setLoading, sendToAPI, refreshMessages, addMessage, deleteMessage])
 
   // Handle action clicks
   const handleActionClick = useCallback((action: ChatAction) => {
