@@ -59,14 +59,42 @@ export async function deleteChatSession(sessionId: string) {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) return { error: "Not authenticated" }
 
-  const { error } = await supabase
+  // 1) Fetch all attachment storage paths for this session
+  const { data: attachments, error: fetchError } = await supabase
+    .schema("ai_transcriber")
+    .from("chat_attachments")
+    .select("storage_path, mime_type, chat_messages!inner(session_id)")
+    .eq("chat_messages.session_id", sessionId)
+
+  if (fetchError) return { error: fetchError.message }
+
+  // 2) Group paths by bucket (images vs files)
+  const imagePaths: string[] = []
+  const filePaths: string[] = []
+  for (const a of attachments || []) {
+    if ((a as any).mime_type?.startsWith('image/')) imagePaths.push((a as any).storage_path)
+    else filePaths.push((a as any).storage_path)
+  }
+
+  // 3) Attempt to remove from storage first (best-effort)
+  if (imagePaths.length) {
+    const { error } = await supabase.storage.from('ai-transcriber-images').remove(imagePaths)
+    if (error) console.error('Failed to remove image attachments from storage:', error)
+  }
+  if (filePaths.length) {
+    const { error } = await supabase.storage.from('ai-transcriber-files').remove(filePaths)
+    if (error) console.error('Failed to remove file attachments from storage:', error)
+  }
+
+  // 4) Delete the session (cascades to messages/attachments rows)
+  const { error: deleteError } = await supabase
     .schema("ai_transcriber")
     .from("chat_sessions")
     .delete()
     .eq("id", sessionId)
     .eq("user_id", userData.user.id)
 
-  if (error) return { error: error.message }
+  if (deleteError) return { error: deleteError.message }
   revalidatePath("/workspace")
   return { data: { success: true } }
 }

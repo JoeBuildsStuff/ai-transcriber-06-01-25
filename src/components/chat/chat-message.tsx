@@ -19,7 +19,6 @@ import { formatToolCallArguments, formatToolCallResult } from '@/lib/chat/utils'
 import { useState } from 'react'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { useChat } from '@/hooks/use-chat'
-import Image from 'next/image'
 import Spinner from '@/components/ui/spinner'
 
 // Import highlight.js styles
@@ -321,9 +320,11 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
                 >
                   {/* File Preview */}
                   <div className="bg-accent flex aspect-square items-center justify-center overflow-hidden rounded-t-[inherit]">
-                    {attachment.type.startsWith("image/") && attachment.data ? (
+                    {attachment.type.startsWith("image/") && (attachment.data || attachment.url) ? (
+                      // Use base64 data when present (fresh uploads), otherwise fallback to signed URL
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={attachment.data}
+                        src={attachment.data || attachment.url!}
                         alt={attachment.name}
                         className="size-full rounded-t-[inherit] object-cover"
                       />
@@ -607,22 +608,13 @@ export function ChatMessage({ message, onActionClick }: ChatMessageProps) {
                 <div className="flex-1 overflow-auto">
                   {selectedAttachment.type.startsWith('image/') ? (
                     <div className="flex items-center justify-center p-4">
-                      {/* Use img for base64 data URLs, Next.js Image for regular URLs */}
-                      {selectedAttachment.data ? (
-                        <img
-                          src={selectedAttachment.data}
-                          alt={selectedAttachment.name}
-                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                        />
-                      ) : selectedAttachment.url ? (
-                        <Image
-                          src={selectedAttachment.url}
-                          alt={selectedAttachment.name}
-                          width={800}
-                          height={600}
-                          className="max-w-full max-h-[70vh] object-contain rounded-lg"
-                        />
-                      ) : null}
+                      {/* Always use img to avoid Next/Image remote domain config */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={selectedAttachment.data || selectedAttachment.url || ''}
+                        alt={selectedAttachment.name}
+                        className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                      />
                     </div>
                   ) : (
                     <div className="flex items-center justify-center p-8">
