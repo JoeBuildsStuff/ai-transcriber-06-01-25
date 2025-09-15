@@ -11,6 +11,7 @@ import { ChevronRightIcon } from '../icons/chevron-right'
 import { useEffect, useState } from 'react'
 import { createChatSession, deleteChatSession, listChatSessions, getChatMessages } from '@/actions/chat'
 import type { Database } from '@/types/supabase'
+import { Skeleton } from '../ui/skeleton'
 
 // Types for the database rows with relations
 type ChatMessageRow = Database['ai_transcriber']['Tables']['chat_messages']['Row'] & {
@@ -167,7 +168,14 @@ export function ChatHistory() {
       {/* Sessions List */}
       <ScrollArea className="flex-1">
         <div className="p-1">
-          {sessions.length === 0 && !loading ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+              <Skeleton className="h-[4.5rem] w-full" />
+              <Skeleton className="h-[4.5rem] w-full" />
+              <Skeleton className="h-[4.5rem] w-full" />
+            </div>
+          ) : sessions.length === 0 ? (
+            
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1}/>
               <p className="text-sm text-muted-foreground mb-4 font-light">No chat history yet</p>
