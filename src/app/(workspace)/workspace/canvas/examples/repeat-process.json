@@ -1,0 +1,1251 @@
+{
+    "nodes": [
+      {
+        "id": "node-1743091823239-957-1743277431647-0z8c4y8yl-1743277487634-ftqy5umzk-1743277503572-y6qv39a4k",
+        "type": "text",
+        "position": {
+          "x": -42,
+          "y": 234
+        },
+        "dimensions": {
+          "width": 270,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "21px",
+          "fontFamily": "sans-serif",
+          "textAlign": "right",
+          "verticalAlign": "middle",
+          "fontWeight": 600,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Data Protection",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092062050-803-1743277431647-g2q7rlong-1743277487635-0ckjgps9f-1743277503572-slaz4icxl",
+        "type": "text",
+        "position": {
+          "x": -42,
+          "y": 534
+        },
+        "dimensions": {
+          "width": 270,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "21px",
+          "fontFamily": "sans-serif",
+          "textAlign": "right",
+          "verticalAlign": "middle",
+          "fontWeight": 600,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Networking",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092077964-832-1743277431647-tbr2y8ya3-1743277487635-yoh6u6nnj-1743277503572-067lbnb5s",
+        "type": "text",
+        "position": {
+          "x": -42,
+          "y": 434
+        },
+        "dimensions": {
+          "width": 270,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "21px",
+          "fontFamily": "sans-serif",
+          "textAlign": "right",
+          "verticalAlign": "middle",
+          "fontWeight": 600,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Storage",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092090868-299-1743277431647-irhjlynm4-1743277487635-r26sn1zpt-1743277503572-d8tgw8258",
+        "type": "text",
+        "position": {
+          "x": -42,
+          "y": 334
+        },
+        "dimensions": {
+          "width": 270,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "21px",
+          "fontFamily": "sans-serif",
+          "textAlign": "right",
+          "verticalAlign": "middle",
+          "fontWeight": 600,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Compute",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092175413-290-1743277431647-52wt1zzfh-1743277487635-sydlgw38g-1743277503572-xzwdceuf5",
+        "type": "rectangle",
+        "position": {
+          "x": 243,
+          "y": 226
+        },
+        "dimensions": {
+          "width": 810,
+          "height": 57
+        },
+        "style": {
+          "borderStyle": "solid",
+          "borderRadius": "12px",
+          "borderColor": "black",
+          "stroke": "black",
+          "fill": "none",
+          "backgroundColor": "transparent",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092224884-602-1743277431647-gt82uake6-1743277487635-4zvhkasrn-1743277503572-ishq2x4qi",
+        "type": "text",
+        "position": {
+          "x": 574,
+          "y": 163
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Expanded Knowledge",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092250453-692-1743277431647-4oz9owzcj-1743277487635-q5dmiaggz-1743277503572-4q4zkablo",
+        "type": "text",
+        "position": {
+          "x": 782.5,
+          "y": 163
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Querry Systems",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092278603-459-1743277431647-b85szrtyv-1743277487635-jtvpx2j8q-1743277503572-elmwag2m1",
+        "type": "text",
+        "position": {
+          "x": 974,
+          "y": 163
+        },
+        "dimensions": {
+          "width": 96,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Write to Systems",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092349209-293-1743277431647-5d5czkdi6-1743277487635-htsqzr7wk-1743277503572-m6tftqn5f",
+        "type": "icon",
+        "position": {
+          "x": 546.5,
+          "y": 169.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "BookOpenCheck",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092359814-524-1743277431647-k5pa7zuch-1743277487635-wwpzrfi9x-1743277503572-l4rkx1vm3",
+        "type": "icon",
+        "position": {
+          "x": 346,
+          "y": 169.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "MessagesSquare",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092434966-24-1743277431647-bt9lh71em-1743277487635-glb4ogxzn-1743277503572-h8dyq63b4",
+        "type": "icon",
+        "position": {
+          "x": 746,
+          "y": 169.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "Telescope",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092502141-20-1743277431647-bbvdju67h-1743277487635-4a9zm2dpn-1743277503572-6kmxun93h",
+        "type": "icon",
+        "position": {
+          "x": 938,
+          "y": 169.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "SquarePen",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092512210-712-1743277431647-y9qpu0xl1-1743277487635-oe9fjal8i-1743277503572-6yic97oph",
+        "type": "text",
+        "position": {
+          "x": 375,
+          "y": 163
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Chat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092705743-41-1743277431647-hrgi35esc-1743277487635-omfdqk9nh-1743277503572-mx34su3im",
+        "type": "rectangle",
+        "position": {
+          "x": 245,
+          "y": 526
+        },
+        "dimensions": {
+          "width": 821,
+          "height": 57
+        },
+        "style": {
+          "borderStyle": "solid",
+          "borderRadius": "12px",
+          "borderColor": "black",
+          "stroke": "black",
+          "fill": "none",
+          "backgroundColor": "transparent",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092707094-519-1743277431647-4cyjjouk4-1743277487635-6bhskk9ui-1743277503572-4ro2o7hey",
+        "type": "rectangle",
+        "position": {
+          "x": 240.5,
+          "y": 424.5
+        },
+        "dimensions": {
+          "width": 815,
+          "height": 60
+        },
+        "style": {
+          "borderStyle": "solid",
+          "borderRadius": "12px",
+          "borderColor": "black",
+          "stroke": "black",
+          "fill": "none",
+          "backgroundColor": "transparent",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092707367-244-1743277431647-bqlwkt2zr-1743277487635-k89a4hj00-1743277503572-3anryr0z4",
+        "type": "rectangle",
+        "position": {
+          "x": 241,
+          "y": 326
+        },
+        "dimensions": {
+          "width": 814,
+          "height": 57
+        },
+        "style": {
+          "borderStyle": "solid",
+          "borderRadius": "12px",
+          "borderColor": "black",
+          "stroke": "black",
+          "fill": "none",
+          "backgroundColor": "transparent",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092768365-5-1743277431647-050pzx30m-1743277487635-wupogpbc4-1743277503572-bs6yc1b31",
+        "type": "line",
+        "position": {
+          "x": 390,
+          "y": 211
+        },
+        "dimensions": {
+          "width": 22.00000000000003,
+          "height": 391
+        },
+        "style": {
+          "borderColor": "black",
+          "borderWidth": 2,
+          "borderRadius": "8px",
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid",
+          "backgroundColor": "transparent"
+        },
+        "data": {
+          "startMarker": "circle",
+          "endMarker": "circle",
+          "markerFillStyle": "outlined",
+          "fillColor": "transparent"
+        },
+        "selected": true,
+        "points": [
+          {
+            "x": 12,
+            "y": 381
+          },
+          {
+            "x": 12.000000000000028,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "node-1743092818883-455-1743277431647-dw3quruer-1743277487635-645s9x0y7-1743277503572-qzegx756w",
+        "type": "text",
+        "position": {
+          "x": 563,
+          "y": 606
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Expanded Knowledge",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-468-1743277431647-j3g08j65m-1743277487635-vewri8e73-1743277503572-gtcgkmyht",
+        "type": "text",
+        "position": {
+          "x": 782.5,
+          "y": 611
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Querry Systems",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-753-1743277431647-wew0oetzx-1743277487635-n5grrhvsf-1743277503572-fuvq0mqr0",
+        "type": "text",
+        "position": {
+          "x": 961,
+          "y": 611
+        },
+        "dimensions": {
+          "width": 96,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Write to Systems",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-126-1743277431647-r1h5a8q1r-1743277487635-zytse0exm-1743277503572-60fpt20pi",
+        "type": "icon",
+        "position": {
+          "x": 533.5,
+          "y": 612.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "BookOpenCheck",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-387-1743277431647-6o622g55d-1743277487635-lgye7c5d9-1743277503572-vwny6inyj",
+        "type": "icon",
+        "position": {
+          "x": 354,
+          "y": 612.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "MessagesSquare",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-331-1743277431647-kfkvilr9x-1743277487635-7wwdx4mgv-1743277503572-d7jg877el",
+        "type": "icon",
+        "position": {
+          "x": 754.5,
+          "y": 617.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "Telescope",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-586-1743277431647-d1rh8rt1q-1743277487635-2qao0tho3-1743277503572-v5mqzxp8p",
+        "type": "icon",
+        "position": {
+          "x": 933,
+          "y": 617.5
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "SquarePen",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092818883-759-1743277431647-l6j0vpci4-1743277487635-jqd134v35-1743277503572-wnw6pvzmu",
+        "type": "text",
+        "position": {
+          "x": 382,
+          "y": 606
+        },
+        "dimensions": {
+          "width": 85,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Chat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743092882936-926-1743277431647-4k133hirt-1743277487635-3t5oe26uf-1743277503572-reydnin2k",
+        "type": "line",
+        "position": {
+          "x": 594,
+          "y": 209
+        },
+        "dimensions": {
+          "width": 22.00000000000003,
+          "height": 391
+        },
+        "style": {
+          "borderColor": "black",
+          "borderWidth": 2,
+          "borderRadius": "8px",
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid",
+          "backgroundColor": "transparent"
+        },
+        "data": {
+          "startMarker": "circle",
+          "endMarker": "circle",
+          "markerFillStyle": "outlined",
+          "fillColor": "transparent"
+        },
+        "selected": true,
+        "points": [
+          {
+            "x": 12,
+            "y": 381
+          },
+          {
+            "x": 12.000000000000028,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "node-1743092884236-632-1743277431647-xc9z0gqos-1743277487635-prtgn5zkf-1743277503572-5ag1laue7",
+        "type": "line",
+        "position": {
+          "x": 795,
+          "y": 210
+        },
+        "dimensions": {
+          "width": 22.00000000000003,
+          "height": 391
+        },
+        "style": {
+          "borderColor": "black",
+          "borderWidth": 2,
+          "borderRadius": "8px",
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid",
+          "backgroundColor": "transparent"
+        },
+        "data": {
+          "startMarker": "circle",
+          "endMarker": "circle",
+          "markerFillStyle": "outlined",
+          "fillColor": "transparent"
+        },
+        "selected": true,
+        "points": [
+          {
+            "x": 12,
+            "y": 381
+          },
+          {
+            "x": 12.000000000000028,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "node-1743092884488-444-1743277431647-e7ob9fhnm-1743277487635-9s8cg71zp-1743277503572-zp3rw82ps",
+        "type": "line",
+        "position": {
+          "x": 974,
+          "y": 211
+        },
+        "dimensions": {
+          "width": 22.00000000000003,
+          "height": 391
+        },
+        "style": {
+          "borderColor": "black",
+          "borderWidth": 2,
+          "borderRadius": "8px",
+          "stroke": "black",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid",
+          "backgroundColor": "transparent"
+        },
+        "data": {
+          "startMarker": "circle",
+          "endMarker": "circle",
+          "markerFillStyle": "outlined",
+          "fillColor": "transparent"
+        },
+        "selected": true,
+        "points": [
+          {
+            "x": 12,
+            "y": 381
+          },
+          {
+            "x": 12.000000000000028,
+            "y": 10
+          }
+        ]
+      },
+      {
+        "id": "node-1743092937067-627-1743277431647-4x75y7tbp-1743277487635-unpicqwxs-1743277503572-r3qb2mgir",
+        "type": "icon",
+        "position": {
+          "x": 1060,
+          "y": 578
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "RotateCcw",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093067267-362-1743277431647-8l34wbaal-1743277487635-2z8cd7w6n-1743277503572-zb7kxpoly",
+        "type": "icon",
+        "position": {
+          "x": 1060,
+          "y": 475
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "RotateCcw",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093070897-991-1743277431647-07pcop87w-1743277487635-dgnaxvj8j-1743277503572-6dk3dqu7t",
+        "type": "icon",
+        "position": {
+          "x": 1060,
+          "y": 375
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "RotateCcw",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093075572-412-1743277431647-0ro7p0wir-1743277487635-5dytt99hz-1743277503572-o9attoifx",
+        "type": "icon",
+        "position": {
+          "x": 1055,
+          "y": 275
+        },
+        "dimensions": {
+          "width": 28,
+          "height": 28
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none",
+          "borderRadius": "0",
+          "iconColor": "black",
+          "iconSize": "24px",
+          "stroke": "none",
+          "fill": "none",
+          "strokeWidth": 2,
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "iconName": "RotateCcw",
+          "isIcon": true,
+          "iconSize": 28,
+          "iconStrokeWidth": 1.5,
+          "customDimensions": {
+            "width": 28,
+            "height": 28
+          }
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093094780-265-1743277431647-7qkpfwmxh-1743277487635-q7jf5fyk9-1743277503572-z0mfs74nu",
+        "type": "text",
+        "position": {
+          "x": 1078,
+          "y": 268.5
+        },
+        "dimensions": {
+          "width": 175,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Repeat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093106475-555-1743277431647-pacjl05i8-1743277487635-v5grxhbbr-1743277503572-4mj9bjij0",
+        "type": "text",
+        "position": {
+          "x": 1083,
+          "y": 375
+        },
+        "dimensions": {
+          "width": 175,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Repeat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093109253-480-1743277431647-zfmpxbju5-1743277487635-bjyhuyj9f-1743277503572-rbry19t16",
+        "type": "text",
+        "position": {
+          "x": 1078,
+          "y": 484.5
+        },
+        "dimensions": {
+          "width": 175,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Repeat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      },
+      {
+        "id": "node-1743093113704-22-1743277431647-bwnztdy7z-1743277487635-u9c1kw6qs-1743277503572-l1nxlctqi",
+        "type": "text",
+        "position": {
+          "x": 1083,
+          "y": 583
+        },
+        "dimensions": {
+          "width": 175,
+          "height": 41
+        },
+        "style": {
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 2,
+          "borderStyle": "solid",
+          "borderRadius": "8px",
+          "textColor": "black-800",
+          "fontSize": "14px",
+          "fontFamily": "sans-serif",
+          "textAlign": "left",
+          "verticalAlign": "middle",
+          "fontWeight": 400,
+          "stroke": "none",
+          "fill": "none",
+          "strokeStyle": "solid"
+        },
+        "data": {
+          "text": "Repeat",
+          "isNew": false,
+          "isDarkTheme": false
+        },
+        "selected": true
+      }
+    ],
+    "connections": [],
+    "version": "1.0",
+    "exportDate": "2025-03-29T19:45:09.419Z"
+  }

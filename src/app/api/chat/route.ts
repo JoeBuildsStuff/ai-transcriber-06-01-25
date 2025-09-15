@@ -388,8 +388,6 @@ User Locale Context:
       messages: currentMessages,
     })
 
-    console.log('resp', resp)
-
     const stopReason = resp.stop_reason // <- drive behavior from this
     const content = resp.content
 

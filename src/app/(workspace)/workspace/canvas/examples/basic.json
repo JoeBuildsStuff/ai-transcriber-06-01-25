@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": "node-1742427725395-143",
+      "type": "rectangle",
+      "position": {
+        "x": 422,
+        "y": 173
+      },
+      "dimensions": {
+        "width": 100,
+        "height": 100
+      },
+      "style": {
+        "borderStyle": "solid",
+        "borderRadius": "8px",
+        "borderColor": "black",
+        "stroke": "black",
+        "fill": "none",
+        "backgroundColor": "transparent",
+        "strokeWidth": 2,
+        "strokeStyle": "solid"
+      },
+      "data": {
+        "isDarkTheme": false
+      },
+      "selected": true
+    },
+    {
+      "id": "node-1742427726944-920",
+      "type": "rectangle",
+      "position": {
+        "x": 682,
+        "y": 173
+      },
+      "dimensions": {
+        "width": 100,
+        "height": 100
+      },
+      "style": {
+        "borderStyle": "solid",
+        "borderRadius": "8px",
+        "borderColor": "black",
+        "stroke": "black",
+        "fill": "none",
+        "backgroundColor": "transparent",
+        "strokeWidth": 2,
+        "strokeStyle": "solid"
+      },
+      "data": {
+        "isDarkTheme": false
+      },
+      "selected": true
+    },
+    {
+      "id": "node-1742427730221-88",
+      "type": "line",
+      "position": {
+        "x": 502,
+        "y": 213
+      },
+      "dimensions": {
+        "width": 178,
+        "height": 20
+      },
+      "style": {
+        "borderColor": "black",
+        "borderWidth": 2,
+        "borderRadius": "8px",
+        "stroke": "black",
+        "fill": "none",
+        "strokeWidth": 2,
+        "strokeStyle": "solid",
+        "backgroundColor": "transparent"
+      },
+      "data": {
+        "startMarker": "circle",
+        "endMarker": "triangle",
+        "markerFillStyle": "filled",
+        "fillColor": "transparent",
+        "animated": true
+      },
+      "selected": true,
+      "points": [
+        {
+          "x": 32,
+          "y": 10
+        },
+        {
+          "x": 168,
+          "y": 10
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "lineId": "node-1742427730221-88",
+      "pointIndex": 0,
+      "shapeId": "node-1742427725395-143",
+      "position": "e",
+      "dynamic": true
+    },
+    {
+      "lineId": "node-1742427730221-88",
+      "pointIndex": 1,
+      "shapeId": "node-1742427726944-920",
+      "position": "w",
+      "dynamic": true
+    }
+  ],
+  "version": "1.0",
+  "exportDate": "2025-03-29T19:47:46.458Z"
+}
