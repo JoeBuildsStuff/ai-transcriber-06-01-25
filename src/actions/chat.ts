@@ -19,7 +19,7 @@ export async function createChatSession(params: CreateSessionParams = {}) {
   const payload = {
     user_id: userData.user.id,
     title: params.title || "New Chat",
-    context: (params.context ?? null) as any,
+    context: params.context ?? null,
   }
 
   const { data, error } = await supabase
@@ -71,9 +71,10 @@ export async function deleteChatSession(sessionId: string) {
   // 2) Group paths by bucket (images vs files)
   const imagePaths: string[] = []
   const filePaths: string[] = []
-  for (const a of attachments || []) {
-    if ((a as any).mime_type?.startsWith('image/')) imagePaths.push((a as any).storage_path)
-    else filePaths.push((a as any).storage_path)
+  type AttachmentRow = { storage_path: string; mime_type: string }
+  for (const a of (attachments as AttachmentRow[] | null) || []) {
+    if (a.mime_type?.startsWith('image/')) imagePaths.push(a.storage_path)
+    else filePaths.push(a.storage_path)
   }
 
   // 3) Attempt to remove from storage first (best-effort)
@@ -119,7 +120,14 @@ export async function listChatSessions() {
 
   if (error) return { error: error.message }
   // Map messageCount for convenience
-  const mapped = (data || []).map((row: any) => ({
+  type SessionRow = {
+    id: string
+    title: string
+    created_at: string
+    updated_at: string
+    chat_messages?: Array<{ count: number }>
+  }
+  const mapped = (data || []).map((row: SessionRow) => ({
     id: row.id,
     title: row.title,
     created_at: row.created_at,
@@ -154,9 +162,9 @@ export async function addChatMessage(params: AddMessageParams) {
     role: params.role,
     content: params.content,
     reasoning: params.reasoning ?? null,
-    context: (params.context ?? null) as any,
-    function_result: (params.functionResult ?? null) as any,
-    citations: (params.citations ?? null) as any,
+    context: params.context ?? null,
+    function_result: params.functionResult ?? null,
+    citations: params.citations ?? null,
     root_user_message_id: params.rootUserMessageId ?? null,
     variant_group_id: params.variantGroupId ?? null,
     variant_index: params.variantIndex ?? 0,
@@ -222,11 +230,11 @@ export async function addChatToolCalls(messageId: string, calls: ToolCallInput[]
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) return { error: "Not authenticated" }
 
-  const rows = calls.map(c => ({
+  const rows = calls.map((c) => ({
     message_id: messageId,
     name: c.name,
-    arguments: c.arguments as any,
-    result: (c.result ?? null) as any,
+    arguments: c.arguments,
+    result: c.result ?? null,
     reasoning: c.reasoning ?? null,
   }))
 
@@ -252,11 +260,11 @@ export async function addChatSuggestedActions(messageId: string, actions: Sugges
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) return { error: "Not authenticated" }
 
-  const rows = actions.map(a => ({
+  const rows = actions.map((a) => ({
     message_id: messageId,
     type: a.type,
     label: a.label,
-    payload: a.payload as any,
+    payload: a.payload,
   }))
 
   const { data, error } = await supabase
