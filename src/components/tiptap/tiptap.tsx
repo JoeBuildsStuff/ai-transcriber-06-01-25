@@ -67,7 +67,7 @@ const Tiptap = ({
             types: ['heading', 'paragraph'],
         }),
         Placeholder.configure({
-            placeholder: 'Write something…',
+            placeholder:'Write something…',
         }),
         CustomCodeBlock.configure({
             lowlight,
