@@ -483,3 +483,118 @@ The chat system uses:
 - Verify context extraction from different pages
 - Test action execution and navigation
 - Validate persistence across page reloads 
+
+## Infrastructure Overview
+
+This section documents the end-to-end infrastructure that powers the chat: client components, hook, store, server actions, API routes, and the Supabase schema used for persistence.
+
+### Data Flow
+
+1. UI components (`src/components/chat/*`) render chat UI and invoke the hook.
+2. Hook (`src/hooks/use-chat.tsx`) orchestrates sending messages, uploading/serving attachments, choosing an AI provider, and syncing messages.
+3. Store (`src/lib/chat/chat-store.ts`) manages local state (sessions, messages, UI state, branching) with persistence to `localStorage`.
+4. Server actions (`src/actions/chat.ts`) persist sessions/messages/attachments/tool-calls/actions to Supabase and fetch conversation state.
+5. API routes (`src/app/api/chat/*`) call AI providers and return structured results: message text, suggested actions, citations, tool calls, reasoning.
+6. Hook writes assistant results back via server actions and refreshes the store from DB to stay canonical.
+
+### Hook: use-chat.tsx
+
+The hook centralizes chat behavior and integrates UI, storage, and APIs.
+
+- Ensures a server-backed session exists via `createChatSession`; mirrors it into the store with `upsertSessionFromServer` and `setCurrentSessionIdFromServer`.
+- Provides `sendMessage(content, attachments?, model?, reasoningEffort?, options?)` which:
+  - Optimistically adds the user message to the store and shows a typing indicator.
+  - Uploads attachments to storage via `/api/images/upload` or `/api/files/upload`.
+  - Persists the user message with `addChatMessage`; associates uploaded attachments with `addChatAttachments`.
+  - Chooses provider based on `model`:
+    - Default Anthropic: `POST /api/chat`
+    - Cerebras: `POST /api/chat/cerebras` (e.g., models like `gpt-oss-120b-*`)
+    - OpenAI: `POST /api/chat/openai` (e.g., models like `gpt-5-*`)
+  - Sends last 10 messages for context, plus optional `reasoning_effort` and client timezone metadata.
+  - Persists assistant reply with `addChatMessage`, then writes tool calls (`addChatToolCalls`) and suggested actions (`addChatSuggestedActions`) when present.
+  - Refreshes messages from DB (`getChatMessages`) and updates the store via `setMessagesForSession` to replace optimistic entries.
+- Exposes `handleActionClick` to execute or log suggested actions; default behavior posts a system confirmation message.
+- Provides context helpers and summary (filter/sort/visible counts) based on `PageContext`.
+
+Attachments serving:
+- Image URLs are signed via `GET /api/images/serve?path=...`.
+- File URLs are signed via `GET /api/files/serve?path=...`.
+
+Note on hooks:
+- There are two `useChat` exports:
+  - `src/components/chat/chat-provider.tsx` exports a lightweight `useChat` bound to the context provider.
+  - `src/hooks/use-chat.tsx` exports the feature-rich hook described here. Prefer importing from `@/hooks/use-chat` when integrating chat logic.
+
+### Store: chat-store.ts
+
+Zustand store with persistence (`localStorage` key `chat-storage`) and safeguards to avoid quota overruns (~10MB):
+
+- Sessions and messages:
+  - Persists last 10 sessions and last 50 messages per session.
+  - Serializes dates and rehydrates on load.
+- UI state: `isOpen`, `isMinimized`, `isMaximized`, `layoutMode` (floating | inset | fullpage), `showHistory`, `isLoading`.
+- Context: `currentContext` holds `PageContext` snapshot (filters, sorting, data samples, totals).
+- Branching and variants:
+  - Maintains per-user-message branches allowing multiple assistant variants per prompt.
+  - APIs: `retryMessage`, `getBranchStatus`, `goToPreviousMessageList`, `goToNextMessageList`, `getAssistantVariantStatus`, `goToPreviousVariant`, `goToNextVariant`.
+- Tooling:
+  - Per-message `toolCalls` with `addToolCalls` and `updateToolCallResult`.
+  - Optional `functionResult` and `citations` on messages.
+- Quota helpers: `getStorageUsage`, `clearOldSessions`, `isStorageQuotaExceeded`.
+
+### Server Actions: src/actions/chat.ts
+
+These wrap Supabase access and enforce RLS-safe operations.
+
+- Sessions
+  - `createChatSession({ title?, context? })`
+  - `updateChatSessionTitle(sessionId, title)`
+  - `deleteChatSession(sessionId)` removes rows and attempts to delete attachments from storage buckets.
+  - `listChatSessions()` returns basic metadata and message counts.
+- Messages
+  - `addChatMessage({ sessionId, role, content, reasoning?, context?, functionResult?, citations?, parentId?, rootUserMessageId?, variantGroupId?, variantIndex? })`
+  - `getChatMessages(sessionId)` returns messages plus joined `chat_attachments`, `chat_tool_calls`, and `chat_suggested_actions`.
+- Attachments & metadata
+  - `addChatAttachments(messageId, [{ name, mime_type, size, storage_path, width?, height? }])`
+  - `addChatToolCalls(messageId, [{ name, arguments, result?, reasoning? }])`
+  - `addChatSuggestedActions(messageId, [{ type, label, payload }])`
+- Branch state
+  - `setActiveVariant({ sessionId, userMessageId, activeIndex, signature?, signatures? })`
+  - `getBranchState(sessionId)`
+
+### API Routes: src/app/api/chat/*
+
+- `POST /api/chat` Anthropic backend with support for returning:
+  - `message`, optional `actions`, optional `toolCalls`, optional `citations`, optional `reasoning`.
+- `POST /api/chat/cerebras` Cerebras backend with optional `reasoning` in both message and tool calls.
+- `POST /api/chat/openai` OpenAI backend supporting `reasoning_effort` and structured results similar to above.
+- Upload/serve utilities:
+  - `POST /api/images/upload`, `GET /api/images/serve?path=...`
+  - `POST /api/files/upload`, `GET /api/files/serve?path=...`
+
+### Supabase Schema (Summary)
+
+All tables live under schema `ai_transcriber` with RLS enabled.
+
+- `chat_sessions`
+  - `id`, `user_id`, `title`, `context jsonb`, `created_at`, `updated_at`.
+- `chat_messages`
+  - `id`, `session_id`, `parent_id`, `role enum(user|assistant|system)`, `content`, `reasoning`, `context jsonb`, `function_result jsonb`, `citations jsonb`, `root_user_message_id`, `variant_group_id`, `variant_index`, `created_at`, `seq`.
+- `chat_attachments`
+  - `id`, `message_id`, `name`, `mime_type`, `size`, `storage_path`, `width`, `height`, `created_at`.
+- `chat_tool_calls`
+  - `id`, `message_id`, `name`, `arguments jsonb`, `result jsonb`, `reasoning`, `created_at`.
+- `chat_suggested_actions`
+  - `id`, `message_id`, `type enum(filter|sort|navigate|create|function_call)`, `label`, `payload jsonb`, `created_at`.
+- `chat_branch_state`
+  - `id`, `session_id`, `user_message_id`, `active_index`, `signature`, `signatures text[]`, `updated_at`.
+
+Storage buckets
+- Images: `ai-transcriber-images`
+- Files: `ai-transcriber-files`
+
+### Extending the System
+
+- New AI tool: add an implementation under `src/app/api/chat/tools/*`, then surface calls in the provider backend and handle returned `toolCalls` in the client.
+- New provider: add an API route under `src/app/api/chat/<provider>/route.ts`, then branch in `use-chat.tsx` based on `model` naming to call it.
+- New action type: extend store `ChatAction['type']`, update DB enum/migration and server action typing, and render handling in UI components.
