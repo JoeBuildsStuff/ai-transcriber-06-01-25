@@ -22,7 +22,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File } from "lucide-react"
+import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File, Network } from "lucide-react"
 import Spinner from "@/components/ui/spinner"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
@@ -161,11 +161,15 @@ export function AppSidebar() {
     setIsNoteSheetOpen(false)
   }
 
-
-
   const handleCreateSlide = () => {
     toast.success("Slide created", {
       description: "The new slide has been successfully added.",
+    })
+  }
+
+  const handleCreateCanvas = () => {
+    toast.success("Canvas created", {
+      description: "The new canvas has been successfully added.",
     })
   }
 
@@ -201,6 +205,14 @@ export function AppSidebar() {
       action: handleCreateSlide,
       isActionLoading: false,
       actionAriaLabel: "Create new slide",
+    },
+    {
+      label: "Canvas",
+      href: "/workspace/canvas",
+      icon: Network,
+      action: handleCreateCanvas,
+      isActionLoading: false,
+      actionAriaLabel: "Create new canvas",
     },
   ]
 
