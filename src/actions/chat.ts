@@ -2,13 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { Json } from "@/types/supabase"
 
 // Types kept minimal to avoid coupling with client store shapes
 export type ChatRole = 'user' | 'assistant' | 'system'
 
 export interface CreateSessionParams {
   title?: string
-  context?: Record<string, unknown> | null
+  context?: Json | null
 }
 
 export async function createChatSession(params: CreateSessionParams = {}) {
@@ -143,9 +144,9 @@ export interface AddMessageParams {
   content: string
   parentId?: string | null
   reasoning?: string | null
-  context?: Record<string, unknown> | null
-  functionResult?: Record<string, unknown> | null
-  citations?: Array<{ url: string; title: string; cited_text: string }> | null
+  context?: Json | null
+  functionResult?: Json | null
+  citations?: Json | null
   rootUserMessageId?: string | null
   variantGroupId?: string | null
   variantIndex?: number | null
@@ -219,8 +220,8 @@ export async function addChatAttachments(messageId: string, attachments: Attachm
 
 export interface ToolCallInput {
   name: string
-  arguments: Record<string, unknown>
-  result?: Record<string, unknown> | null
+  arguments: Json
+  result?: Json | null
   reasoning?: string | null
 }
 
@@ -251,7 +252,7 @@ export async function addChatToolCalls(messageId: string, calls: ToolCallInput[]
 export interface SuggestedActionInput {
   type: 'filter' | 'sort' | 'navigate' | 'create' | 'function_call'
   label: string
-  payload: Record<string, unknown>
+  payload: Json
 }
 
 export async function addChatSuggestedActions(messageId: string, actions: SuggestedActionInput[]) {
