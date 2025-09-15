@@ -110,6 +110,11 @@ interface ChatStore {
   deleteMessage: (id: string) => void
   clearMessages: () => void
 
+  // Server-backed helpers
+  upsertSessionFromServer: (session: Omit<ChatSession, 'messages'> & { messages?: ChatMessage[] }) => void
+  setCurrentSessionIdFromServer: (sessionId: string) => void
+  setMessagesForSession: (sessionId: string, messages: ChatMessage[]) => void
+
   // Message actions
   copyMessage: (messageId: string) => void
   editMessage: (messageId: string, newContent: string) => void
@@ -452,6 +457,53 @@ export const useChatStore = create<ChatStore>()(
             currentSession,
             messages,
           }
+        })
+      },
+
+      // Server-backed helpers
+      upsertSessionFromServer: (session) => {
+        set((state) => {
+          const exists = state.sessions.find((s) => s.id === session.id)
+          const toInsert: ChatSession = {
+            id: session.id,
+            title: session.title,
+            messages: session.messages || [],
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt,
+            context: session.context,
+          }
+
+          const sessions = exists
+            ? state.sessions.map((s) => (s.id === session.id ? { ...s, ...toInsert } : s))
+            : [toInsert, ...state.sessions]
+
+          const { currentSession, messages } = computeCurrentSessionAndMessages(
+            sessions,
+            state.currentSessionId ?? session.id
+          )
+
+          return {
+            sessions,
+            currentSession,
+            messages,
+          }
+        })
+      },
+
+      setCurrentSessionIdFromServer: (sessionId) => {
+        set((state) => {
+          const { currentSession, messages } = computeCurrentSessionAndMessages(state.sessions, sessionId)
+          return { currentSessionId: sessionId, currentSession, messages, showHistory: false }
+        })
+      },
+
+      setMessagesForSession: (sessionId, newMessages) => {
+        set((state) => {
+          const updatedSessions = state.sessions.map((s) =>
+            s.id === sessionId ? { ...s, messages: newMessages, updatedAt: new Date() } : s
+          )
+          const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
+          return { sessions: updatedSessions, currentSession, messages }
         })
       },
 

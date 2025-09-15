@@ -25,9 +25,10 @@ import { ChevronLeftIcon } from '../icons/chevron-left'
 import { DownloadIcon } from '../icons/download'
 import { XIcon } from '../icons/x'
 import { useRouter } from 'next/navigation'
+import { createChatSession, updateChatSessionTitle as updateChatSessionTitleAction } from '@/actions/chat'
 
 export function ChatHeader() {
-  const { setOpen, setMinimized, clearMessages, setShowHistory, createSession, currentSession, updateSessionTitle, layoutMode, setLayoutMode } = useChatStore()
+  const { setOpen, setMinimized, clearMessages, setShowHistory, currentSession, updateSessionTitle, layoutMode, setLayoutMode, upsertSessionFromServer, setCurrentSessionIdFromServer } = useChatStore()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [isConfirmingClear, setIsConfirmingClear] = useState(false)
@@ -52,8 +53,12 @@ export function ChatHeader() {
     }
   }
 
-  const handleNewChat = () => {
-    createSession()
+  const handleNewChat = async () => {
+    const res = await createChatSession()
+    if ('error' in res && res.error) return
+    const s = res.data!
+    upsertSessionFromServer({ id: s.id, title: s.title, createdAt: new Date(s.created_at), updatedAt: new Date(s.updated_at), messages: [] })
+    setCurrentSessionIdFromServer(s.id)
   }
 
   const handleDownloadChat = () => {
@@ -82,8 +87,9 @@ export function ChatHeader() {
     }
   }
 
-  const handleTitleSubmit = () => {
+  const handleTitleSubmit = async () => {
     if (currentSession && editTitle.trim()) {
+      await updateChatSessionTitleAction(currentSession.id, editTitle.trim())
       updateSessionTitle(currentSession.id, editTitle.trim())
     }
     setIsEditingTitle(false)

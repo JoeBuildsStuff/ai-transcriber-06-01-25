@@ -277,19 +277,19 @@ export default function TextControls() {
         <PopoverContent side="right" sideOffset={15} align="start" className="w-auto p-2">
 
           {/* Color selection */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Color</Label>
             {renderColorButtons()}
           </Card>
 
           {/* Shade selection */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Shade</Label>
             {renderShadeButtons()}
           </Card>
 
           {/* Weight selection */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Weight</Label>
             <div className="flex flex-row items-center space-x-2">
               <span className="font-thin text-xs">A</span>
@@ -306,7 +306,7 @@ export default function TextControls() {
           </Card>
 
           {/* Size selection */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Size</Label>
             <div className="flex flex-row items-center space-x-2">
               <span className="text-xs">S</span>
@@ -323,7 +323,7 @@ export default function TextControls() {
           </Card>
 
           {/* Horizontal Alignment */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Horizontal Alignment</Label>
             <ToggleGroup type="single" value={horizontalAlignment} onValueChange={handleHorizontalAlignmentChange} className="justify-start">
               <ToggleGroupItem variant="outline" value="left" className="shadow-none"><AlignLeft className="w-4 h-4" /></ToggleGroupItem>
@@ -333,7 +333,7 @@ export default function TextControls() {
           </Card>
 
           {/* Vertical Alignment */}
-          <Card className="p-2 border-none">
+          <Card className="p-2 border-none gap-0 shadow-none">
             <Label className="text-xs text-muted-foreground mb-2 block">Vertical Alignment</Label>
             <ToggleGroup type="single" value={verticalAlignment} onValueChange={handleVerticalAlignmentChange} className="justify-start">
               <ToggleGroupItem variant="outline" value="top" className="justify-start items-start pt-1 shadow-none"><AArrowUp className="w-4 h-4" /></ToggleGroupItem>

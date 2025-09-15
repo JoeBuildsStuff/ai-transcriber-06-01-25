@@ -8,29 +8,97 @@ import { DeleteButton } from '@/components/ui/delete-button'
 import { useChatStore } from '@/lib/chat/chat-store'
 import { cn } from '@/lib/utils'
 import { ChevronRightIcon } from '../icons/chevron-right'
+import { useEffect, useMemo, useState } from 'react'
+import { createChatSession, deleteChatSession, listChatSessions, getChatMessages } from '@/actions/chat'
 
 export function ChatHistory() {
   const { 
-    getSessions, 
-    currentSessionId, 
-    switchToSession, 
-    deleteSession, 
-    createSession, 
-    setShowHistory 
+    currentSessionId,
+    setShowHistory,
+    deleteSession: deleteLocalSession,
+    upsertSessionFromServer,
+    setCurrentSessionIdFromServer,
+    setMessagesForSession,
   } = useChatStore()
 
-  const sessions = getSessions()
+  const [sessions, setSessions] = useState<Array<{ id: string; title: string; updatedAt: Date; createdAt: Date; messageCount: number }>>([])
+  const [loading, setLoading] = useState(false)
 
-  const handleSessionClick = (sessionId: string) => {
-    switchToSession(sessionId)
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const res = await listChatSessions()
+      if ('error' in res && res.error) {
+        setLoading(false)
+        return
+      }
+      const mapped = (res.data || []).map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+        messageCount: row.message_count ?? 0,
+      }))
+      // prime store sessions list
+      mapped.forEach((s) => upsertSessionFromServer({ id: s.id, title: s.title, createdAt: s.createdAt, updatedAt: s.updatedAt, messages: [] }))
+      setSessions(mapped)
+      setLoading(false)
+    }
+    load()
+  }, [upsertSessionFromServer])
+
+  const handleSessionClick = async (sessionId: string) => {
+    setCurrentSessionIdFromServer(sessionId)
+    // fetch messages for the session and populate
+    const res = await getChatMessages(sessionId)
+    if (!('error' in res) && res.data) {
+      // map to UI messages; we only include minimal fields here; use-chat’s refresh has fuller mapping.
+      const rows = res.data
+      const msgs = await Promise.all(rows.map(async (m: any) => {
+        const attachments = Array.isArray(m.chat_attachments) ? await Promise.all(m.chat_attachments.map(async (att: any) => {
+          const endpoint = (att.mime_type as string)?.startsWith('image/') ? '/api/images/serve' : '/api/files/serve'
+          try {
+            const r = await fetch(`${endpoint}?path=${encodeURIComponent(att.storage_path)}`)
+            const j = await r.json()
+            const signed = j.imageUrl || j.fileUrl
+            return { id: att.id, name: att.name, size: att.size, type: att.mime_type, url: signed }
+          } catch {
+            return { id: att.id, name: att.name, size: att.size, type: att.mime_type }
+          }
+        })) : []
+        return {
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.created_at),
+          reasoning: m.reasoning || undefined,
+          attachments,
+          context: m.context || undefined,
+          suggestedActions: Array.isArray(m.chat_suggested_actions) ? m.chat_suggested_actions.map((a: any) => ({ type: a.type, label: a.label, payload: a.payload })) : undefined,
+          functionResult: m.function_result || undefined,
+          toolCalls: Array.isArray(m.chat_tool_calls) ? m.chat_tool_calls.map((t: any) => ({ id: t.id, name: t.name, arguments: t.arguments, result: t.result || undefined, reasoning: t.reasoning || undefined })) : undefined,
+          citations: m.citations || undefined,
+        }
+      }))
+      setMessagesForSession(sessionId, msgs)
+    }
   }
 
   const handleDeleteSession = async (sessionId: string) => {
-    deleteSession(sessionId)
+    await deleteChatSession(sessionId)
+    // update local store and list
+    deleteLocalSession(sessionId)
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId))
   }
 
-  const handleNewChat = () => {
-    createSession()
+  const handleNewChat = async () => {
+    const res = await createChatSession()
+    if ('error' in res && res.error) return
+    const row = res.data!
+    const s = { id: row.id, title: row.title, createdAt: new Date(row.created_at), updatedAt: new Date(row.updated_at), messageCount: 0 }
+    upsertSessionFromServer({ id: s.id, title: s.title, createdAt: s.createdAt, updatedAt: s.updatedAt, messages: [] })
+    setCurrentSessionIdFromServer(s.id)
+    setSessions((prev) => [s, ...prev])
   }
 
   const handleBackToChat = () => {
@@ -68,7 +136,7 @@ export function ChatHistory() {
       {/* Sessions List */}
       <ScrollArea className="flex-1">
         <div className="p-1">
-          {sessions.length === 0 ? (
+          {sessions.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <MessagesSquare className="size-8 text-muted-foreground mb-2" strokeWidth={1}/>
               <p className="text-sm text-muted-foreground mb-4 font-light">No chat history yet</p>
@@ -112,9 +180,7 @@ export function ChatHistory() {
 
                   {/* Session Meta */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-                    <span>
-                      {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
-                    </span>
+                    <span>{session.messageCount} message{session.messageCount !== 1 ? 's' : ''}</span>
                     <span>
                       {formatDistanceToNow(session.updatedAt, { addSuffix: true })}
                     </span>
@@ -127,4 +193,4 @@ export function ChatHistory() {
       </ScrollArea>
     </div>
   )
-} 
+}

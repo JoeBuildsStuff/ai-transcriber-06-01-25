@@ -5,6 +5,76 @@ import { useChatStore } from '@/lib/chat/chat-store'
 import { toast } from 'sonner'
 import type { ChatMessage, ChatAction, PageContext } from '@/types/chat'
 import type { Attachment } from '@/components/chat/chat-input'
+import {
+  createChatSession,
+  addChatMessage,
+  addChatAttachments,
+  addChatSuggestedActions,
+  addChatToolCalls,
+  getChatMessages,
+} from '@/actions/chat'
+
+// Define proper types for database responses
+interface ChatAttachmentRow {
+  id: string
+  name: string
+  size: number
+  mime_type: string
+  storage_path: string
+}
+
+interface ChatSuggestedActionRow {
+  type: 'filter' | 'sort' | 'navigate' | 'create' | 'function_call'
+  label: string
+  payload: Record<string, unknown>
+}
+
+interface ChatToolCallRow {
+  id: string
+  name: string
+  arguments: Record<string, unknown>
+  result?: {
+    success: boolean
+    data?: unknown
+    error?: string
+  }
+  reasoning?: string
+}
+
+interface ChatMessageRow {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  created_at: string
+  reasoning?: string
+  context?: Record<string, unknown>
+  function_result?: {
+    success: boolean
+    data?: unknown
+    error?: string
+  }
+  citations?: Array<{ url: string; title: string; cited_text: string }>
+  chat_attachments?: ChatAttachmentRow[]
+  chat_suggested_actions?: ChatSuggestedActionRow[]
+  chat_tool_calls?: ChatToolCallRow[]
+}
+
+interface ToolCallResponse {
+  name: string
+  arguments: Record<string, unknown>
+  result?: {
+    success: boolean
+    data?: unknown
+    error?: string
+  }
+  reasoning?: string
+}
+
+interface ActionResponse {
+  type: 'filter' | 'sort' | 'navigate' | 'create' | 'function_call'
+  label: string
+  payload: Record<string, unknown>
+}
 
 interface UseChatProps {
   onSendMessage?: (message: string, attachments?: Attachment[]) => Promise<void>
@@ -19,7 +89,6 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     isLoading,
     currentContext,
     currentSessionId,
-    createSession,
     addMessage,
     updateMessage,
     deleteMessage,
@@ -29,7 +98,90 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
     setLoading,
     toggleChat,
     updatePageContext,
+    // server-backed helpers
+    upsertSessionFromServer,
+    setCurrentSessionIdFromServer,
+    setMessagesForSession,
   } = useChatStore()
+
+  // Ensure a server-backed session exists
+  const ensureSession = useCallback(async (): Promise<string> => {
+    if (currentSessionId) return currentSessionId
+    const res = await createChatSession()
+    if ('error' in res && res.error) {
+      toast.error('Failed to create chat session')
+      throw new Error(res.error)
+    }
+    const session = res.data!
+    upsertSessionFromServer({
+      id: session.id,
+      title: session.title,
+      createdAt: new Date(session.created_at),
+      updatedAt: new Date(session.updated_at),
+      messages: [],
+      context: session.context ?? undefined,
+    })
+    setCurrentSessionIdFromServer(session.id)
+    return session.id
+  }, [currentSessionId, upsertSessionFromServer, setCurrentSessionIdFromServer])
+
+  // Refresh messages from DB
+  const refreshMessages = useCallback(async (sessionId: string) => {
+    const res = await getChatMessages(sessionId)
+    if ('error' in res && res.error) {
+      console.error('Failed to fetch messages:', res.error)
+      return
+    }
+    const rows = res.data || []
+
+    const allMessages: ChatMessage[] = []
+    for (const m of rows as ChatMessageRow[]) {
+      // Map attachments and sign URLs
+      const attachments = Array.isArray(m.chat_attachments)
+        ? await Promise.all(
+            m.chat_attachments.map(async (att: ChatAttachmentRow) => {
+              const endpoint = (att.mime_type as string)?.startsWith('image/')
+                ? '/api/images/serve'
+                : '/api/files/serve'
+              try {
+                const r = await fetch(`${endpoint}?path=${encodeURIComponent(att.storage_path)}`)
+                const j = await r.json()
+                const signed = j.imageUrl || j.fileUrl
+                return {
+                  id: att.id,
+                  name: att.name,
+                  size: att.size,
+                  type: att.mime_type,
+                  url: signed,
+                }
+              } catch {
+                return { id: att.id, name: att.name, size: att.size, type: att.mime_type }
+              }
+            })
+          )
+        : []
+
+      allMessages.push({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: new Date(m.created_at),
+        reasoning: m.reasoning || undefined,
+        attachments,
+        context: m.context || undefined,
+        suggestedActions: Array.isArray(m.chat_suggested_actions)
+          ? m.chat_suggested_actions.map((a: ChatSuggestedActionRow) => ({ type: a.type, label: a.label, payload: a.payload }))
+          : undefined,
+        functionResult: m.function_result || undefined,
+        toolCalls: Array.isArray(m.chat_tool_calls)
+          ? m.chat_tool_calls.map((t: ChatToolCallRow) => ({ id: t.id, name: t.name, arguments: t.arguments, result: t.result || undefined, reasoning: t.reasoning || undefined }))
+          : undefined,
+        citations: m.citations || undefined,
+      })
+    }
+
+    setMessagesForSession(sessionId, allMessages)
+  }, [setMessagesForSession])
 
   // Default API handler
   const sendToAPI = useCallback(async (content: string, context: PageContext | null, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high') => {
@@ -95,79 +247,74 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       citations: result.citations || undefined
     }
     
-    addMessage(assistantMessage)
-  }, [addMessage])
+    // Persist assistant message to DB and refresh
+    const sid = await ensureSession()
+    const addRes = await addChatMessage({
+      sessionId: sid,
+      role: 'assistant',
+      content: assistantMessage.content,
+      reasoning: assistantMessage.reasoning || null,
+      context: null,
+      functionResult: assistantMessage.functionResult || null,
+      citations: assistantMessage.citations || null,
+    })
+    if (!('error' in addRes) && addRes.data) {
+      if (result.toolCalls?.length) {
+        await addChatToolCalls(addRes.data.id, result.toolCalls.map((t: ToolCallResponse) => ({ name: t.name, arguments: t.arguments, result: t.result, reasoning: t.reasoning })))
+      }
+      if (result.actions?.length) {
+        await addChatSuggestedActions(addRes.data.id, result.actions.map((a: ActionResponse) => ({ type: a.type, label: a.label, payload: a.payload })))
+      }
+    }
+    await refreshMessages(sid)
+  }, [ensureSession, refreshMessages])
 
   // Handle sending a new message
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high', options?: { skipUserAdd?: boolean }) => {
     if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
-    // Ensure we have a current session
-    if (!currentSessionId) {
-      createSession()
+    // Ensure we have a server-backed session
+    const sid = await ensureSession()
+
+    // Upload attachments to Supabase Storage
+    const uploaded: Array<{ name: string; mime_type: string; size: number; storage_path: string }> = []
+    if (attachments && attachments.length > 0) {
+      for (const a of attachments) {
+        try {
+          const form = new FormData()
+          form.append('file', a.file)
+          form.append('pathPrefix', 'chat')
+          const endpoint = a.type.startsWith('image/') ? '/api/images/upload' : '/api/files/upload'
+          const resp = await fetch(endpoint, { method: 'POST', body: form })
+          const j = await resp.json()
+          if (!resp.ok || j.error) throw new Error(j.error || 'Upload failed')
+          const filePath = j.filePath || j.url
+          if (filePath) uploaded.push({ name: a.name, mime_type: a.type, size: a.size, storage_path: filePath })
+        } catch (e) {
+          console.error('Attachment upload failed:', e)
+          toast.error('Attachment upload failed')
+        }
+      }
     }
-
-    // Process attachments to include base64 data for images
-    const processedAttachments = await Promise.all(
-      (attachments || []).map(async (attachment) => {
-        const baseAttachment = {
-          id: attachment.id,
-          name: attachment.name,
-          size: attachment.size,
-          type: attachment.type
-        }
-
-        // Convert images to base64 for preview in message bubbles
-        if (attachment.type.startsWith('image/')) {
-          try {
-            const arrayBuffer = await attachment.file.arrayBuffer()
-            const base64 = Buffer.from(arrayBuffer).toString('base64')
-            return {
-              ...baseAttachment,
-              data: `data:${attachment.type};base64,${base64}`
-            }
-          } catch (error) {
-            console.error('Failed to convert image to base64:', error)
-            return baseAttachment
-          }
-        }
-
-        return baseAttachment
-      })
-    )
 
     // Add user message unless explicitly skipped (used when resending an edited message)
     if (!options?.skipUserAdd) {
-      const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+      const res = await addChatMessage({
+        sessionId: sid,
         role: 'user',
         content: content.trim() || 'Sent with attachments',
-        attachments: processedAttachments,
-        context: currentContext ? {
-          filters: currentContext.currentFilters,
-          data: {
-            totalCount: currentContext.totalCount,
-            visibleDataSample: currentContext.visibleData.slice(0, 3) // Limit context data
-          }
-        } : undefined
-      }
+        context: currentContext ? { filters: currentContext.currentFilters, data: { totalCount: currentContext.totalCount } } : null,
+      })
 
-      try {
-        addMessage(userMessage)
-      } catch (error) {
-        console.error('Failed to add message due to storage quota:', error)
-        toast.error('Storage quota exceeded', {
-          description: 'Old sessions have been cleared to make room for your message.',
-          duration: 6000,
-        })
-        // Add a system message to inform the user
-        addMessage({
-          role: 'system',
-          content: '⚠️ Storage quota exceeded. Some old chat sessions have been automatically cleared to make room for new messages.',
-        })
-        // Try to add the user message again
-        addMessage(userMessage)
+      console.log('res', res)
+      
+      if (!('error' in res) && res.data && uploaded.length > 0) {
+        await addChatAttachments(res.data.id, uploaded)
       }
+      await refreshMessages(sid)
     }
+
+ 
 
     // Set loading state
     setLoading(true)
@@ -244,7 +391,22 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
             citations: result.citations || undefined
           }
           
-          addMessage(assistantMessage)
+          const res2 = await addChatMessage({
+            sessionId: sid,
+            role: 'assistant',
+            content: assistantMessage.content,
+            reasoning: assistantMessage.reasoning || null,
+            citations: assistantMessage.citations || null,
+          })
+          if (!('error' in res2) && res2.data) {
+            if (result.toolCalls?.length) {
+              await addChatToolCalls(res2.data.id, result.toolCalls.map((t: ToolCallResponse) => ({ name: t.name, arguments: t.arguments, result: t.result, reasoning: t.reasoning })))
+            }
+            if (result.actions?.length) {
+              await addChatSuggestedActions(res2.data.id, result.actions.map((a: ActionResponse) => ({ type: a.type, label: a.label, payload: a.payload })))
+            }
+          }
+          await refreshMessages(sid)
         } else if (isOpenAIModel) {
           // Use OpenAI API
           const openaiFormData = new FormData()
@@ -308,7 +470,22 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
             citations: result.citations || undefined
           }
           
-          addMessage(assistantMessage)
+          const res3 = await addChatMessage({
+            sessionId: sid,
+            role: 'assistant',
+            content: assistantMessage.content,
+            reasoning: assistantMessage.reasoning || null,
+            citations: assistantMessage.citations || null,
+          })
+          if (!('error' in res3) && res3.data) {
+            if (result.toolCalls?.length) {
+              await addChatToolCalls(res3.data.id, result.toolCalls.map((t: ToolCallResponse) => ({ name: t.name, arguments: t.arguments, result: t.result, reasoning: t.reasoning })))
+            }
+            if (result.actions?.length) {
+              await addChatSuggestedActions(res3.data.id, result.actions.map((a: ActionResponse) => ({ type: a.type, label: a.label, payload: a.payload })))
+            }
+          }
+          await refreshMessages(sid)
         } else {
           // Default API call (Anthropic)
           await sendToAPI(content, currentContext, attachments, model, reasoningEffort)
@@ -316,16 +493,13 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       }
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Add error message
-      addMessage({
-        role: 'assistant',
-        content: 'Sorry, I encountered an error while processing your message. Please try again.',
-      })
+      await addChatMessage({ sessionId: sid, role: 'assistant', content: 'Sorry, I encountered an error while processing your message. Please try again.' })
+      await refreshMessages(sid)
     } finally {
       // Always clear loading state
       setLoading(false)
     }
-  }, [currentContext, currentSessionId, createSession, addMessage, onSendMessage, isLoading, setLoading, sendToAPI])
+  }, [currentContext, currentSessionId, ensureSession, addMessage, onSendMessage, isLoading, setLoading, sendToAPI, refreshMessages])
 
   // Handle action clicks
   const handleActionClick = useCallback((action: ChatAction) => {

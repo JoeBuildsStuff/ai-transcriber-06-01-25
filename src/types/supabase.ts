@@ -14,6 +14,268 @@ export type Database = {
   }
   ai_transcriber: {
     Tables: {
+      chat_attachments: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          message_id: string
+          mime_type: string
+          name: string
+          size: number
+          storage_path: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          message_id: string
+          mime_type: string
+          name: string
+          size: number
+          storage_path: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          message_id?: string
+          mime_type?: string
+          name?: string
+          size?: number
+          storage_path?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_branch_state: {
+        Row: {
+          active_index: number
+          id: string
+          session_id: string
+          signature: string | null
+          signatures: string[] | null
+          updated_at: string
+          user_message_id: string
+        }
+        Insert: {
+          active_index?: number
+          id?: string
+          session_id: string
+          signature?: string | null
+          signatures?: string[] | null
+          updated_at?: string
+          user_message_id: string
+        }
+        Update: {
+          active_index?: number
+          id?: string
+          session_id?: string
+          signature?: string | null
+          signatures?: string[] | null
+          updated_at?: string
+          user_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_branch_state_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_branch_state_user_message_id_fkey"
+            columns: ["user_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          citations: Json | null
+          content: string
+          context: Json | null
+          created_at: string
+          function_result: Json | null
+          id: string
+          parent_id: string | null
+          reasoning: string | null
+          role: Database["ai_transcriber"]["Enums"]["chat_role"]
+          root_user_message_id: string | null
+          seq: number
+          session_id: string
+          variant_group_id: string | null
+          variant_index: number
+        }
+        Insert: {
+          citations?: Json | null
+          content?: string
+          context?: Json | null
+          created_at?: string
+          function_result?: Json | null
+          id?: string
+          parent_id?: string | null
+          reasoning?: string | null
+          role: Database["ai_transcriber"]["Enums"]["chat_role"]
+          root_user_message_id?: string | null
+          seq?: never
+          session_id: string
+          variant_group_id?: string | null
+          variant_index?: number
+        }
+        Update: {
+          citations?: Json | null
+          content?: string
+          context?: Json | null
+          created_at?: string
+          function_result?: Json | null
+          id?: string
+          parent_id?: string | null
+          reasoning?: string | null
+          role?: Database["ai_transcriber"]["Enums"]["chat_role"]
+          root_user_message_id?: string | null
+          seq?: never
+          session_id?: string
+          variant_group_id?: string | null
+          variant_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_root_user_message_id_fkey"
+            columns: ["root_user_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_suggested_actions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          message_id: string
+          payload: Json
+          type: Database["ai_transcriber"]["Enums"]["chat_action_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          message_id: string
+          payload: Json
+          type: Database["ai_transcriber"]["Enums"]["chat_action_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          message_id?: string
+          payload?: Json
+          type?: Database["ai_transcriber"]["Enums"]["chat_action_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_suggested_actions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_tool_calls: {
+        Row: {
+          arguments: Json
+          created_at: string
+          id: string
+          message_id: string
+          name: string
+          reasoning: string | null
+          result: Json | null
+        }
+        Insert: {
+          arguments: Json
+          created_at?: string
+          id?: string
+          message_id: string
+          name: string
+          reasoning?: string | null
+          result?: Json | null
+        }
+        Update: {
+          arguments?: Json
+          created_at?: string
+          id?: string
+          message_id?: string
+          name?: string
+          reasoning?: string | null
+          result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_tool_calls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_notes: {
         Row: {
           contact_id: string
@@ -586,10 +848,23 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      is_message_owner: {
+        Args: { p_message_id: string }
+        Returns: boolean
+      }
+      is_session_owner: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      chat_action_type:
+        | "filter"
+        | "sort"
+        | "navigate"
+        | "create"
+        | "function_call"
+      chat_role: "user" | "assistant" | "system"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -716,6 +991,15 @@ export type CompositeTypes<
 
 export const Constants = {
   ai_transcriber: {
-    Enums: {},
+    Enums: {
+      chat_action_type: [
+        "filter",
+        "sort",
+        "navigate",
+        "create",
+        "function_call",
+      ],
+      chat_role: ["user", "assistant", "system"],
+    },
   },
 } as const
