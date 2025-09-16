@@ -41,3 +41,5 @@
 - Store secrets in `.env.local`; never commit secrets. Use `src/.env.example` as reference.
 - Required env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DEEPGRAM_API_KEY`, `OPENAI_API_KEY`.
 - Supabase schema: `ai_transcriber`; audio bucket: `ai-transcriber-audio`.
+
+You can check the supabase schema and tables in the `src/types/supabase.ts` file.  When making changes to the database always check the types then prompt the user to update the file.

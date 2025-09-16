@@ -1,7 +1,11 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { Database } from "@/types/supabase"
 import { revalidatePath } from "next/cache"
+
+type TagRow = Database["ai_transcriber"]["Tables"]["tags"]["Row"]
+type MeetingTagRow = Database["ai_transcriber"]["Tables"]["meeting_tags"]["Row"]
 
 // Helper function to find contact by first and last name
 // used by the LLM Agent to add attendees to a meeting
@@ -394,15 +398,214 @@ export async function getMeetingNote(meetingId: string) {
       .single()
 
     if (noteError) {
-      return { error: noteError.message }
-    }
+    return { error: noteError.message }
+  }
 
-    return { data: note }
+  return { data: note }
   } catch (error) {
     console.error('Error fetching meeting note:', error)
     return { error: "An unexpected error occurred" }
   }
 }
 
+export async function getAllTags() {
+  const supabase = await createClient()
+  const { data: userData } = await supabase.auth.getUser()
 
+  if (!userData.user) {
+    throw new Error("You must be logged in to view tags.")
+  }
 
+  const { data, error } = await supabase
+    .schema("ai_transcriber")
+    .from("tags")
+    .select("id, name, description, created_at, updated_at")
+    .eq("user_id", userData.user.id)
+    .order("name", { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch tags: ${error.message}`)
+  }
+
+  return (data ?? []) as TagRow[]
+}
+
+export async function getMeetingTags(meetingId: string) {
+  const supabase = await createClient()
+  const { data: userData } = await supabase.auth.getUser()
+
+  if (!userData.user) {
+    throw new Error("You must be logged in to view meeting tags.")
+  }
+
+  const { data, error } = await supabase
+    .schema("ai_transcriber")
+    .from("meeting_tags")
+    .select("id, meeting_id, tag:tags(id, name, description, created_at, updated_at)")
+    .eq("meeting_id", meetingId)
+    .eq("user_id", userData.user.id)
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch meeting tags: ${error.message}`)
+  }
+
+  const rows = (data ?? []) as Array<MeetingTagRow & { tag: TagRow | null }>
+  return rows
+    .map((row) => row.tag)
+    .filter((tag): tag is TagRow => Boolean(tag))
+}
+
+export async function addTagsToMeeting(meetingId: string, tagIds: string[]) {
+  if (tagIds.length === 0) {
+    return { data: [], message: "No tags to add." }
+  }
+
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { error: "You must be logged in to modify meeting tags." }
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .schema("ai_transcriber")
+    .from("meeting_tags")
+    .select("tag_id")
+    .eq("meeting_id", meetingId)
+    .eq("user_id", user.id)
+    .in("tag_id", tagIds)
+
+  if (existingError) {
+    return { error: existingError.message }
+  }
+
+  const existingIds = new Set((existingRows ?? []).map((row) => row.tag_id))
+  const newIds = tagIds.filter((id) => !existingIds.has(id))
+
+  if (newIds.length === 0) {
+    return { data: [], message: "All selected tags are already attached." }
+  }
+
+  const payload = newIds.map((tagId) => ({
+    meeting_id: meetingId,
+    tag_id: tagId,
+    user_id: user.id,
+  }))
+
+  const { data: inserted, error: insertError } = await supabase
+    .schema("ai_transcriber")
+    .from("meeting_tags")
+    .insert(payload)
+    .select("tag:tags(id, name, description, created_at, updated_at)")
+
+  if (insertError) {
+    return { error: insertError.message }
+  }
+
+  revalidatePath(`/workspace/meetings/${meetingId}`)
+
+  const attachedTags = ((inserted ?? []) as Array<{ tag: TagRow | null }>).map((row) => row.tag).filter((tag): tag is TagRow => Boolean(tag))
+
+  return {
+    data: attachedTags,
+    message: `${attachedTags.length} tag(s) added successfully.`,
+  }
+}
+
+export async function removeTagsFromMeeting(meetingId: string, tagIds: string[]) {
+  if (tagIds.length === 0) {
+    return { data: "No tags removed." }
+  }
+
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { error: "You must be logged in to modify meeting tags." }
+  }
+
+  const { error } = await supabase
+    .schema("ai_transcriber")
+    .from("meeting_tags")
+    .delete()
+    .eq("meeting_id", meetingId)
+    .eq("user_id", user.id)
+    .in("tag_id", tagIds)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/workspace/meetings/${meetingId}`)
+
+  return {
+    data: "Tags removed successfully",
+    message: `${tagIds.length} tag(s) removed.`,
+  }
+}
+
+const sanitizeTagName = (value: string) =>
+  value
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "")
+
+export async function createAndAttachTag(meetingId: string, rawName: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  if (userError || !user) {
+    return { error: "You must be logged in to create tags." }
+  }
+
+  const name = sanitizeTagName(rawName)
+
+  if (!name) {
+    return { error: "Tag name cannot be empty." }
+  }
+
+  const { data: existingTag, error: existingError } = await supabase
+    .schema("ai_transcriber")
+    .from("tags")
+    .select("id, name, description, created_at, updated_at")
+    .eq("user_id", user.id)
+    .ilike("name", name)
+    .maybeSingle()
+
+  if (existingError && existingError.code !== "PGRST116") {
+    return { error: existingError.message }
+  }
+
+  const tag = existingTag as TagRow | null
+
+  if (tag) {
+    const result = await addTagsToMeeting(meetingId, [tag.id])
+    if (result.error) {
+      return result
+    }
+    return { data: tag, created: false }
+  }
+
+  const { data: newTag, error: insertError } = await supabase
+    .schema("ai_transcriber")
+    .from("tags")
+    .insert({ name, user_id: user.id })
+    .select("id, name, description, created_at, updated_at")
+    .single()
+
+  if (insertError || !newTag) {
+    return { error: insertError?.message || "Failed to create tag." }
+  }
+
+  const attachResult = await addTagsToMeeting(meetingId, [newTag.id])
+  if (attachResult.error) {
+    return { error: attachResult.error }
+  }
+
+  return {
+    data: newTag as TagRow,
+    created: true,
+  }
+}

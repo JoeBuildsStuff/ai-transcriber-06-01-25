@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { parseSearchParams, SearchParams } from "@/lib/data-table"
 import { MeetingsList } from "./validations"
+import { Tag } from "@/types"
 import { PostgrestError } from "@supabase/supabase-js"
 
 export async function getMeetingsList(searchParams: SearchParams): Promise<{ 
@@ -186,6 +187,16 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
           first_name,
           last_name
         )
+      ),
+      meeting_tags:meeting_tags (
+        tag:tags (
+          id,
+          name,
+          description,
+          user_id,
+          created_at,
+          updated_at
+        )
       )
     `, { count: "exact" })
 
@@ -319,6 +330,10 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
       last_name: speaker.new_contacts?.last_name || null,
     })) || []
 
+    const tags = (meeting.meeting_tags ?? [])
+      .map((meetingTag) => meetingTag.tag)
+      .filter((tag): tag is Tag => Boolean(tag))
+
     return {
       id: meeting.id,
       meeting_reviewed: meeting.meeting_reviewed,
@@ -327,6 +342,7 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
       speakers: speakers,
       created_at: meeting.created_at,
       updated_at: meeting.updated_at,
+      tags,
     }
   }) || []
 

@@ -422,7 +422,53 @@ export type Database = {
             foreignKeyName: "meeting_attendees_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
+          referencedRelation: "meetings_with_attendee_summary"
+          referencedColumns: ["id"]
+        },
+      ]
+      }
+      meeting_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_id: string
+          tag_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_tags_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_tags_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
             referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
@@ -739,10 +785,37 @@ export type Database = {
             foreignKeyName: "new_contacts_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: "new_companies"
-            referencedColumns: ["id"]
-          },
-        ]
+          referencedRelation: "new_companies"
+          referencedColumns: ["id"]
+        },
+      ]
+      }
+      tags: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       notes: {
         Row: {

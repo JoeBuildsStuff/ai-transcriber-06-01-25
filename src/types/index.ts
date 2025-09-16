@@ -19,6 +19,15 @@ export type Contact = {
   tags?: string[] | null
 }
 
+export interface Tag {
+  id: string
+  name: string
+  description: string | null
+  created_at: string | null
+  updated_at: string | null
+  user_id: string
+}
+
 // New contact structure from database
 export interface NewContactEmail {
   email: string;

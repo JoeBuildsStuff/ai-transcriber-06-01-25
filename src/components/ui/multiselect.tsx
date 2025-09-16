@@ -72,6 +72,8 @@ interface MultipleSelectorProps {
   selectFirstItem?: boolean
   /** Allow user to create option when there is no option matched. */
   creatable?: boolean
+  /** Custom label for the creatable option. */
+  createLabel?: (value: string) => string
   /** Props of `Command` */
   commandProps?: React.ComponentPropsWithoutRef<typeof Command>
   /** Props of `CommandInput` */
@@ -187,6 +189,7 @@ const MultipleSelector = ({
   badgeClassName,
   selectFirstItem = true,
   creatable = false,
+  createLabel,
   triggerSearchOnFocus = false,
   commandProps,
   inputProps,
@@ -358,7 +361,7 @@ const MultipleSelector = ({
           onChange?.(newOptions)
         }}
       >
-        {`Create "${inputValue}"`}
+        {createLabel ? createLabel(inputValue) : `Create "${inputValue}"`}
       </CommandItem>
     )
 

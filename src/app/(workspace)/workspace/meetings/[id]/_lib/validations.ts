@@ -1,3 +1,5 @@
+import { Tag } from "@/types"
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Speaker = {
@@ -38,6 +40,7 @@ export type MeetingsList = {
   meeting_reviewed?: boolean,
   original_file_name?: string,
   summary?: string,
+  tags?: Tag[],
 }
 
 export type MeetingsDetail = {
@@ -55,5 +58,3 @@ export type MeetingsDetail = {
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
 }
-
-

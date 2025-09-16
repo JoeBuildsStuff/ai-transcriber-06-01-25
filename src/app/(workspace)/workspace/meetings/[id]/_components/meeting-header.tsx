@@ -1,13 +1,17 @@
 import InputSupabase from "@/components/supabase/_components/input-supabase";
 import { DateFieldSupabase, TimeFieldSupabase, DateInputSupabase } from "@/components/supabase/_components/datefield-rac-supabase";
 import MeetingAudioPlayer from "@/components/audio-player-meeting";
-import { Calendar, Clock, Map, Type } from "lucide-react";
+import { Calendar, Clock, Map, Tags, Type } from "lucide-react";
 import { MeetingAttendeeViewData } from "@/types";
 import AttendeesSelector from "./attendees-selector";
+import MeetingTagsSelector from "./meeting-tags-selector";
 import { RefObject } from "react";
 import { AudioPlayerRef } from "@/components/audio-player-lazy";
 import { DeleteButton } from "@/components/ui/delete-button";
 import { deleteMeetings } from "../_lib/actions";
+import { Database } from "@/types/supabase";
+
+type TagRow = Database["ai_transcriber"]["Tables"]["tags"]["Row"];
 
 interface MeetingHeaderProps {
     id: string;
@@ -18,11 +22,12 @@ interface MeetingHeaderProps {
         audio_file_path?: string;
     };
     meetingAttendees: MeetingAttendeeViewData[];
+    meetingTags: TagRow[];
     audioPlayerRef?: RefObject<AudioPlayerRef | null>;
     onTimeUpdate?: (time: number) => void;
 }
 
-export default function MeetingHeader({ id, meetingData, meetingAttendees, audioPlayerRef, onTimeUpdate }: MeetingHeaderProps) {
+export default function MeetingHeader({ id, meetingData, meetingAttendees, meetingTags, audioPlayerRef, onTimeUpdate }: MeetingHeaderProps) {
 
     return (
         <div className="flex flex-col gap-3">
@@ -74,6 +79,13 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, audio
             <div className="flex flex-row gap-2 items-center">
                 <Map className="size-4 shrink-0 text-muted-foreground " />
                 <InputSupabase table="meetings" field="location" id={id} initialValue={meetingData?.location || ''} className="text-sm font-extralight border-none bg-input/30" />
+            </div>
+
+
+            {/* Meeting tags */}
+            <div className="flex flex-row gap-2 items-center">
+                <Tags className="size-4 shrink-0 text-muted-foreground" />
+                <MeetingTagsSelector meetingId={id} initialTags={meetingTags} />
             </div>
 
             {/* Audio Player */}

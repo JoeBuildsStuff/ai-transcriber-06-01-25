@@ -1,7 +1,7 @@
 "use client"
 
 import { format, formatDistanceToNow } from "date-fns"
-import { Calendar, CheckCircle, Circle, Clock4, Timer, Type, Users } from "lucide-react"
+import { Calendar, CheckCircle, Circle, Clock4, Tags, Timer, Type, Users } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
@@ -63,6 +63,40 @@ export const columns: ColumnDef<MeetingsList>[] = [
       label: "Title",
       variant: "text",
       placeholder: "New Meeting",
+    },
+    enableColumnFilter: true,
+  },
+  {
+    id: "tags",
+    accessorFn: (row) => row.tags?.map((tag) => tag.name).join(", ") ?? "",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Tags"
+        icon={<Tags className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+      />
+    ),
+    cell: ({ row }) => {
+      const tags = row.original.tags ?? []
+
+      if (!tags.length) {
+        return <div className="text-muted-foreground">—</div>
+      }
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {tags.map((tag) => (
+            <Badge key={tag.id} variant="purple" className="">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+      )
+    },
+    meta: {
+      label: "Tags",
+      variant: "text",
+      readOnly: true,
     },
     enableColumnFilter: true,
   },
