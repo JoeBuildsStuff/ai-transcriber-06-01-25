@@ -157,7 +157,7 @@ export default function SpeakerBadgeHeader({
     };
 
     return (
-        <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-3 font-extralight">
+        <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg rounded-lg p-3 font-extralight">
             <span className="text-sm font-extralight">Speakers:</span>
             <div className="flex flex-wrap gap-2">
                 {meetingSpeakers.map((speaker) => (

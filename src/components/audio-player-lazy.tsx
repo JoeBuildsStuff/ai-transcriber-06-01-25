@@ -182,7 +182,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   return (
-    <Card>
+    <Card className="border-none">
         <CardContent className="">
           {audioLoaded && audioUrl && (
             <audio 

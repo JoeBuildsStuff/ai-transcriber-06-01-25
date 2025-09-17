@@ -110,7 +110,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
     }
 
     return (
-        <Card className="h-full p-1 gap-0" ref={transcriptRef}>
+        <Card className="h-full p-1 gap-0 border-none" ref={transcriptRef}>
             {/* Position the copy button using a wrapper to avoid hover-induced reflow/flicker */}
             <ScrollArea className="h-full overflow-y-auto relative">
 
