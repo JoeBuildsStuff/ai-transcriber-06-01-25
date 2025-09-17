@@ -98,7 +98,7 @@ export default function MeetingTagsSelector({ meetingId, initialTags }: MeetingT
         }
 
         const result = await createAndAttachTag(meetingId, sanitized)
-        if (result.error) {
+        if ('error' in result && result.error) {
           toast.error(result.error)
           failedValues.add(option.value)
           continue
