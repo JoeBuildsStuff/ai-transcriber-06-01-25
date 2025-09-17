@@ -252,7 +252,7 @@ importers:
         specifier: ^19.1.0
         version: 19.1.1
       react-aria-components:
-        specifier: ^1.10.1
+        specifier: ^1.11.0
         version: 1.11.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react-day-picker:
         specifier: 9.8.0

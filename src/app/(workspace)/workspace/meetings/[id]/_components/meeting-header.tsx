@@ -11,6 +11,8 @@ import { DeleteButton } from "@/components/ui/delete-button";
 import { deleteMeetings } from "../_lib/actions";
 import { Database } from "@/types/supabase";
 
+import MeetingRepeat from "./meeting-repeat";
+
 type TagRow = Database["ai_transcriber"]["Tables"]["tags"]["Row"];
 
 interface MeetingHeaderProps {
@@ -20,6 +22,7 @@ interface MeetingHeaderProps {
         meeting_at?: string | null;
         location?: string;
         audio_file_path?: string;
+        repeat?: string;
     };
     meetingAttendees: MeetingAttendeeViewData[];
     meetingTags: TagRow[];
@@ -73,6 +76,9 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     <Clock className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
                 </TimeFieldSupabase>
+                {/* Repeat */}
+                <MeetingRepeat meetingDate={meetingData.meeting_at} />
+                    
             </div>
 
             {/* Location */}
