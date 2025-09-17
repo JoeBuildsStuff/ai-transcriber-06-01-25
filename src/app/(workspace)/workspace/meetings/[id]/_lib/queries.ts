@@ -331,8 +331,16 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
     })) || []
 
     const tags = (meeting.meeting_tags ?? [])
-      .map((meetingTag) => meetingTag.tag)
-      .filter((tag): tag is Tag => Boolean(tag))
+      .map(meetingTag => meetingTag.tag)
+      .filter((tag): tag is NonNullable<typeof tag> => Boolean(tag))
+      .map<Tag>(tag => ({
+        id: tag.id,
+        name: tag.name,
+        description: tag.description,
+        created_at: tag.created_at,
+        updated_at: tag.updated_at,
+        user_id: tag.user_id,
+      }))
 
     return {
       id: meeting.id,
