@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AI Next Steps",
   description: "AI Next Steps",
-  };
+};
 
 export default function RootLayout({
 children,
@@ -16,10 +16,10 @@ children: React.ReactNode;
 }>) {
 return (
   <html lang="en" suppressHydrationWarning>
-      <body className={inter.className + ""}>
+    <body className={inter.className + ""}>
       <Providers>
         {children}
-        </Providers>
+      </Providers>
     </body>
   </html>
 );
