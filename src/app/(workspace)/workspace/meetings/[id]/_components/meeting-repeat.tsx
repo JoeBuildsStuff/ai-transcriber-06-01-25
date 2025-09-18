@@ -381,7 +381,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <Select value={selectedValue} onValueChange={handleSelectChange} disabled={isSaving}>
-        <SelectTrigger className="h-8 w-fit gap-2 rounded-full border-none bg-secondary px-3 text-xs font-extralight">
+        <SelectTrigger className="h-8 w-fit gap-2 border-none bg-secondary px-3 text-xs font-extralight">
           <Repeat className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
           <SelectValue placeholder="Select repeat">
             {selectedValue === CUSTOM_CURRENT_VALUE ? customSummary : undefined}

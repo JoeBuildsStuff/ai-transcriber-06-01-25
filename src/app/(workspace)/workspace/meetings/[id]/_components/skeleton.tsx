@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, Map, Type, Users } from "lucide-react";
+import { Calendar, Clock, Map, Repeat, Type, Users } from "lucide-react";
 import { DeleteButton } from "@/components/ui/delete-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -36,6 +36,10 @@ import { Card } from "@/components/ui/card";
             </div>
             <div className="flex flex-row gap-2 items-center font-extralight">
                 <Clock className="size-4 shrink-0 text-muted-foreground" />
+                <Skeleton className="w-25 h-9" />
+            </div>
+            <div className="flex flex-row gap-2 items-center font-extralight">
+                <Repeat className="size-4 shrink-0 text-muted-foreground" />
                 <Skeleton className="w-25 h-9" />
             </div>
         </div>
