@@ -12,6 +12,7 @@ import { deleteMeetings } from "../_lib/actions";
 import { Database } from "@/types/supabase";
 
 import MeetingRepeat from "./meeting-repeat";
+import type { MeetingRecurrence } from "../_lib/validations";
 
 type TagRow = Database["ai_transcriber"]["Tables"]["tags"]["Row"];
 
@@ -23,6 +24,7 @@ interface MeetingHeaderProps {
         location?: string;
         audio_file_path?: string;
         repeat?: string;
+        recurrence?: MeetingRecurrence | null;
     };
     meetingAttendees: MeetingAttendeeViewData[];
     meetingTags: TagRow[];
@@ -77,7 +79,11 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     <DateInputSupabase />
                 </TimeFieldSupabase>
                 {/* Repeat */}
-                <MeetingRepeat meetingDate={meetingData.meeting_at} />
+                <MeetingRepeat 
+                    meetingId={id}
+                    meetingDate={meetingData.meeting_at}
+                    recurrence={meetingData.recurrence}
+                />
                     
             </div>
 

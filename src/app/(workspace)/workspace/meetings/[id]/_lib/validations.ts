@@ -1,4 +1,5 @@
 import { Tag } from "@/types"
+import type { Database } from "@/types/supabase"
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
@@ -11,6 +12,8 @@ export type Speaker = {
   first_name: string | null
   last_name: string | null
 }
+
+export type MeetingRecurrence = Database["ai_transcriber"]["Tables"]["meeting_recurrences"]["Row"]
 
 export type Meetings = {
   id: string,
@@ -28,6 +31,7 @@ export type Meetings = {
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
   location?: string,
+  recurrence?: MeetingRecurrence | null,
 }
 
 export type MeetingsList = {

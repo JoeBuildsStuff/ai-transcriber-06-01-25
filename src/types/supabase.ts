@@ -473,6 +473,71 @@ export type Database = {
           },
         ]
       }
+      meeting_recurrences: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          end_type: Database["ai_transcriber"]["Enums"]["meeting_recurrence_end_type"]
+          frequency: Database["ai_transcriber"]["Enums"]["meeting_recurrence_frequency"]
+          id: string
+          interval: number
+          meeting_id: string
+          monthly_day_of_month: number | null
+          monthly_option: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_weekday: string | null
+          monthly_weekday_position: number | null
+          occurrence_count: number | null
+          starts_at: string
+          timezone: string
+          updated_at: string
+          weekdays: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          end_type?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_end_type"]
+          frequency: Database["ai_transcriber"]["Enums"]["meeting_recurrence_frequency"]
+          id?: string
+          interval?: number
+          meeting_id: string
+          monthly_day_of_month?: number | null
+          monthly_option?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_weekday?: string | null
+          monthly_weekday_position?: number | null
+          occurrence_count?: number | null
+          starts_at: string
+          timezone?: string
+          updated_at?: string
+          weekdays?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          end_type?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_end_type"]
+          frequency?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_frequency"]
+          id?: string
+          interval?: number
+          meeting_id?: string
+          monthly_day_of_month?: number | null
+          monthly_option?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_weekday?: string | null
+          monthly_weekday_position?: number | null
+          occurrence_count?: number | null
+          starts_at?: string
+          timezone?: string
+          updated_at?: string
+          weekdays?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_recurrences_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_speakers: {
         Row: {
           confidence_score: number | null
@@ -938,6 +1003,9 @@ export type Database = {
         | "create"
         | "function_call"
       chat_role: "user" | "assistant" | "system"
+      meeting_recurrence_end_type: "never" | "on" | "after"
+      meeting_recurrence_frequency: "day" | "week" | "month" | "year"
+      meeting_recurrence_monthly_option: "day" | "weekday"
     }
     CompositeTypes: {
       [_ in never]: never
