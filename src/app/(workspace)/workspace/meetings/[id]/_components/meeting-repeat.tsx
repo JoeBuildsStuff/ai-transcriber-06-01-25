@@ -428,7 +428,6 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
                 placeholder="1"
                 className="w-[5rem]"
                 value={frequencyNumber}
-                min={1}
                 onChange={(value) => setFrequencyNumber(normalizePositiveInteger(value, 1))}
               />
               <Select value={frequencyType} onValueChange={(value) => setFrequencyType(value as FrequencyType)}>
@@ -506,7 +505,6 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
                   <InputNumber
                     placeholder="12"
                     className="w-[5rem]"
-                    min={1}
                     value={occurrenceCount}
                     onChange={(value) => setOccurrenceCount(normalizePositiveInteger(value, 1))}
                   />
