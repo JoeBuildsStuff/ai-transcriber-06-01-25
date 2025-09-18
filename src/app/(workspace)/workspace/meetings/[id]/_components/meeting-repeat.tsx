@@ -14,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { InputNumber } from "@/components/ui/input-number"
@@ -46,13 +56,31 @@ interface MeetingRepeatProps {
   meetingId: string
   meetingDate?: string | null
   recurrence?: MeetingRecurrence | null
+  recurrenceParentId?: string | null
 }
 
 type FrequencyType = "day" | "week" | "month" | "year"
-type EndOption = "never" | "on" | "after"
+type EndOption = "on" | "after"
 type MonthlyOption = "day" | "weekday"
 
 type RecurrencePreset = "none" | "weekly" | "monthly" | "yearly" | typeof CUSTOM_CURRENT_VALUE
+
+type RecurrenceScope = "series" | "following"
+
+type RecurrenceFormPayload = {
+  frequency: FrequencyType
+  interval: number
+  weekdays: string[] | null
+  monthly_option: MonthlyOption | null
+  monthly_day_of_month: number | null
+  monthly_weekday: string | null
+  monthly_weekday_position: number | null
+  end_type: EndOption
+  end_date: string | null
+  occurrence_count: number | null
+  starts_at: string
+  timezone: string
+}
 
 const toCalendarDate = (date: Date): CalendarDate => parseDate(date.toISOString().slice(0, 10))
 const getToggleValueForDate = (date: Date): typeof DAY_CODES[number] => DAY_CODES[date.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6]
@@ -71,24 +99,21 @@ const derivePresetFromRecurrence = (
     recurrence.interval === 1 &&
     recurrence.weekdays &&
     recurrence.weekdays.length === 1 &&
-    recurrence.weekdays[0] === anchorDay &&
-    recurrence.end_type === "never"
+    recurrence.weekdays[0] === anchorDay
   ) {
     return "weekly"
   }
 
   if (
     recurrence.frequency === "month" &&
-    recurrence.interval === 1 &&
-    recurrence.end_type === "never"
+    recurrence.interval === 1
   ) {
     return "monthly"
   }
 
   if (
     recurrence.frequency === "year" &&
-    recurrence.interval === 1 &&
-    recurrence.end_type === "never"
+    recurrence.interval === 1
   ) {
     return "yearly"
   }
@@ -145,11 +170,18 @@ const normalizePositiveInteger = (value: number | null | undefined, fallback: nu
   return Math.floor(value)
 }
 
-export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: MeetingRepeatProps) {
+const mapRecurrenceEndType = (value: MeetingRecurrence["end_type"] | null | undefined): EndOption => {
+  if (value === "on") {
+    return "on"
+  }
+  return "after"
+}
+
+export default function MeetingRepeat({ meetingId, meetingDate, recurrence, recurrenceParentId }: MeetingRepeatProps) {
   const router = useRouter()
   const anchorDate = useMemo(() => {
-    if (meetingDate) return new Date(meetingDate)
     if (recurrence?.starts_at) return new Date(recurrence.starts_at)
+    if (meetingDate) return new Date(meetingDate)
     return new Date()
   }, [meetingDate, recurrence?.starts_at])
 
@@ -161,6 +193,8 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
 
   const anchorDay = useMemo(() => getToggleValueForDate(anchorDate), [anchorDate])
 
+  const isSeriesHead = !recurrenceParentId
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [selectedValue, setSelectedValue] = useState<RecurrencePreset>("none")
@@ -168,18 +202,22 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
   const [frequencyNumber, setFrequencyNumber] = useState<number>(1)
   const [selectedDays, setSelectedDays] = useState<string[]>([anchorDay])
   const [monthlyOption, setMonthlyOption] = useState<MonthlyOption>("day")
-  const [endOption, setEndOption] = useState<EndOption>("never")
+  const [endOption, setEndOption] = useState<EndOption>("after")
   const [endDate, setEndDate] = useState<CalendarDate>(defaultEndDate)
   const [occurrenceCount, setOccurrenceCount] = useState<number>(12)
+  const [isScopeDialogOpen, setIsScopeDialogOpen] = useState(false)
+  const [scopeChoice, setScopeChoice] = useState<RecurrenceScope>("series")
+  const [pendingPayload, setPendingPayload] = useState<RecurrenceFormPayload | null>(null)
+  const [pendingPresetValue, setPendingPresetValue] = useState<RecurrencePreset | null>(null)
 
   useEffect(() => {
     setSelectedDays(recurrence?.weekdays ?? [anchorDay])
     setFrequencyType((recurrence?.frequency as FrequencyType) ?? "day")
     setFrequencyNumber(recurrence?.interval ?? 1)
     setMonthlyOption((recurrence?.monthly_option as MonthlyOption) ?? "day")
-    setEndOption((recurrence?.end_type as EndOption) ?? "never")
+    setEndOption(mapRecurrenceEndType(recurrence?.end_type))
     setEndDate(recurrence?.end_date ? parseDate(recurrence.end_date) : defaultEndDate)
-    setOccurrenceCount(recurrence?.occurrence_count ?? 12)
+    setOccurrenceCount(normalizePositiveInteger(recurrence?.occurrence_count, 12))
     setSelectedValue(derivePresetFromRecurrence(recurrence, anchorDay))
   }, [recurrence, anchorDay, defaultEndDate])
 
@@ -195,7 +233,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
     endStrategy?: EndOption
     endBoundary?: CalendarDate
     occurrenceTotal?: number
-  }) => {
+  }): RecurrenceFormPayload => {
     const effectiveFrequency = options?.frequency ?? frequencyType
     const effectiveInterval = normalizePositiveInteger(options?.interval ?? frequencyNumber, 1)
     const effectiveDays = options?.days ?? selectedDays
@@ -231,7 +269,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
       monthly_day_of_month: monthlyDayOfMonth,
       monthly_weekday: monthlyWeekday,
       monthly_weekday_position: monthlyWeekdayPosition,
-      end_type: effectiveEndOption as MeetingRecurrence["end_type"],
+      end_type: effectiveEndOption,
       end_date: effectiveEndOption === "on" ? effectiveEndDate.toString() : null,
       occurrence_count: effectiveEndOption === "after" ? effectiveOccurrenceCount : null,
       starts_at: anchorDate.toISOString(),
@@ -239,7 +277,82 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
     }
   }
 
+  const resetScopeDialogState = () => {
+    setPendingPayload(null)
+    setPendingPresetValue(null)
+    setScopeChoice("series")
+    setIsScopeDialogOpen(false)
+  }
+
+  const finalizeRecurrenceSave = async (
+    payload: RecurrenceFormPayload,
+    scope: RecurrenceScope,
+    presetValue: RecurrencePreset | null
+  ) => {
+    const effectiveScope: RecurrenceScope = scope === "following" && isSeriesHead ? "series" : scope
+    const currentMeetingIso = meetingDate ? new Date(meetingDate).toISOString() : null
+
+    if (effectiveScope === "following" && !currentMeetingIso) {
+      toast.error("Set a date and time for this meeting before updating following events")
+      return
+    }
+
+    const scopedPayload: RecurrenceFormPayload =
+      effectiveScope === "following" && currentMeetingIso
+        ? { ...payload, starts_at: currentMeetingIso }
+        : payload
+
+    setIsSaving(true)
+    try {
+      const result = await upsertMeetingRecurrence(meetingId, scopedPayload, { scope: effectiveScope })
+      if (!result.success) {
+        throw new Error(result.error ?? "Failed to update recurrence")
+      }
+
+      if (presetValue) {
+        setSelectedValue(presetValue)
+      } else {
+        setSelectedValue(CUSTOM_CURRENT_VALUE)
+      }
+
+      const successMessage =
+        effectiveScope === "following"
+          ? "Recurrence updated for this and following events"
+          : "Recurrence updated for all events"
+
+      toast.success(successMessage)
+      resetScopeDialogState()
+      setIsDialogOpen(false)
+      router.refresh()
+    } catch (error) {
+      console.error("Error saving recurrence", error)
+      toast.error(error instanceof Error ? error.message : "Failed to update recurrence")
+      if (!isSeriesHead && scope === "following") {
+        setIsScopeDialogOpen(true)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const queueRecurrenceSave = (payload: RecurrenceFormPayload, presetValue: RecurrencePreset | null) => {
+    if (!isSeriesHead) {
+      setPendingPayload(payload)
+      setPendingPresetValue(presetValue ?? CUSTOM_CURRENT_VALUE)
+      setScopeChoice("series")
+      setIsScopeDialogOpen(true)
+      return
+    }
+
+    void finalizeRecurrenceSave(payload, "series", presetValue)
+  }
+
   const handleDeleteRecurrence = async () => {
+    if (!isSeriesHead) {
+      toast.info("Open the first meeting in the series to remove the recurrence")
+      return
+    }
+
     setIsSaving(true)
     try {
       const result = await deleteMeetingRecurrence(meetingId)
@@ -253,7 +366,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
       setFrequencyNumber(1)
       setSelectedDays([anchorDay])
       setMonthlyOption("day")
-      setEndOption("never")
+      setEndOption("after")
       setEndDate(defaultEndDate)
       setOccurrenceCount(12)
       toast.success("Recurrence removed")
@@ -266,18 +379,17 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
     }
   }
 
-  const handlePresetSelection = async (value: RecurrencePreset) => {
+  const handlePresetSelection = (value: RecurrencePreset) => {
     if (value === CUSTOM_CURRENT_VALUE) {
       setIsDialogOpen(true)
       return
     }
 
     if (value === "none") {
-      await handleDeleteRecurrence()
+      void handleDeleteRecurrence()
       return
     }
 
-    setIsSaving(true)
     try {
       const presetOptions: Record<Exclude<RecurrencePreset, "none" | typeof CUSTOM_CURRENT_VALUE>, () => void> = {
         weekly: () => {
@@ -285,7 +397,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
           setFrequencyNumber(1)
           setSelectedDays([anchorDay])
           setMonthlyOption("day")
-          setEndOption("never")
+          setEndOption("after")
           setEndDate(defaultEndDate)
           setOccurrenceCount(12)
         },
@@ -294,7 +406,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
           setFrequencyNumber(1)
           setSelectedDays([anchorDay])
           setMonthlyOption("weekday")
-          setEndOption("never")
+          setEndOption("after")
           setEndDate(defaultEndDate)
           setOccurrenceCount(12)
         },
@@ -303,7 +415,7 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
           setFrequencyNumber(1)
           setSelectedDays([anchorDay])
           setMonthlyOption("day")
-          setEndOption("never")
+          setEndOption("after")
           setEndDate(defaultEndDate)
           setOccurrenceCount(12)
         }
@@ -316,45 +428,24 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
         interval: 1,
         days: value === "weekly" ? [anchorDay] : undefined,
         monthStrategy: value === "monthly" ? "weekday" : "day",
-        endStrategy: "never"
+        endStrategy: "after"
       })
 
-      const result = await upsertMeetingRecurrence(meetingId, payload)
-      if (!result.success) {
-        toast.error(result.error ?? "Failed to update recurrence")
-        return
-      }
-
-      setSelectedValue(value)
-      toast.success("Recurrence updated")
-      router.refresh()
+      queueRecurrenceSave(payload, value)
     } catch (error) {
-      console.error("Error saving preset recurrence", error)
-      toast.error(error instanceof Error ? error.message : "Failed to update recurrence")
-    } finally {
-      setIsSaving(false)
+      console.error("Error preparing preset recurrence", error)
+      toast.error(error instanceof Error ? error.message : "Failed to prepare recurrence changes")
     }
   }
 
-  const handleSaveCustomRecurrence = async () => {
-    setIsSaving(true)
+  const handleSaveCustomRecurrence = () => {
     try {
       const payload = buildPayload()
-      const result = await upsertMeetingRecurrence(meetingId, payload)
-      if (!result.success) {
-        toast.error(result.error ?? "Failed to update recurrence")
-        return
-      }
-
-      setSelectedValue(CUSTOM_CURRENT_VALUE)
       setIsDialogOpen(false)
-      toast.success("Custom recurrence saved")
-      router.refresh()
+      queueRecurrenceSave(payload, CUSTOM_CURRENT_VALUE)
     } catch (error) {
-      console.error("Error saving custom recurrence", error)
-      toast.error(error instanceof Error ? error.message : "Failed to update recurrence")
-    } finally {
-      setIsSaving(false)
+      console.error("Error preparing custom recurrence", error)
+      toast.error(error instanceof Error ? error.message : "Failed to prepare recurrence changes")
     }
   }
 
@@ -374,51 +465,56 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
       return
     }
 
-    void handlePresetSelection(value as RecurrencePreset)
+    handlePresetSelection(value as RecurrencePreset)
   }
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <Select value={selectedValue} onValueChange={handleSelectChange} disabled={isSaving}>
-        <SelectTrigger  className="shadow-none border-none">
-          <SelectValue className="" placeholder="Select repeat">
-            {selectedValue === CUSTOM_CURRENT_VALUE ? customSummary : undefined}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Does not repeat</SelectItem>
-          <SelectItem value="weekly">Weekly on {format(baseDateDisplay, "EEEE")}</SelectItem>
-          <SelectItem value="monthly">{formatMonthlySummary(baseDateDisplay)}</SelectItem>
-          <SelectItem value="yearly">Yearly on {format(baseDateDisplay, "MMMM d")}</SelectItem>
-          {selectedValue === CUSTOM_CURRENT_VALUE && (
-            <SelectItem
-              value={CUSTOM_CURRENT_VALUE}
-              onSelect={(event) => {
-                event.preventDefault()
-                setIsDialogOpen(true)
-              }}
-            >
-              Custom — {customSummary}
-            </SelectItem>
-          )}
-          <SelectItem
-            value={CUSTOM_DIALOG_TRIGGER}
-            onSelect={(event) => {
-              event.preventDefault()
-              setIsDialogOpen(true)
-            }}
-          >
-            Custom
-          </SelectItem>
-        </SelectContent>
-      </Select>
+    <>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex flex-col gap-1">
+          <Select value={selectedValue} onValueChange={handleSelectChange} disabled={isSaving}>
+            <SelectTrigger className="shadow-none border-none">
+              <SelectValue placeholder="Select repeat">
+                {selectedValue === CUSTOM_CURRENT_VALUE ? customSummary : undefined}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none" disabled={!isSeriesHead}>
+                Does not repeat
+              </SelectItem>
+              <SelectItem value="weekly">Weekly on {format(baseDateDisplay, "EEEE")}</SelectItem>
+              <SelectItem value="monthly">{formatMonthlySummary(baseDateDisplay)}</SelectItem>
+              <SelectItem value="yearly">Yearly on {format(baseDateDisplay, "MMMM d")}</SelectItem>
+              {selectedValue === CUSTOM_CURRENT_VALUE && (
+                <SelectItem
+                  value={CUSTOM_CURRENT_VALUE}
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setIsDialogOpen(true)
+                  }}
+                >
+                  Custom — {customSummary}
+                </SelectItem>
+              )}
+              <SelectItem
+                value={CUSTOM_DIALOG_TRIGGER}
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setIsDialogOpen(true)
+                }}
+              >
+                Custom
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <DialogContent className="w-fit rounded-3xl p-4">
-        <DialogHeader>
-          <DialogTitle>Custom Recurrence</DialogTitle>
-          <DialogDescription>Configure how often this meeting repeats.</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <DialogContent className="w-fit rounded-3xl p-4">
+          <DialogHeader>
+            <DialogTitle>Custom Recurrence</DialogTitle>
+            <DialogDescription>Configure how often this meeting repeats.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
           <div className="flex flex-row items-center justify-between gap-8">
             <Label htmlFor="frequency">Repeat every</Label>
             <div className="flex flex-row items-center gap-2">
@@ -482,10 +578,6 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
             <Label htmlFor="ends">Ends</Label>
             <div>
               <RadioGroup value={endOption} onValueChange={(value) => setEndOption(value as EndOption)} className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="never" id="end-never" />
-                  <Label htmlFor="end-never">Never</Label>
-                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <RadioGroupItem value="on" id="end-on" />
@@ -510,16 +602,75 @@ export default function MeetingRepeat({ meetingId, meetingDate, recurrence }: Me
               </RadioGroup>
             </div>
           </div>
-        </div>
-        <DialogFooter className="mt-4 flex justify-end gap-2">
-          <DialogClose asChild>
-            <Button variant="ghost" disabled={isSaving}>Cancel</Button>
-          </DialogClose>
-          <Button variant="default" onClick={handleSaveCustomRecurrence} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </div>
+          <DialogFooter className="mt-4 flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button variant="ghost" disabled={isSaving}>Cancel</Button>
+            </DialogClose>
+            <Button variant="default" onClick={handleSaveCustomRecurrence} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={isScopeDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetScopeDialogState()
+          } else {
+            setIsScopeDialogOpen(true)
+          }
+        }}
+      >
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apply recurrence changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose how these recurrence updates should apply to your meetings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3">
+            <RadioGroup
+              value={scopeChoice}
+              onValueChange={(value) => setScopeChoice(value as RecurrenceScope)}
+              className="flex flex-col gap-3"
+            >
+              <div className="flex items-start gap-2">
+                <RadioGroupItem value="series" id="scope-series" />
+                <Label htmlFor="scope-series" className="font-normal leading-snug">
+                  All events in the series
+                </Label>
+              </div>
+              <div className="flex items-start gap-2">
+                <RadioGroupItem value="following" id="scope-following" disabled={isSeriesHead} />
+                <Label htmlFor="scope-following" className="font-normal leading-snug">
+                  This and following events
+                  {isSeriesHead && " (open a future meeting to use this option)"}
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSaving || !pendingPayload}
+              onClick={async (event) => {
+                event.preventDefault()
+                if (!pendingPayload) return
+                await finalizeRecurrenceSave(
+                  pendingPayload,
+                  scopeChoice,
+                  pendingPresetValue ?? CUSTOM_CURRENT_VALUE
+                )
+              }}
+            >
+              {isSaving ? "Saving..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

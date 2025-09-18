@@ -25,6 +25,8 @@ interface MeetingHeaderProps {
         audio_file_path?: string;
         repeat?: string;
         recurrence?: MeetingRecurrence | null;
+        recurrence_parent_id?: string | null;
+        recurrence_instance_index?: number | null;
     };
     meetingAttendees: MeetingAttendeeViewData[];
     meetingTags: TagRow[];
@@ -84,6 +86,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     meetingId={id}
                     meetingDate={meetingData.meeting_at}
                     recurrence={meetingData.recurrence}
+                    recurrenceParentId={meetingData.recurrence_parent_id}
                 />
                     
             </div>

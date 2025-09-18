@@ -32,6 +32,8 @@ export type Meetings = {
   meeting_reviewed?: boolean,
   location?: string,
   recurrence?: MeetingRecurrence | null,
+  recurrence_parent_id?: string | null,
+  recurrence_instance_index?: number | null,
 }
 
 export type MeetingsList = {

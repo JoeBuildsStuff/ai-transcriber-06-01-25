@@ -658,6 +658,8 @@ export type Database = {
           meeting_at: string | null
           meeting_reviewed: boolean | null
           openai_response: Json | null
+          recurrence_instance_index: number | null
+          recurrence_parent_id: string | null
           original_file_name: string | null
           speaker_names: Json | null
           summary: string | null
@@ -676,6 +678,8 @@ export type Database = {
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
+          recurrence_instance_index?: number | null
+          recurrence_parent_id?: string | null
           original_file_name?: string | null
           speaker_names?: Json | null
           summary?: string | null
@@ -694,6 +698,8 @@ export type Database = {
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
+          recurrence_instance_index?: number | null
+          recurrence_parent_id?: string | null
           original_file_name?: string | null
           speaker_names?: Json | null
           summary?: string | null
@@ -703,7 +709,22 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_recurrence_parent_id_fkey"
+            columns: ["recurrence_parent_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       new_companies: {
         Row: {
@@ -968,6 +989,8 @@ export type Database = {
           id: string | null
           meeting_at: string | null
           meeting_reviewed: boolean | null
+          recurrence_instance_index: number | null
+          recurrence_parent_id: string | null
           no_response_count: number | null
           openai_response: Json | null
           original_file_name: string | null
