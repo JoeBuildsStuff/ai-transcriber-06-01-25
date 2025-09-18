@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, Map, Repeat, Type, Users } from "lucide-react";
+import { Calendar, Clock, Map, Repeat, Tags, Type, Users } from "lucide-react";
 import { DeleteButton } from "@/components/ui/delete-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -49,6 +49,12 @@ import { Card } from "@/components/ui/card";
             <Skeleton className="w-full h-9" />
         </div>
 
+        <div className="flex flex-row gap-2 items-center flex-1">   
+            <Tags className="size-4 shrink-0 text-muted-foreground" />
+            <Skeleton className="w-full h-9" />
+        </div>
+
+
         <Skeleton className="w-full h-30 rounded-xl" />
 
         <Tabs defaultValue="transcript" className="w-full h-full overflow-y-auto">
@@ -59,7 +65,7 @@ import { Card } from "@/components/ui/card";
             </TabsList>
                 <TabsContent value="transcript">
                     <Card className="flex w-full h-full p-1 gap-2">
-                        <Skeleton className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg border-1 border-border rounded-lg p-3 font-extralight">
+                        <Skeleton className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg rounded-lg p-3 font-extralight">
                             <span className="text-sm font-extralight">Speakers:</span>
                             <Skeleton className="w-20 h-6" />
                             <Skeleton className="w-20 h-6" />
