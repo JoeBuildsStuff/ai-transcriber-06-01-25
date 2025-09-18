@@ -1,7 +1,7 @@
 import InputSupabase from "@/components/supabase/_components/input-supabase";
 import { DateFieldSupabase, TimeFieldSupabase, DateInputSupabase } from "@/components/supabase/_components/datefield-rac-supabase";
 import MeetingAudioPlayer from "@/components/audio-player-meeting";
-import { Calendar, Clock, Map, Tags, Type } from "lucide-react";
+import { Calendar, Clock, Map, Repeat, Tags, Type } from "lucide-react";
 import { MeetingAttendeeViewData } from "@/types";
 import AttendeesSelector from "./attendees-selector";
 import MeetingTagsSelector from "./meeting-tags-selector";
@@ -79,6 +79,7 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     <DateInputSupabase />
                 </TimeFieldSupabase>
                 {/* Repeat */}
+                <Repeat className="size-4 shrink-0 text-muted-foreground" />
                 <MeetingRepeat 
                     meetingId={id}
                     meetingDate={meetingData.meeting_at}
