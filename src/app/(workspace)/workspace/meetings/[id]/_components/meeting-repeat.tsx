@@ -11,10 +11,14 @@ import { DateField, DateInput } from "@/components/ui/datefield-rac";
 import { parseDate, CalendarDate } from "@internationalized/date";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { getLocalTimeZone } from "@internationalized/date";
 
 interface MeetingRepeatProps {
     meetingDate?: string | null;
 }
+
+const CUSTOM_DIALOG_TRIGGER = "custom";
+const CUSTOM_CURRENT_VALUE = "custom-current";
 
 export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -71,14 +75,50 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
     const [frequencyType, setFrequencyType] = useState<string>("day");
     const [selectedDays, setSelectedDays] = useState<string[]>([getCurrentDayOfWeek()]);
     const [monthlyOption, setMonthlyOption] = useState<string>("day");
+    const [endOption, setEndOption] = useState<string>("never");
+    const [frequencyNumber, setFrequencyNumber] = useState<number>(1);
+    const [occurrenceCount, setOccurrenceCount] = useState<number>(12);
+
+    // Generate display text for custom recurrence
+    const getCustomDisplayText = (): string => {
+        const baseDate = meetingDate ? new Date(meetingDate) : new Date();
+        
+        let frequencyText = '';
+        if (frequencyType === 'day') {
+            frequencyText = frequencyNumber === 1 ? 'Daily' : `Every ${frequencyNumber} days`;
+        } else if (frequencyType === 'week') {
+            const dayNames = selectedDays.map(day => {
+                const dayMap = { 'su': 'Sunday', 'm': 'Monday', 't': 'Tuesday', 'w': 'Wednesday', 'th': 'Thursday', 'f': 'Friday', 'sa': 'Saturday' };
+                return dayMap[day as keyof typeof dayMap];
+            });
+            frequencyText = frequencyNumber === 1 ? `Weekly on ${dayNames.join(', ')}` : `Every ${frequencyNumber} weeks on ${dayNames.join(', ')}`;
+        } else if (frequencyType === 'month') {
+            if (monthlyOption === 'day') {
+                frequencyText = frequencyNumber === 1 ? `Monthly on day ${getCurrentDayOfMonth()}` : `Every ${frequencyNumber} months on day ${getCurrentDayOfMonth()}`;
+            } else {
+                frequencyText = frequencyNumber === 1 ? getCurrentWeekdayAndOrdinal() : `Every ${frequencyNumber} months on the ${getCurrentWeekdayAndOrdinal().split(' on the ')[1]}`;
+            }
+        } else if (frequencyType === 'year') {
+            frequencyText = frequencyNumber === 1 ? `Yearly on ${format(baseDate, 'MMMM d')}` : `Every ${frequencyNumber} years on ${format(baseDate, 'MMMM d')}`;
+        }
+        
+        // Add end condition
+        if (endOption === 'on') {
+            const endDateStr = format(endDate.toDate(getLocalTimeZone()), 'MMM d, yyyy');
+            frequencyText += ` until ${endDateStr}`;
+        } else if (endOption === 'after') {
+            frequencyText += ` for ${occurrenceCount} occurrences`;
+        }
+        
+        return frequencyText;
+    };
 
     const handleValueChange = (value: string) => {
-        if (value === "custom") {
+        if (value === CUSTOM_DIALOG_TRIGGER || value === CUSTOM_CURRENT_VALUE) {
             setIsDialogOpen(true);
-            setSelectedValue("");
-        } else {
-            setSelectedValue(value);
+            return;
         }
+        setSelectedValue(value);
     };
 
     return (
@@ -86,18 +126,39 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
             <Select value={selectedValue} onValueChange={handleValueChange}>
                 <SelectTrigger className="flex flex-row gap-2 items-center border-none shadow-none bg-input/30">
                     <Repeat className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5}/>
-                    <SelectValue placeholder="Select repeat" />
+                    <SelectValue placeholder="Select repeat">
+                        {selectedValue === CUSTOM_CURRENT_VALUE ? getCustomDisplayText() : undefined}
+                    </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="none">Does not repeat</SelectItem>
                     <SelectItem value="weekly">Weekly on {format(meetingDate ? new Date(meetingDate) : new Date(), 'EEEE')}</SelectItem>
                     <SelectItem value="monthly">{getCurrentWeekdayAndOrdinal()}</SelectItem>
                     <SelectItem value="yearly">Yearly on {format(meetingDate ? new Date(meetingDate) : new Date(), 'MMMM d')}</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    {selectedValue === CUSTOM_CURRENT_VALUE && (
+                        <SelectItem
+                            value={CUSTOM_CURRENT_VALUE}
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                setIsDialogOpen(true);
+                            }}
+                        >
+                            Custom — {getCustomDisplayText()}
+                        </SelectItem>
+                    )}
+                    <SelectItem
+                        value={CUSTOM_DIALOG_TRIGGER}
+                        onSelect={(event) => {
+                            event.preventDefault();
+                            setIsDialogOpen(true);
+                        }}
+                    >
+                        Custom
+                    </SelectItem>
                 </SelectContent>
             </Select>
             
-            <DialogContent className="w-fit rounded-2xl">
+            <DialogContent className="w-fit rounded-3xl p-4">
                 <DialogHeader>
                     <DialogTitle>Custom Recurrence</DialogTitle>
                     <DialogDescription></DialogDescription>
@@ -106,7 +167,12 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
                     <div className="flex flex-row items-center justify-between gap-8">
                         <Label htmlFor="frequency">Repeat every</Label>
                         <div className="flex flex-row gap-2 items-center">
-                        <InputNumber placeholder="1" className="w-[5rem]"/>
+                        <InputNumber 
+                            placeholder="1" 
+                            className="w-[5rem]"
+                            value={frequencyNumber}
+                            onChange={(value) => setFrequencyNumber(value || 1)}
+                        />
                         <Select value={frequencyType} onValueChange={setFrequencyType}>
                             <SelectTrigger className="w-fit">
                                 <SelectValue placeholder="day" />
@@ -130,9 +196,10 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
                             {frequencyType === "week" && (
                                 <ToggleGroup 
                                     type="multiple" 
+                                    variant="outline"
                                     value={selectedDays} 
                                     onValueChange={setSelectedDays} 
-                                    className="w-full border border-border"
+                                    className="w-full"
                                 >
                                     <ToggleGroupItem value="su">S</ToggleGroupItem>
                                     <ToggleGroupItem value="m">M</ToggleGroupItem>
@@ -162,7 +229,7 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
                     <div className="flex flex-col gap-4">
                         <Label htmlFor="ends">Ends</Label>
                         <div>
-                            <RadioGroup defaultValue="never" className="flex flex-col gap-4">
+                            <RadioGroup value={endOption} onValueChange={setEndOption} className="flex flex-col gap-4">
                                 <div className="flex items-center gap-3">
                                     <RadioGroupItem value="never" id="r1" />
                                     <Label htmlFor="r1">Never</Label>
@@ -181,7 +248,12 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
                                         <RadioGroupItem value="after" id="r2" />
                                         <Label htmlFor="r2">After</Label>
                                     </div>
-                                    <InputNumber placeholder="12" className="w-[5rem]"/>
+                                    <InputNumber 
+                                        placeholder="12" 
+                                        className="w-[5rem]"
+                                        value={occurrenceCount}
+                                        onChange={(value) => setOccurrenceCount(value || 12)}
+                                    />
                                 </div>
                             </RadioGroup>
                         </div>
@@ -190,7 +262,12 @@ export default function MeetingRepeat({ meetingDate }: MeetingRepeatProps) {
                 </div>
                 <DialogFooter className="mt-4">
                     <DialogClose asChild>
-                        <Button variant="default">Save</Button>
+                        <Button 
+                            variant="default" 
+                            onClick={() => setSelectedValue(CUSTOM_CURRENT_VALUE)}
+                        >
+                            Save
+                        </Button>
                     </DialogClose>
                 </DialogFooter>
             </DialogContent>
