@@ -88,9 +88,13 @@ const getNthWeekdayOfMonth = (
 }
 
 const normalizeWeekdays = (weekdays: string[] | null, fallback: number): number[] => {
-  const normalized = (weekdays ?? [])
-    .map((day) => (isValidDayCode(day) ? DAY_CODE_TO_INDEX[day] : undefined))
-    .filter((day): day is number => typeof day === "number")
+  const normalized: number[] = []
+  
+  for (const day of weekdays ?? []) {
+    if (isValidDayCode(day)) {
+      normalized.push(DAY_CODE_TO_INDEX[day])
+    }
+  }
 
   if (normalized.length === 0) {
     normalized.push(fallback)
