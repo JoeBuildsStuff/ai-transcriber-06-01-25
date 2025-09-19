@@ -44,9 +44,9 @@ function formatDate(
 
   try {
     return new Intl.DateTimeFormat("en-US", {
-      month: opts.month ?? "long",
-      day: opts.day ?? "numeric", 
-      year: opts.year ?? "numeric",
+      month: opts.month ?? "2-digit",
+      day: opts.day ?? "2-digit", 
+      year: opts.year ?? "2-digit",
       ...opts,
     }).format(new Date(date));
   } catch {
