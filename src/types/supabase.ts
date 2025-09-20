@@ -483,7 +483,9 @@ export type Database = {
           interval: number
           meeting_id: string
           monthly_day_of_month: number | null
-          monthly_option: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_option:
+            | Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"]
+            | null
           monthly_weekday: string | null
           monthly_weekday_position: number | null
           occurrence_count: number | null
@@ -501,7 +503,9 @@ export type Database = {
           interval?: number
           meeting_id: string
           monthly_day_of_month?: number | null
-          monthly_option?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_option?:
+            | Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"]
+            | null
           monthly_weekday?: string | null
           monthly_weekday_position?: number | null
           occurrence_count?: number | null
@@ -519,7 +523,9 @@ export type Database = {
           interval?: number
           meeting_id?: string
           monthly_day_of_month?: number | null
-          monthly_option?: Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"] | null
+          monthly_option?:
+            | Database["ai_transcriber"]["Enums"]["meeting_recurrence_monthly_option"]
+            | null
           monthly_weekday?: string | null
           monthly_weekday_position?: number | null
           occurrence_count?: number | null
@@ -534,6 +540,13 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: true
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_recurrences_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "meetings_with_attendee_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -658,9 +671,9 @@ export type Database = {
           meeting_at: string | null
           meeting_reviewed: boolean | null
           openai_response: Json | null
+          original_file_name: string | null
           recurrence_instance_index: number | null
           recurrence_parent_id: string | null
-          original_file_name: string | null
           speaker_names: Json | null
           summary: string | null
           summary_jsonb: Json | null
@@ -678,9 +691,9 @@ export type Database = {
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
+          original_file_name?: string | null
           recurrence_instance_index?: number | null
           recurrence_parent_id?: string | null
-          original_file_name?: string | null
           speaker_names?: Json | null
           summary?: string | null
           summary_jsonb?: Json | null
@@ -698,9 +711,9 @@ export type Database = {
           meeting_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
+          original_file_name?: string | null
           recurrence_instance_index?: number | null
           recurrence_parent_id?: string | null
-          original_file_name?: string | null
           speaker_names?: Json | null
           summary?: string | null
           summary_jsonb?: Json | null
@@ -903,6 +916,39 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_views: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          state: Json
+          table_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          state?: Json
+          table_key: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          state?: Json
+          table_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string
@@ -989,8 +1035,6 @@ export type Database = {
           id: string | null
           meeting_at: string | null
           meeting_reviewed: boolean | null
-          recurrence_instance_index: number | null
-          recurrence_parent_id: string | null
           no_response_count: number | null
           openai_response: Json | null
           original_file_name: string | null
@@ -1164,6 +1208,9 @@ export const Constants = {
         "function_call",
       ],
       chat_role: ["user", "assistant", "system"],
+      meeting_recurrence_end_type: ["never", "on", "after"],
+      meeting_recurrence_frequency: ["day", "week", "month", "year"],
+      meeting_recurrence_monthly_option: ["day", "weekday"],
     },
   },
 } as const

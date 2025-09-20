@@ -97,7 +97,7 @@ export default function ContactNotes({ contactNotes, contactId }: ContactNotesPr
       setLastSavedNotes(contactNotes || '')
       setSaveStatus('idle')
     }
-  }, [contactNotes])
+  }, [contactNotes, lastSavedNotes])
 
   // Warn user before leaving page with unsaved changes
   useEffect(() => {

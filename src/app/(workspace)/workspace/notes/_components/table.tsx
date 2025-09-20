@@ -68,6 +68,7 @@ export default async function DataTableNote({
         data={tableData} 
         pageCount={pageCount}
         initialState={initialState}
+        tableKey="notes"
         deleteAction={tableDeleteAction}
         createAction={tableCreateAction}
         updateActionSingle={tableUpdateActionSingle}

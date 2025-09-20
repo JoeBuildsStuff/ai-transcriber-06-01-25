@@ -45,6 +45,8 @@ export interface DataTableProps {
   initialState?: Partial<DataTableState>
   /** Total number of pages for server-side pagination */
   pageCount?: number
+  /** Unique identifier for persisting saved views */
+  tableKey: string
   /** Function to handle multi deletion of rows */
   deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
   /** Function to handle creation of new rows */
@@ -80,6 +82,7 @@ interface DataTableInternalProps<TData, TValue> {
   data: TData[]
   initialState?: Partial<DataTableState>
   pageCount?: number
+  tableKey: string
   deleteAction?: (ids: string[]) => Promise<{ success: boolean; error?: string; deletedCount?: number }>
   createAction?: (data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
   updateActionSingle?: (id: string, data: Partial<TData>) => Promise<{ success: boolean; error?: string }>
@@ -108,6 +111,7 @@ export function DataTable<TData, TValue>({
   data,
   initialState,
   pageCount,
+  tableKey,
   deleteAction,
   createAction,
   updateActionSingle,
@@ -192,6 +196,7 @@ export function DataTable<TData, TValue>({
         <div className="pb-2 ">
             <DataTableToolbar 
               table={table} 
+              tableKey={tableKey}
               deleteAction={deleteAction} 
               createAction={createAction}
               updateActionSingle={updateActionSingle}

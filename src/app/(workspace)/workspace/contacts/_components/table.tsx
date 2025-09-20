@@ -68,6 +68,7 @@ export default async function DataTablePerson({
         data={tableData} 
         pageCount={pageCount}
         initialState={initialState}
+        tableKey="contacts"
         deleteAction={tableDeleteAction}
         createAction={tableCreateAction}
         updateActionSingle={tableUpdateActionSingle}

@@ -37,6 +37,7 @@ export default async function DataTableMeetings({
         data={data} 
         pageCount={pageCount}
         initialState={initialState}
+        tableKey="meetings"
         createAction={createMeeting}
         updateActionSingle={updateMeeting}
         updateActionMulti={multiUpdateMeetings}

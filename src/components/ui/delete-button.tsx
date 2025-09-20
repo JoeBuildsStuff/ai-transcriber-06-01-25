@@ -15,6 +15,7 @@ import { type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
+import Spinner from './spinner';
 
 type ButtonProps = ComponentProps<"button"> & VariantProps<typeof buttonVariants> & {
   asChild?: boolean;
@@ -148,7 +149,7 @@ export function DeleteButton({
         layout
         initial={false}
         animate={{
-          width: showConfirm ? (size === "icon" ? 142 : 120) : (size === "icon" ? 34 : 48)
+          width: showConfirm && !isDeleting ? (size === "icon" ? 142 : 120) : (size === "icon" ? 34 : 48)
         }}
         transition={{
           type: "spring",
@@ -184,7 +185,7 @@ export function DeleteButton({
                         }}
                         className="inline-block"
                       >
-                        {isDeleting ? "..." : confirmText}
+                        {isDeleting ? <Spinner variant="red" /> : confirmText}
                       </motion.span>
                     )}
                   </AnimatePresence>

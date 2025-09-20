@@ -24,11 +24,11 @@ export const CustomImageView = ({ node, selected }: ReactNodeViewProps) => {
   useEffect(() => {
     if (wrapperRef.current) {
       const storedWidth = wrapperRef.current.getAttribute('data-image-width')
-      if (storedWidth && !localWidth) {
+      if (storedWidth && localWidth === null) {
         setLocalWidth(parseInt(storedWidth, 10))
       }
     }
-  }, [])
+  }, [localWidth])
 
   // Store width in data attribute when it changes
   useEffect(() => {
@@ -168,6 +168,7 @@ export const CustomImageView = ({ node, selected }: ReactNodeViewProps) => {
   return (
     <NodeViewWrapper>
       <div ref={wrapperRef} className=" inline-block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imageRef}
           src={imageUrl}

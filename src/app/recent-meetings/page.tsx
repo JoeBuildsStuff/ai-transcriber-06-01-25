@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -54,11 +54,11 @@ export default function RecentMeetingsPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Utility function to get contact display name
-  const getContactDisplayName = (contact: Contact): string => {
+  const getContactDisplayName = useCallback((contact: Contact): string => {
     return contact.display_name || 
            `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 
            'Unknown Contact'
-  }
+  }, [])
 
   // Function to truncate summary text
   const truncateSummary = (summary: string | null, maxLength: number = 200): string => {
@@ -68,7 +68,7 @@ export default function RecentMeetingsPage() {
   }
 
   // Function to get contact names for a meeting
-  const getContactNamesForMeeting = (meeting: Meeting): string[] => {
+  const getContactNamesForMeeting = useCallback((meeting: Meeting): string[] => {
     if (!meeting.speaker_names) return []
     
     const contactIds = Object.values(meeting.speaker_names)
@@ -78,10 +78,10 @@ export default function RecentMeetingsPage() {
         return contact ? getContactDisplayName(contact) : null
       })
       .filter((name): name is string => name !== null)
-  }
+  }, [contacts, getContactDisplayName])
 
   // Function to check if meeting is within date range
-  const isMeetingInDateRange = (meeting: Meeting): boolean => {
+  const isMeetingInDateRange = useCallback((meeting: Meeting): boolean => {
     if (!startDate && !endDate) return true
     if (!meeting.meeting_at) return !startDate && !endDate // If no meeting date, only show if no date filter is applied
     
@@ -109,7 +109,7 @@ export default function RecentMeetingsPage() {
       console.error('Error parsing meeting date:', error)
       return !startDate && !endDate
     }
-  }
+  }, [startDate, endDate])
 
   // Clear date filters
   const clearDateFilters = () => {
@@ -282,7 +282,7 @@ export default function RecentMeetingsPage() {
       }))
       setMeetings(updatedMeetings)
     }
-  }, [contacts])
+  }, [contacts, meetings, getContactNamesForMeeting])
 
   // Filter meetings based on search term and date range
   useEffect(() => {
@@ -311,7 +311,7 @@ export default function RecentMeetingsPage() {
     }
 
     setFilteredMeetings(filtered)
-  }, [searchTerm, meetings, startDate, endDate])
+  }, [searchTerm, meetings, startDate, endDate, isMeetingInDateRange])
 
   // Clear selection when filtered meetings change
   useEffect(() => {
