@@ -88,6 +88,10 @@ export default function DataTableToolbar<TData>({
   const [nameEdited, setNameEdited] = React.useState(false)
   const [descriptionEdited, setDescriptionEdited] = React.useState(false)
   const suggestionSignatureRef = React.useRef<string | null>(null)
+  const suggestionAbortControllerRef = React.useRef<AbortController | null>(null)
+  const suggestionInFlightRef = React.useRef(false)
+  const nameEditedRef = React.useRef(nameEdited)
+  const descriptionEditedRef = React.useRef(descriptionEdited)
 
   // Load saved views for this table key on mount / change
   React.useEffect(() => {
@@ -148,36 +152,22 @@ export default function DataTableToolbar<TData>({
 
   const canSaveView = isFiltered || isSorted || hasVisibilityChanges || hasColumnOrderChanges
 
-  React.useEffect(() => {
-    if (!saveDialogOpen) {
-      suggestionSignatureRef.current = null
-      setIsSuggesting(false)
-      return
+  const suggestionSummary = React.useMemo<SuggestionSummary | null>(() => {
+    if (!canSaveView) {
+      return null
     }
 
-    if (!canSaveView || nameEdited || isSuggesting) {
-      return
-    }
+    const columns = table.getAllColumns()
 
     const hiddenColumns = Array.from(
-      new Set(
-        table
-          .getAllColumns()
-          .filter((column) => !column.getIsVisible())
-          .map((column) => column.id),
-      ),
+      new Set(columns.filter((column) => !column.getIsVisible()).map((column) => column.id)),
     )
 
     const visibleColumns = Array.from(
-      new Set(
-        table
-          .getAllColumns()
-          .filter((column) => column.getIsVisible())
-          .map((column) => column.id),
-      ),
+      new Set(columns.filter((column) => column.getIsVisible()).map((column) => column.id)),
     )
 
-    const summary: SuggestionSummary = {
+    return {
       tableKey,
       filters: columnFilters.map((filter) => ({
         column: filter.id,
@@ -191,32 +181,71 @@ export default function DataTableToolbar<TData>({
       visibleColumns,
       columnOrder: columnOrder ?? [],
     }
+  }, [canSaveView, table, columnFilters, sorting, columnOrder, tableKey])
 
-    const signature = JSON.stringify(summary)
-    if (suggestionSignatureRef.current === signature) {
+  const suggestionSignature = React.useMemo(() => {
+    if (!suggestionSummary) {
+      return null
+    }
+
+    return JSON.stringify(suggestionSummary)
+  }, [suggestionSummary])
+
+  React.useEffect(() => {
+    nameEditedRef.current = nameEdited
+  }, [nameEdited])
+
+  React.useEffect(() => {
+    descriptionEditedRef.current = descriptionEdited
+  }, [descriptionEdited])
+
+  React.useEffect(() => {
+    if (!saveDialogOpen) {
+      suggestionSignatureRef.current = null
+      setIsSuggesting(false)
+      suggestionAbortControllerRef.current?.abort()
+      suggestionAbortControllerRef.current = null
+      suggestionInFlightRef.current = false
       return
     }
 
-    suggestionSignatureRef.current = signature
+    if (!suggestionSummary || !suggestionSignature) {
+      return
+    }
+
+    if (!canSaveView || nameEditedRef.current) {
+      return
+    }
+
+    if (suggestionInFlightRef.current) {
+      return
+    }
+
+    if (suggestionSignatureRef.current === suggestionSignature) {
+      return
+    }
 
     const controller = new AbortController()
+    suggestionAbortControllerRef.current?.abort()
+    suggestionAbortControllerRef.current = controller
+    suggestionInFlightRef.current = true
+    suggestionSignatureRef.current = suggestionSignature
     setIsSuggesting(true)
 
-    generateSavedViewSuggestion(summary, controller.signal)
+    generateSavedViewSuggestion(suggestionSummary, controller.signal)
       .then((result) => {
         if (controller.signal.aborted) return
 
-        if (!nameEdited && result.name) {
+        if (!nameEditedRef.current && result.name) {
           setViewName(result.name)
         }
 
-        if (!descriptionEdited && typeof result.description === "string") {
+        if (!descriptionEditedRef.current && typeof result.description === "string") {
           setViewDescription(result.description)
         }
       })
       .catch((error) => {
         if (controller.signal.aborted) {
-          suggestionSignatureRef.current = null
           return
         }
 
@@ -225,25 +254,23 @@ export default function DataTableToolbar<TData>({
         suggestionSignatureRef.current = null
       })
       .finally(() => {
+        if (controller.signal.aborted) {
+          suggestionInFlightRef.current = false
+          return
+        }
+
+        suggestionAbortControllerRef.current = null
+        suggestionInFlightRef.current = false
         setIsSuggesting(false)
       })
 
     return () => {
-      suggestionSignatureRef.current = null
       controller.abort()
+      suggestionAbortControllerRef.current = null
+      suggestionInFlightRef.current = false
+      suggestionSignatureRef.current = null
     }
-  }, [
-    saveDialogOpen,
-    canSaveView,
-    columnFilters,
-    sorting,
-    columnOrder,
-    table,
-    nameEdited,
-    descriptionEdited,
-    tableKey,
-    isSuggesting,
-  ])
+  }, [saveDialogOpen, canSaveView, suggestionSummary, suggestionSignature])
 
   const handleReset = () => {
     table.resetColumnFilters(true)
