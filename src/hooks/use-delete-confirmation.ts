@@ -39,11 +39,11 @@ export function useDeleteConfirmation(options: UseDeleteConfirmationOptions = {}
       
       try {
         await deleteAction();
-        toast.success(customSuccessMessage || successMessage);
+        toast.success("Successfully deleted: ", {description: customSuccessMessage || successMessage});
         setShowConfirm(false);
       } catch (error) {
         console.error('Delete failed:', error);
-        toast.error(errorMessage);
+        toast.error("Failed to delete: ", {description: errorMessage});
         // Keep confirmation state on error so user can retry
       } finally {
         setIsDeleting(false);

@@ -49,6 +49,7 @@ export default function MeetingContent({ id, meetingData, meetingSpeakers, meeti
                 meetingTags={meetingTags}
                 audioPlayerRef={audioPlayerRef}
                 onTimeUpdate={handleTimeUpdate}
+                onAudioReset={onUploadSuccess}
             />
 
             {/* Meeting Body */}

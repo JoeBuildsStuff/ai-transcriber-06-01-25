@@ -3,7 +3,7 @@
 // NOTE: Created this component so that audio files are only retrieved if use attempts to play it.  
 // TODO: have to click play 2x to work?
 
-import { Pause, Play, RotateCcw, RotateCw, Volume2 } from "lucide-react";
+import { EllipsisVertical, Pause, Play, RotateCcw, RotateCw, Volume2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import {
@@ -15,18 +15,21 @@ import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } f
 import { Card, CardContent } from "./ui/card";
 import { toast } from "sonner";
 import Spinner from "./ui/spinner";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { DeleteButton } from "./ui/delete-button";
 
 interface LazyAudioPlayerProps {
   meetingId: string;
   duration: number;
   onTimeUpdate?: (time: number) => void;
+  onAudioReset?: () => void;
 }
 
 export interface AudioPlayerRef {
   seek: (time: number) => void;
 }
 
-const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meetingId, onTimeUpdate }, ref) => {
+const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meetingId, onTimeUpdate, onAudioReset }, ref) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(50);
@@ -36,9 +39,12 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const [audioDeleted, setAudioDeleted] = useState(false);
 
   useImperativeHandle(ref, () => ({
     seek(time: number) {
+      if (audioDeleted) return;
+
       if (audioRef.current && audioLoaded) {
         audioRef.current.currentTime = time;
         if (audioRef.current.paused) {
@@ -57,8 +63,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   }));
 
   const loadAudio = async () => {
-    if (isLoadingAudio || audioLoaded) return;
-    
+    if (isLoadingAudio || audioLoaded || audioDeleted) return;
+
     setIsLoadingAudio(true);
     try {
       const response = await fetch(`/api/meetings/${meetingId}/audio`);
@@ -74,6 +80,36 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
     } finally {
       setIsLoadingAudio(false);
     }
+  };
+
+  const resetAudioState = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setAudioUrl(null);
+    setAudioLoaded(false);
+    setProgress(0);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setAudioDeleted(true);
+  };
+
+  const handleDeleteAudio = async () => {
+    const response = await fetch(`/api/meetings/${meetingId}/audio`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const message = data?.error || data?.details || "Failed to delete audio file";
+      console.error("Error deleting audio file:", message);
+      throw new Error(message);
+    }
+
+    resetAudioState();
+    onAudioReset?.();
   };
 
   useEffect(() => {
@@ -120,6 +156,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   }, [onTimeUpdate, audioLoaded]);
 
   const togglePlayPause = async () => {
+    if (audioDeleted) return;
+
     if (!audioLoaded) {
       await loadAudio();
       return;
@@ -133,6 +171,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   const handleSeek = (value: number[]) => {
+    if (audioDeleted) return;
+
     if (audioRef.current && audioRef.current.duration > 0 && audioLoaded) {
       const seekTime = (value[0] / 100) * audioRef.current.duration;
       audioRef.current.currentTime = seekTime;
@@ -146,6 +186,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
   
   const handleForward = async () => {
+    if (audioDeleted) return;
+
     if (!audioLoaded) {
       await loadAudio();
       return;
@@ -156,6 +198,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   const handleRewind = async () => {
+    if (audioDeleted) return;
+
     if (!audioLoaded) {
       await loadAudio();
       return;
@@ -167,6 +211,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
 
   const speeds = [1, 1.5, 2, 2.5, 3];
   const handleSpeedChange = () => {
+    if (audioDeleted) return;
     const currentIndex = speeds.indexOf(playbackRate);
     const nextIndex = (currentIndex + 1) % speeds.length;
     setPlaybackRate(speeds[nextIndex]);
@@ -182,9 +227,9 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   return (
-    <Card className="border-none">
-        <CardContent className="">
-          {audioLoaded && audioUrl && (
+    <Card className="border-none relative">
+        <CardContent className="mr-[1rem]">
+          {(audioLoaded && audioUrl) && (
             <audio 
               ref={audioRef} 
               src={audioUrl} 
@@ -192,14 +237,14 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
               onLoadedMetadata={() => setCurrentTime(0)} 
             />
           )}
-          <div className="flex flex-col items-center justify-center w-full">
-            <div className="w-full">
+          <div className="flex flex-col items-center justify-center w-full ">
+            <div className="w-full ">
               <Slider
                 value={[progress]}
                 onValueChange={handleSeek}
                 max={100}
                 step={0.1}
-                disabled={!audioLoaded}
+                disabled={!audioLoaded || audioDeleted}
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 showTooltip
@@ -214,10 +259,10 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
             </div>
 
             <div className="flex items-center justify-center sm:gap-2 -my-5">
-              <Button variant="ghost" onClick={handleRewind} disabled={isLoadingAudio}>
+              <Button variant="ghost" onClick={handleRewind} disabled={isLoadingAudio || audioDeleted}>
                 <RotateCcw className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" onClick={togglePlayPause} disabled={isLoadingAudio}>
+              <Button variant="ghost" onClick={togglePlayPause} disabled={isLoadingAudio || audioDeleted}>
                 {isLoadingAudio ? (
                   <Spinner className="stroke-5 size-4 stroke-muted-foreground" />
                 ) : isPlaying ? (
@@ -226,12 +271,12 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
                   <Play className="w-4 h-4" />
                 )}
               </Button>
-              <Button variant="ghost" onClick={handleForward} disabled={isLoadingAudio}>
+              <Button variant="ghost" onClick={handleForward} disabled={isLoadingAudio || audioDeleted}>
                 <RotateCw className="w-4 h-4" />
               </Button>
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <Button variant="ghost" disabled={!audioLoaded}>
+                  <Button variant="ghost" disabled={!audioLoaded || audioDeleted}>
                     <Volume2 className="w-4 h-4" />
                   </Button>
                 </HoverCardTrigger>
@@ -246,11 +291,43 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
                   />
                 </HoverCardContent>
               </HoverCard>
-              <Button variant="ghost" onClick={handleSpeedChange} className="font-semibold text-xs" disabled={!audioLoaded}>
+              <Button variant="ghost" onClick={handleSpeedChange} className="font-semibold text-xs" disabled={!audioLoaded || audioDeleted}>
                 {playbackRate.toFixed(1)}x
               </Button>
             </div>
           </div>
+          {!audioLoaded && !audioUrl && audioDeleted && (
+            <div className="text-center text-sm text-muted-foreground mb-4">
+              Audio removed. Upload a new file to play back the meeting.
+            </div>
+          )}
+          {!audioDeleted && (
+              <Popover>
+                <PopoverTrigger asChild className="absolute right-1 top-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-fit h-fit py-2 px-1 m-0"
+                  >
+                    <EllipsisVertical className="size-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-fit rounded-2xl" align="end">
+                  <DeleteButton
+                    variant="destructive"
+                    size="sm"
+                    showAnimation
+                    tooltipText="Delete audio"
+                    tooltipConfirmText="Click to confirm"
+                    tooltipCancelText="Cancel"
+                    confirmText="Delete"
+                    onDelete={handleDeleteAudio}
+                    successMessage="Audio file removed. You can upload a new one."
+                    errorMessage="Failed to delete audio file"
+                  />
+                </PopoverContent>
+              </Popover>
+          )}
         </CardContent>
     </Card>
   );

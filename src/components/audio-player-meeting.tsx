@@ -9,9 +9,10 @@ interface MeetingAudioPlayerProps {
   meetingId: string;
   duration: number;
   onTimeUpdate?: (time: number) => void;
+  onAudioReset?: () => void;
 }
 
-const MeetingAudioPlayer = forwardRef<AudioPlayerRef, MeetingAudioPlayerProps>(({ meetingId, duration, onTimeUpdate }, ref) => {
+const MeetingAudioPlayer = forwardRef<AudioPlayerRef, MeetingAudioPlayerProps>(({ meetingId, duration, onTimeUpdate, onAudioReset }, ref) => {
   const audioPlayerRef = useRef<AudioPlayerRef>(null);
 
   useImperativeHandle(ref, () => ({
@@ -36,6 +37,7 @@ const MeetingAudioPlayer = forwardRef<AudioPlayerRef, MeetingAudioPlayerProps>((
         meetingId={meetingId}
         duration={duration}
         onTimeUpdate={handleTimeUpdate}
+        onAudioReset={onAudioReset}
       />
     </div>
   );

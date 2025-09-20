@@ -112,12 +112,6 @@ export default function AttendeesSelector({ meetingId, meetingAttendees }: Atten
                 <MultipleSelector
                     commandProps={{
                         label: "Manage attendees",
-                        filter: (value: string, search: string) => {
-                            // Only search in the label (display name), not the value (ID)
-                            const option = allContacts.find(contact => contact.value === value);
-                            if (!option) return 0;
-                            return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                        }
                     }}
                     value={selectedAttendees}
                     options={allContacts}

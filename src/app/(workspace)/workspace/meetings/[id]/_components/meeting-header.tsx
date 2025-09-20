@@ -32,9 +32,10 @@ interface MeetingHeaderProps {
     meetingTags: TagRow[];
     audioPlayerRef?: RefObject<AudioPlayerRef | null>;
     onTimeUpdate?: (time: number) => void;
+    onAudioReset?: () => void;
 }
 
-export default function MeetingHeader({ id, meetingData, meetingAttendees, meetingTags, audioPlayerRef, onTimeUpdate }: MeetingHeaderProps) {
+export default function MeetingHeader({ id, meetingData, meetingAttendees, meetingTags, audioPlayerRef, onTimeUpdate, onAudioReset }: MeetingHeaderProps) {
 
     return (
         <div className="flex flex-col gap-3">
@@ -106,12 +107,15 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
 
             {/* Audio Player */}
             {meetingData.audio_file_path && (
-            <MeetingAudioPlayer 
-                meetingId={id} 
-                duration={0} // Duration will be calculated from audio metadata when loaded
-                ref={audioPlayerRef}
-                onTimeUpdate={onTimeUpdate}
-            />
+            <div className="flex flex-col gap-2">
+                <MeetingAudioPlayer 
+                    meetingId={id} 
+                    duration={0} // Duration will be calculated from audio metadata when loaded
+                    ref={audioPlayerRef}
+                    onTimeUpdate={onTimeUpdate}
+                    onAudioReset={onAudioReset}
+                />
+            </div>
             )}
         </div>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MeetingTranscript from "./meeting-transcript";
 import Summary from "./meeting-outline";
@@ -19,6 +19,10 @@ interface MeetingBodyProps {
 
 export default function MeetingBody({ meetingData, meetingSpeakers: initialMeetingSpeakers, meetingId, onSeekAndPlay, currentTime = 0, onUploadSuccess }: MeetingBodyProps) {
     const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>(initialMeetingSpeakers);
+
+    useEffect(() => {
+        setMeetingSpeakers(initialMeetingSpeakers);
+    }, [initialMeetingSpeakers]);
 
     return (
         <div className="h-full relative">

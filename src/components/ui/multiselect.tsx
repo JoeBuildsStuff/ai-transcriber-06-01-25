@@ -398,20 +398,41 @@ const MultipleSelector = ({
     [options, selected]
   )
 
-  /** Avoid Creatable Selector freezing or lagging when paste a long string. */
+  const optionLookup = React.useMemo(() => {
+    const map = new Map<string, Option>()
+    Object.values(selectables).forEach((group) => {
+      group.forEach((option) => {
+        map.set(option.value, option)
+      })
+    })
+    selected.forEach((option) => {
+      map.set(option.value, option)
+    })
+    return map
+  }, [selectables, selected])
+
+  /**
+   * Derive the Command filter that powers search. We honor any consumer override, otherwise
+   * we search option labels (falling back to raw values) so lookups behave intuitively everywhere.
+   */
   const commandFilter = React.useCallback(() => {
     if (commandProps?.filter) {
       return commandProps.filter
     }
 
-    if (creatable) {
-      return (value: string, search: string) => {
-        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : -1
-      }
+    const defaultFilter = (value: string, search: string) => {
+      const query = search.trim().toLowerCase()
+      if (!query) return 1
+
+      const option = optionLookup.get(value)
+      const labelMatch = option?.label?.toLowerCase().includes(query)
+      if (labelMatch) return 1
+
+      return value.toLowerCase().includes(query) ? 1 : -1
     }
-    // Using default filter in `cmdk`. We don&lsquo;t have to provide it.
-    return undefined
-  }, [creatable, commandProps?.filter])
+
+    return defaultFilter
+  }, [commandProps?.filter, optionLookup])
 
   return (
     <Command
