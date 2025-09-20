@@ -63,7 +63,11 @@ export async function executeCreatePersonContact(parameters: Record<string, unkn
       return { success: false, error: 'At least first name or last name is required' }
     }
     
-    const result = await createPerson(parameters)
+    // Filter out client timezone parameters that shouldn't be passed to the database
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { client_tz, client_now_iso, client_utc_offset, ...filteredParameters } = parameters
+    
+    const result = await createPerson(filteredParameters)
 
     if (result.success && result.data) {
       return {
