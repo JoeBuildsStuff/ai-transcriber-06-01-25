@@ -3,7 +3,7 @@
 // NOTE: Created this component so that audio files are only retrieved if use attempts to play it.  
 // TODO: have to click play 2x to work?
 
-import { EllipsisVertical, Pause, Play, RotateCcw, RotateCw, Volume2 } from "lucide-react";
+import { AudioLines, EllipsisVertical, Pause, Play, RotateCcw, RotateCw, Trash2, Volume2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import {
@@ -15,8 +15,13 @@ import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } f
 import { Card, CardContent } from "./ui/card";
 import { toast } from "sonner";
 import Spinner from "./ui/spinner";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { DeleteButton } from "./ui/delete-button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface LazyAudioPlayerProps {
   meetingId: string;
@@ -40,6 +45,7 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [audioDeleted, setAudioDeleted] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   useImperativeHandle(ref, () => ({
     seek(time: number) {
@@ -96,20 +102,35 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
   };
 
   const handleDeleteAudio = async () => {
-    const response = await fetch(`/api/meetings/${meetingId}/audio`, {
-      method: "DELETE",
-    });
+    if (isConfirmingDelete) {
+      try {
+        const response = await fetch(`/api/meetings/${meetingId}/audio`, {
+          method: "DELETE",
+        });
 
-    const data = await response.json().catch(() => null);
+        const data = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      const message = data?.error || data?.details || "Failed to delete audio file";
-      console.error("Error deleting audio file:", message);
-      throw new Error(message);
+        if (!response.ok) {
+          const message = data?.error || data?.details || "Failed to delete audio file";
+          console.error("Error deleting audio file:", message);
+          throw new Error(message);
+        }
+
+        resetAudioState();
+        onAudioReset?.();
+        setIsConfirmingDelete(false);
+      } catch (error) {
+        console.error("Error deleting audio:", error);
+        toast.error("Failed to delete audio file");
+        setIsConfirmingDelete(false);
+      }
+    } else {
+      setIsConfirmingDelete(true);
+      // Reset confirmation after 3 seconds
+      setTimeout(() => {
+        setIsConfirmingDelete(false);
+      }, 3000);
     }
-
-    resetAudioState();
-    onAudioReset?.();
   };
 
   useEffect(() => {
@@ -302,8 +323,8 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
             </div>
           )}
           {!audioDeleted && (
-              <Popover>
-                <PopoverTrigger asChild className="absolute right-1 top-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="absolute right-1 top-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -311,22 +332,28 @@ const LazyAudioPlayer = forwardRef<AudioPlayerRef, LazyAudioPlayerProps>(({ meet
                   >
                     <EllipsisVertical className="size-4" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit rounded-2xl" align="end">
-                  <DeleteButton
-                    variant="destructive"
-                    size="sm"
-                    showAnimation
-                    tooltipText="Delete audio"
-                    tooltipConfirmText="Click to confirm"
-                    tooltipCancelText="Cancel"
-                    confirmText="Delete"
-                    onDelete={handleDeleteAudio}
-                    successMessage="Audio file removed. You can upload a new one."
-                    errorMessage="Failed to delete audio file"
-                  />
-                </PopoverContent>
-              </Popover>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-fit" align="end">
+                  <DropdownMenuLabel>Audio Actions</DropdownMenuLabel>
+                  <DropdownMenuItem disabled={true}>
+                    <AudioLines className="size-4" />
+                    Edit Audio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    variant='destructive'
+                    onClick={handleDeleteAudio}
+                    onSelect={(e) => {
+                      if (!isConfirmingDelete) {
+                        e.preventDefault();
+                      }
+                    }}
+                    className="rounded-lg"
+                  >
+                    <Trash2 className="size-4" />
+                    {isConfirmingDelete ? 'Confirm Delete' : 'Delete Audio'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
           )}
         </CardContent>
     </Card>
