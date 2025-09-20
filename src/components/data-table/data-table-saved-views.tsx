@@ -14,6 +14,7 @@ import {
   CircleCheckBig,
   GripVertical,
   Pin,
+  Settings,
   Telescope,
   Trash2,
   X,
@@ -37,6 +38,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -68,7 +70,59 @@ import {
   generateSavedViewSuggestion,
   type SuggestionSummary,
 } from "@/lib/saved-view-suggestion"
+import { dataTableConfig, type FilterOperator } from "@/lib/data-table"
 import Spinner from "../ui/spinner"
+
+// Helper function to get operator label
+function getOperatorLabel(operator: FilterOperator): string {
+  const allOperators = [
+    ...dataTableConfig.textOperators,
+    ...dataTableConfig.numericOperators,
+    ...dataTableConfig.dateOperators,
+    ...dataTableConfig.selectOperators,
+    ...dataTableConfig.multiSelectOperators,
+    ...dataTableConfig.booleanOperators,
+  ]
+  return allOperators.find(op => op.value === operator)?.label ?? operator
+}
+
+// Helper function to format filter value for display
+function formatFilterValue(value: unknown, variant: string, operator: FilterOperator): string {
+  if (["isEmpty", "isNotEmpty"].includes(operator)) {
+    return ""
+  }
+  
+  if (Array.isArray(value)) {
+    if (operator === "isBetween" && value.length === 2) {
+      return `${value[0]} - ${value[1]}`
+    }
+    return value.join(", ")
+  }
+  
+  if (variant === "date" && typeof value === "string") {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        month: "2-digit",
+        day: "2-digit", 
+        year: "2-digit",
+      }).format(new Date(value))
+    } catch {
+      return String(value)
+    }
+  }
+  
+  if (variant === "boolean" && typeof value === "string") {
+    return value === "true" ? "True" : "False"
+  }
+  
+  return String(value)
+}
+
+// Helper function to format column name for display
+function getColumnDisplayName<TData>(columnId: string, table: Table<TData>): string {
+  const column = table.getColumn(columnId)
+  return column?.columnDef.meta?.label ?? columnId
+}
 
 interface SortableViewItemProps {
   id: string
@@ -153,6 +207,7 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
   const [localViews, setLocalViews] = useState<SavedViewRecord[]>([])
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create")
   const [viewName, setViewName] = useState("")
   const [viewDescription, setViewDescription] = useState("")
   const [isLoadingViews, setIsLoadingViews] = useState(false)
@@ -285,11 +340,16 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
 
   useEffect(() => {
     if (!saveDialogOpen) {
+      setDialogMode("create")
       suggestionSignatureRef.current = null
       setIsSuggesting(false)
       suggestionAbortControllerRef.current?.abort()
       suggestionAbortControllerRef.current = null
       suggestionInFlightRef.current = false
+      return
+    }
+
+    if (dialogMode === "edit") {
       return
     }
 
@@ -354,7 +414,7 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
       suggestionInFlightRef.current = false
       suggestionSignatureRef.current = null
     }
-  }, [saveDialogOpen, canSaveView, suggestionSummary, suggestionSignature])
+  }, [saveDialogOpen, canSaveView, suggestionSummary, suggestionSignature, dialogMode])
 
   useEffect(() => {
     if (saveDialogOpen) {
@@ -378,10 +438,23 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
     setSelectedViewId(null)
   }
 
+  const selectedView = useMemo(
+    () => localViews.find((view) => view.id === selectedViewId) ?? null,
+    [localViews, selectedViewId],
+  )
+
   const handleOpenSaveDialog = () => {
-    const defaultName = viewName.trim().length > 0 ? viewName : `View ${savedViews.length + 1}`
-    setViewName(defaultName)
-    setViewDescription("")
+    if (selectedView) {
+      setDialogMode("edit")
+      setViewName(selectedView.name)
+      setViewDescription(selectedView.description ?? "")
+    } else {
+      const defaultName = viewName.trim().length > 0 ? viewName : `View ${savedViews.length + 1}`
+      setDialogMode("create")
+      setViewName(defaultName)
+      setViewDescription("")
+    }
+
     setNameEdited(false)
     setDescriptionEdited(false)
     suggestionSignatureRef.current = null
@@ -398,6 +471,7 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
     }
 
     const state = table.getState()
+    const isEditing = dialogMode === "edit" && Boolean(selectedViewId)
 
     startSaving(async () => {
       const result = await saveView({
@@ -411,6 +485,7 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
           columnOrder: state.columnOrder ?? [],
           pagination: state.pagination,
         },
+        viewId: isEditing ? selectedViewId ?? undefined : undefined,
       })
 
       if (!result.success || !result.data) {
@@ -419,6 +494,7 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
       }
 
       setSavedViews((prev) => {
+        if (!result.data) return prev
         const deduped = prev.filter((view) => view.id !== result.data!.id)
         return [result.data!, ...deduped].sort(
           (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -429,8 +505,8 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
       setSaveDialogOpen(false)
       setViewName("")
       setViewDescription("")
-      toast.success("View saved", {
-        description: `Saved as ${result.data.name}`,
+      toast.success(isEditing ? "View updated" : "View saved", {
+        description: result.data.name,
       })
     })
   }
@@ -488,12 +564,14 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
 
   const deletingInProgress = isDeleting ? deletingViewId : null
 
-  const selectedView = useMemo(
-    () => localViews.find((view) => view.id === selectedViewId) ?? null,
-    [localViews, selectedViewId],
-  )
-
   const hasViews = localViews.length > 0
+  const showSaveButton = canSaveView || Boolean(selectedView)
+  const saveButtonLabel = selectedView ? selectedView.name : "Save View"
+  const dialogTitle = dialogMode === "edit" ? "Edit Saved View" : "Save Current View"
+  const dialogDescription = dialogMode === "edit"
+    ? "Update how this view is labeled. Any current filters, sorting, and column preferences will be saved again."
+    : "Store the current filters, sorting, and column preferences as a reusable view."
+  const submitLabel = dialogMode === "edit" ? "Update" : "Save"
 
   return (
     <>
@@ -505,14 +583,14 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
             onClick={handleReset}
             className="flex items-center gap-1"
           >
-            Reset
             <X className="h-4 w-4" />
+            Reset
           </Button>
         ) : null}
 
-        {canSaveView ? (
+        {showSaveButton ? (
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={handleOpenSaveDialog}
             disabled={isSaving}
@@ -522,8 +600,12 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
               <Spinner />
             ) : (
               <>
-                Save View
-                <Pin className="size-4 shrink-0" />
+                {selectedView ? (
+                  <Settings className="size-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <Pin className="size-4 shrink-0 text-muted-foreground" />
+                )}
+                <span>{saveButtonLabel}</span>
               </>
             )}
           </Button>
@@ -531,14 +613,12 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Telescope className="size-4 shrink-0" strokeWidth={1.5} />
-              Views
-              {selectedView && (
-                <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                  ({selectedView.name})
-                </span>
-              )}
+            <Button variant="outline" size="sm">
+              <Telescope className="w-4 h-4" />
+              <div>Views</div>
+              <Badge variant="secondary">
+                {localViews.length}
+              </Badge>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-0 rounded-xl" align="end">
@@ -594,10 +674,8 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleSaveView} className="space-y-4">
             <DialogHeader>
-              <DialogTitle>Save Current View</DialogTitle>
-              <DialogDescription>
-                Store the current filters, sorting, and column preferences as a reusable view.
-              </DialogDescription>
+              <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-2">
@@ -642,12 +720,109 @@ export default function DataTableSavedViews<TData>({ table, tableKey }: DataTabl
               />
             </div>
 
+            {/* Show applied view filter and sort details */}
+            {canSaveView && (
+              <div className="space-y-3">
+                <Label>Applied Filters & Sorts</Label>
+                
+                {/* Display Filters */}
+                {columnFilters.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">Filters:</div>
+                    <div className="space-y-1">
+                      {columnFilters.map((filter, index) => {
+                        const filterValue = filter.value as { operator?: string; value?: unknown; variant?: string } | undefined
+                        const operator = filterValue?.operator ?? "iLike"
+                        const value = filterValue?.value ?? ""
+                        const variant = filterValue?.variant ?? "text"
+                        const columnName = getColumnDisplayName(filter.id, table)
+                        const operatorLabel = getOperatorLabel(operator as FilterOperator)
+                        const formattedValue = formatFilterValue(value, variant, operator as FilterOperator)
+                        
+                        return (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {columnName}
+                            </Badge>
+                            <span className="text-muted-foreground">{operatorLabel}</span>
+                            {formattedValue && (
+                              <Badge variant="secondary" className="text-xs">
+                                {formattedValue}
+                              </Badge>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Display Sorts */}
+                {sorting.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">Sorts:</div>
+                    <div className="space-y-1">
+                      {sorting.map((sort, index) => {
+                        const columnName = getColumnDisplayName(sort.id, table)
+                        const direction = sort.desc ? "Descending" : "Ascending"
+                        
+                        return (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {columnName}
+                            </Badge>
+                            <span className="text-muted-foreground">{direction}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Display Column Visibility Changes */}
+                {hasVisibilityChanges && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">Hidden Columns:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(columnVisibility)
+                        .filter(([, visible]) => !visible)
+                        .map(([columnId]) => {
+                          const columnName = getColumnDisplayName(columnId, table)
+                          return (
+                            <Badge key={columnId} variant="secondary" className="text-xs">
+                              {columnName}
+                            </Badge>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Display Column Order Changes */}
+                {hasColumnOrderChanges && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">Column Order:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {columnOrder?.map((columnId) => {
+                        const columnName = getColumnDisplayName(columnId, table)
+                        return (
+                          <Badge key={columnId} variant="outline" className="text-xs">
+                            {columnName}
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <DialogFooter className="flex items-center justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setSaveDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? <Spinner /> : "Save"}
+                {isSaving ? <Spinner /> : submitLabel}
               </Button>
             </DialogFooter>
           </form>
