@@ -13,6 +13,7 @@ import DataTableRowEditSingle from "./data-table-row-edit-single"
 import DataTableRowEditMulti from "./data-table-row-edit-multi"
 import DataTableRowDelete from "./data-table-row-delete"
 import { DataTableViewOptions } from "./data-table-view-options"
+import DataTableSavedViews from "./data-table-saved-views"
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -109,6 +110,7 @@ export default function DataTableToolbar<TData>({
       {(isFiltered || isSorted) && (
         <Button
           variant="secondary"
+          size="sm"
           onClick={() => {
             table.resetColumnFilters(true)
             table.resetSorting(true)
@@ -120,6 +122,9 @@ export default function DataTableToolbar<TData>({
       )}
 
       <div className="ml-auto flex items-center gap-2">
+        {/* Saved Views */}
+        <DataTableSavedViews />
+
         {/* Column visibility toggle */}
         <DataTableViewOptions table={table} />
       </div>
