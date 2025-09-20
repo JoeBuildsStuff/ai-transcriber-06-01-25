@@ -78,12 +78,12 @@ export default function DataTableFilter<TData>({ table }: { table: Table<TData> 
         // Extract filter details from the value object
         const filterValue = filter.value as { operator?: string; value?: unknown; variant?: string } | undefined;
         const operator = filterValue?.operator ?? "iLike";
-        const value = filterValue?.value ?? "";
+        const value = (filterValue?.value ?? "") as ExtendedColumnFilter<TData>["value"];
 
         return {
           filterId: `${filter.id}-${index}`, // Create unique ID
           id: filter.id as Extract<keyof TData, string>,
-          value: value as string | number | boolean | string[] | Date,
+          value,
           operator: operator as FilterOperator,
           variant: variant,
         };

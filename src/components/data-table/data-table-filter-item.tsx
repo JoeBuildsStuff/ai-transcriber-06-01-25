@@ -32,7 +32,8 @@ import { CSS } from "@dnd-kit/utilities"
 import { Table } from "@tanstack/react-table"
 import { cn } from "@/lib/utils"
 import { dataTableConfig } from "@/lib/data-table"
-import type { ExtendedColumnFilter, FilterVariant, FilterOperator } from "@/lib/data-table"
+import type { ExtendedColumnFilter, FilterVariant, FilterOperator, RelativeDateValue } from "@/lib/data-table"
+import { isRelativeDateValue, resolveRelativeDate } from "@/lib/data-table"
 import { InputNumber } from "@/components/ui/input-number"
 
 // Format date utility
@@ -280,29 +281,72 @@ export default function DataTableFilterItem<TData>({
       }
 
       case "date": {
-        const date = filter.value ? new Date(filter.value as string) : undefined
-        return (
+        const isBetween = filter.operator === "isBetween"
+        const relativeValue = isRelativeDateValue(filter.value)
+          ? filter.value
+          : undefined
+        const mode: "absolute" | "relative" = !isBetween && relativeValue
+          ? "relative"
+          : "absolute"
+
+        const defaultRelativeValue: RelativeDateValue = {
+          type: "relative",
+          amount: 3,
+          unit: "days",
+          direction: "from_now",
+        }
+
+        const dateValue = (() => {
+          if (relativeValue || isBetween) {
+            return undefined
+          }
+
+          const raw = filter.value
+          if (!raw) return undefined
+          if (raw instanceof Date) return raw
+          if (typeof raw === "string") {
+            const parsed = new Date(raw)
+            return Number.isNaN(parsed.getTime()) ? undefined : parsed
+          }
+          return undefined
+        })()
+
+        const handleModeChange = (nextMode: "absolute" | "relative") => {
+          if (nextMode === "relative") {
+            onFilterChange({
+              ...filter,
+              value: relativeValue ?? { ...defaultRelativeValue },
+            })
+          } else {
+            onFilterChange({
+              ...filter,
+              value: "",
+            })
+          }
+        }
+
+        const renderAbsolutePicker = () => (
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
                   "w-40 justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
+                  !dateValue && "text-muted-foreground"
                 )}
               >
                 <CalendarDays className="mr-2 h-4 w-4" />
-                {date ? formatDate(date) : "Pick a date"}
+                {dateValue ? formatDate(dateValue, { year: "numeric" }) : "Pick a date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={date}
+                selected={dateValue}
                 onSelect={(selectedDate) => {
-                  onFilterChange({ 
-                    ...filter, 
-                    value: selectedDate ? selectedDate.toISOString() : "" 
+                  onFilterChange({
+                    ...filter,
+                    value: selectedDate ? selectedDate.toISOString() : "",
                   })
                   setCalendarOpen(false)
                 }}
@@ -310,6 +354,82 @@ export default function DataTableFilterItem<TData>({
               />
             </PopoverContent>
           </Popover>
+        )
+
+        const renderRelativeControls = () => {
+          const activeRelative = relativeValue ?? { ...defaultRelativeValue }
+          const previewDate = resolveRelativeDate(activeRelative)
+
+          const updateRelative = (partial: Partial<RelativeDateValue>) => {
+            onFilterChange({
+              ...filter,
+              value: {
+                ...activeRelative,
+                ...partial,
+              },
+            })
+          }
+
+          return (
+            <div className="flex items-center gap-2">
+              <InputNumber
+                value={activeRelative.amount}
+                onChange={(value) => {
+                  if (Number.isNaN(value) || value < 0) {
+                    return
+                  }
+                  updateRelative({ amount: Math.round(value) })
+                }}
+                className="w-16"
+              />
+              <Select
+                value={activeRelative.unit}
+                onValueChange={(unit) => updateRelative({ unit: unit as RelativeDateValue["unit"] })}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="days">day(s)</SelectItem>
+                  <SelectItem value="weeks">week(s)</SelectItem>
+                  <SelectItem value="months">month(s)</SelectItem>
+                  <SelectItem value="years">year(s)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={activeRelative.direction}
+                onValueChange={(direction) => updateRelative({ direction: direction as RelativeDateValue["direction"] })}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ago">ago</SelectItem>
+                  <SelectItem value="from_now">from now</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-muted-foreground">
+                ({formatDate(previewDate, { month: "short", day: "2-digit", year: "numeric" })})
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            {!isBetween && (
+              <Select value={mode} onValueChange={(value) => handleModeChange(value as "absolute" | "relative") }>
+                <SelectTrigger className="w-36 justify-start text-left">
+                  <SelectValue placeholder="Select mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="absolute">Specific date</SelectItem>
+                  <SelectItem value="relative">Relative to now</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {mode === "relative" ? renderRelativeControls() : renderAbsolutePicker()}
+          </div>
         )
       }
 

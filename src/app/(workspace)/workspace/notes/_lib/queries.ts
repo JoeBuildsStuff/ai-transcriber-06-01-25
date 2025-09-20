@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
-import { parseSearchParams, SearchParams } from "@/lib/data-table"
+import { normalizeFilterValue, parseSearchParams, SearchParams } from "@/lib/data-table"
+import type { FilterVariant } from "@/lib/data-table"
 import { NoteWithAssociations, Contact, Meeting } from "./validations"
 import { PostgrestError } from "@supabase/supabase-js"
 
@@ -100,14 +101,22 @@ export async function getNotes(searchParams: SearchParams): Promise<{
   filters.forEach(filter => {
     const { id: columnId, value: filterValue } = filter
     if (typeof filterValue === 'object' && filterValue !== null && 'operator' in filterValue) {
-      const { operator, value } = filterValue as { operator: string, value: unknown }
+      const { operator, value, variant } = filterValue as { operator: string, value: unknown, variant?: FilterVariant }
+      const normalizedValue = normalizeFilterValue(value, variant)
 
-      if (!operator || value === null || value === undefined || (typeof value === 'string' && value === '')) return
+      if (
+        !operator ||
+        normalizedValue === null ||
+        normalizedValue === undefined ||
+        (typeof normalizedValue === 'string' && normalizedValue === '')
+      ) {
+        return
+      }
 
       switch (columnId) {
         case "content":
           if (operator === "iLike") {
-            query = query.ilike("content", `%${value}%`)
+            query = query.ilike("content", `%${normalizedValue}%`)
           }
           break
         case "associations":
@@ -119,28 +128,32 @@ export async function getNotes(searchParams: SearchParams): Promise<{
           // Handle regular columns
           switch (operator) {
             case "iLike":
-              query = query.ilike(columnId, `%${value}%`)
+              query = query.ilike(columnId, `%${normalizedValue}%`)
               break
             case "notILike":
-              query = query.not(columnId, 'ilike', `%${value}%`)
+              query = query.not(columnId, 'ilike', `%${normalizedValue}%`)
               break
             case "eq":
-              query = query.eq(columnId, value)
+              query = query.eq(columnId, normalizedValue as string | number | boolean)
               break
             case "ne":
-              query = query.neq(columnId, value)
+              query = query.neq(columnId, normalizedValue as string | number | boolean)
               break
             case "lt":
-              query = query.lt(columnId, value)
+              query = query.lt(columnId, normalizedValue as string | number)
               break
             case "gt":
-              query = query.gt(columnId, value)
+              query = query.gt(columnId, normalizedValue as string | number)
               break
             case "inArray":
-              query = query.in(columnId, value as (string | number)[])
+              if (Array.isArray(normalizedValue)) {
+                query = query.in(columnId, normalizedValue as (string | number)[])
+              }
               break
             case "notInArray":
-              query = query.not(columnId, 'in', `(${(value as (string | number)[]).join(',')})`)
+              if (Array.isArray(normalizedValue)) {
+                query = query.not(columnId, 'in', `(${(normalizedValue as (string | number)[]).join(',')})`)
+              }
               break
             case "isEmpty":
               query = query.or(`${columnId}.is.null,${columnId}.eq.""`)
@@ -149,8 +162,10 @@ export async function getNotes(searchParams: SearchParams): Promise<{
               query = query.not(columnId, 'is', null).not(columnId, 'eq', '""')
               break
             case "isBetween":
-              if (Array.isArray(value) && value.length === 2) {
-                query = query.gte(columnId, value[0]).lte(columnId, value[1])
+              if (Array.isArray(normalizedValue) && normalizedValue.length === 2) {
+                query = query
+                  .gte(columnId, normalizedValue[0] as string | number)
+                  .lte(columnId, normalizedValue[1] as string | number)
               }
               break
             default:
@@ -245,5 +260,4 @@ export async function getNoteById(noteId: string) {
     throw error
   }
 }
-
 

@@ -228,12 +228,88 @@ export interface Option {
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
 }
 
+export interface RelativeDateValue {
+  type: "relative";
+  amount: number;
+  unit: "days" | "weeks" | "months" | "years";
+  direction: "ago" | "from_now";
+}
+
+export function isRelativeDateValue(value: unknown): value is RelativeDateValue {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<RelativeDateValue>;
+  return (
+    candidate.type === "relative" &&
+    typeof candidate.amount === "number" &&
+    ["days", "weeks", "months", "years"].includes(candidate.unit ?? "") &&
+    ["ago", "from_now"].includes(candidate.direction ?? "")
+  );
+}
+
+export function resolveRelativeDate(value: RelativeDateValue, referenceDate: Date = new Date()): Date {
+  const target = new Date(referenceDate);
+  const multiplier = value.direction === "ago" ? -1 : 1;
+
+  switch (value.unit) {
+    case "days":
+      target.setDate(target.getDate() + multiplier * value.amount);
+      break;
+    case "weeks":
+      target.setDate(target.getDate() + multiplier * value.amount * 7);
+      break;
+    case "months":
+      target.setMonth(target.getMonth() + multiplier * value.amount);
+      break;
+    case "years":
+      target.setFullYear(target.getFullYear() + multiplier * value.amount);
+      break;
+    default:
+      break;
+  }
+
+  return target;
+}
+
+export function normalizeFilterValue(value: unknown, variant?: FilterVariant): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeFilterValue(item, variant));
+  }
+
+  if (variant === "date" || variant === "dateRange") {
+    if (isRelativeDateValue(value)) {
+      return resolveRelativeDate(value).toISOString();
+    }
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+  }
+
+  if (variant === "number" && typeof value === "string" && value !== "") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+
+  if (variant === "boolean" && typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+
+  return value;
+}
+
 export type FilterOperator = DataTableConfig["operators"][number];
 export type FilterVariant = DataTableConfig["filterVariants"][number];
 
 export interface ExtendedColumnFilter<TData> {
   id: Extract<keyof TData, string>;
-  value: string | string[] | number | boolean | Date;
+  value: string | string[] | number | boolean | Date | RelativeDateValue;
   variant: FilterVariant;
   operator: FilterOperator;
   filterId: string;
@@ -269,8 +345,12 @@ export function customFilterFn(row: { getValue: (key: string) => unknown }, colu
   }
   
   // Convert date strings to Date objects for date operations
-  if (variant === "date" && typeof value === "string" && value !== "") {
-    compareValue = new Date(value);
+  if (variant === "date") {
+    if (isRelativeDateValue(value)) {
+      compareValue = resolveRelativeDate(value);
+    } else if (typeof value === "string" && value !== "") {
+      compareValue = new Date(value);
+    }
   }
   
   // Convert string booleans to actual booleans
