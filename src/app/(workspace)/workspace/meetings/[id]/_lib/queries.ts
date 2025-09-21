@@ -21,60 +21,69 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
   const sort = sorting ?? []
   const filters = columnFilters ?? []
 
-  // Check if we have a speakers filter
+  // Track filters that require joining helper tables
   const speakersFilter = filters.find(filter => filter.id === 'speakers')
   const hasSpeakersFilter = !!speakersFilter
-  
-  // Check if we have an attendees filter
+
   const attendeesFilter = filters.find(filter => filter.id === 'attendees')
   const hasAttendeesFilter = !!attendeesFilter
 
-  let meetingIds: string[] = []
+  const tagsFilter = filters.find(filter => filter.id === 'tags')
+  const hasTagsFilter = !!tagsFilter
+
+  let meetingIds: string[] | null = null
+  let excludedMeetingIds: string[] = []
+
+  const mergeMeetingIds = (currentIds: string[] | null, nextIds: string[]): string[] | null => {
+    if (!nextIds.length) {
+      return []
+    }
+
+    if (currentIds === null) {
+      return nextIds
+    }
+
+    return currentIds.filter((id) => nextIds.includes(id))
+  }
   
   // If we have a speakers filter, first get the meeting IDs from meeting_speakers
   if (hasSpeakersFilter && speakersFilter) {
     const { operator, value } = speakersFilter.value as { operator: string, value: unknown }
     const searchValue = String(value).toLowerCase()
     
-    let speakersQuery = supabase
-      .schema("ai_transcriber")
-      .from("meeting_speakers")
-      .select("meeting_id")
-    
-    switch (operator) {
-      case "iLike":
-        speakersQuery = speakersQuery.or(`speaker_name.ilike.%${searchValue}%`)
-        break
-      case "notILike":
-        speakersQuery = speakersQuery.not('speaker_name', 'ilike', `%${searchValue}%`)
-        break
-      case "eq":
-        speakersQuery = speakersQuery.eq('speaker_name', searchValue)
-        break
-      case "ne":
-        speakersQuery = speakersQuery.neq('speaker_name', searchValue)
-        break
-      case "isEmpty":
-        // For isEmpty, we need to find meetings that have no speakers
-        // This requires a different approach - we'll handle it in the main query
-        break
-      case "isNotEmpty":
-        // For isNotEmpty, we need to find meetings that have at least one speaker
-        // This also requires a different approach
-        break
-      default:
-        break
+    if (operator !== "isEmpty" && operator !== "isNotEmpty") {
+      let speakersQuery = supabase
+        .schema("ai_transcriber")
+        .from("meeting_speakers")
+        .select("meeting_id")
+      
+      switch (operator) {
+        case "iLike":
+          speakersQuery = speakersQuery.or(`speaker_name.ilike.%${searchValue}%`)
+          break
+        case "notILike":
+          speakersQuery = speakersQuery.not('speaker_name', 'ilike', `%${searchValue}%`)
+          break
+        case "eq":
+          speakersQuery = speakersQuery.eq('speaker_name', searchValue)
+          break
+        case "ne":
+          speakersQuery = speakersQuery.neq('speaker_name', searchValue)
+          break
+        default:
+          break
+      }
+      
+      const { data: speakersData, error: speakersError } = await speakersQuery
+      
+      if (speakersError) {
+        console.error("Error fetching speaker data:", speakersError)
+        return { data: [], count: 0, error: speakersError }
+      }
+      
+      const speakerMeetingIds = [...new Set(speakersData?.map((s) => s.meeting_id) || [])]
+      meetingIds = mergeMeetingIds(meetingIds, speakerMeetingIds)
     }
-    
-    const { data: speakersData, error: speakersError } = await speakersQuery
-    
-    if (speakersError) {
-      console.error("Error fetching speaker data:", speakersError)
-      return { data: [], count: 0, error: speakersError }
-    }
-    
-    // Extract unique meeting IDs
-    meetingIds = [...new Set(speakersData?.map(s => s.meeting_id) || [])]
   }
   
   // If we have an attendees filter, get the meeting IDs from meeting_attendees
@@ -82,89 +91,164 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
     const { operator, value } = attendeesFilter.value as { operator: string, value: unknown }
     const searchValue = String(value).toLowerCase()
     
-    // Use a simpler approach - search in contacts table first, then get meeting IDs
-    let contactsQuery = supabase
-      .schema("ai_transcriber")
-      .from("new_contacts")
-      .select("id")
-    
-    switch (operator) {
-      case "iLike":
-        // Search for contacts where first_name or last_name contains the search value
-        // If search value contains a space, split it and search for first_name AND last_name
-        if (searchValue.includes(' ')) {
-          const [firstName, lastName] = searchValue.split(' ', 2)
-          contactsQuery = contactsQuery
-            .ilike('first_name', `%${firstName}%`)
-            .ilike('last_name', `%${lastName}%`)
-        } else {
-          contactsQuery = contactsQuery.or(`first_name.ilike.%${searchValue}%,last_name.ilike.%${searchValue}%`)
-        }
-        break
-      case "notILike":
-        contactsQuery = contactsQuery
-          .not('first_name', 'ilike', `%${searchValue}%`)
-          .not('last_name', 'ilike', `%${searchValue}%`)
-        break
-      case "eq":
-        // If search value contains a space, split it and search for first_name AND last_name
-        if (searchValue.includes(' ')) {
-          const [firstName, lastName] = searchValue.split(' ', 2)
-          contactsQuery = contactsQuery
-            .eq('first_name', firstName)
-            .eq('last_name', lastName)
-        } else {
-          contactsQuery = contactsQuery.or(`first_name.eq.${searchValue},last_name.eq.${searchValue}`)
-        }
-        break
-      case "ne":
-        contactsQuery = contactsQuery
-          .not('first_name', 'eq', searchValue)
-          .not('last_name', 'eq', searchValue)
-        break
-      case "isEmpty":
-        // For isEmpty, we need to find meetings that have no attendees
-        break
-      case "isNotEmpty":
-        // For isNotEmpty, we need to find meetings that have at least one attendee
-        break
-      default:
-        break
-    }
-    
-    const { data: contactsData, error: contactsError } = await contactsQuery
-    
-    if (contactsError) {
-      console.error("Error fetching contact data:", contactsError)
-      return { data: [], count: 0, error: contactsError }
-    }
-    
-    if (contactsData && contactsData.length > 0) {
-      // Now get meeting IDs for these contacts
-      const contactIds = contactsData.map(c => c.id)
-      const { data: attendeesData, error: attendeesError } = await supabase
+    if (operator !== "isEmpty" && operator !== "isNotEmpty") {
+      // Use a simpler approach - search in contacts table first, then get meeting IDs
+      let contactsQuery = supabase
         .schema("ai_transcriber")
-        .from("meeting_attendees")
-        .select("meeting_id")
-        .in('contact_id', contactIds)
+        .from("new_contacts")
+        .select("id")
       
-      if (attendeesError) {
-        console.error("Error fetching attendee data:", attendeesError)
-        return { data: [], count: 0, error: attendeesError }
+      switch (operator) {
+        case "iLike":
+          if (searchValue.includes(' ')) {
+            const [firstName, lastName] = searchValue.split(' ', 2)
+            contactsQuery = contactsQuery
+              .ilike('first_name', `%${firstName}%`)
+              .ilike('last_name', `%${lastName}%`)
+          } else {
+            contactsQuery = contactsQuery.or(`first_name.ilike.%${searchValue}%,last_name.ilike.%${searchValue}%`)
+          }
+          break
+        case "notILike":
+          contactsQuery = contactsQuery
+            .not('first_name', 'ilike', `%${searchValue}%`)
+            .not('last_name', 'ilike', `%${searchValue}%`)
+          break
+        case "eq":
+          if (searchValue.includes(' ')) {
+            const [firstName, lastName] = searchValue.split(' ', 2)
+            contactsQuery = contactsQuery
+              .eq('first_name', firstName)
+              .eq('last_name', lastName)
+          } else {
+            contactsQuery = contactsQuery.or(`first_name.eq.${searchValue},last_name.eq.${searchValue}`)
+          }
+          break
+        case "ne":
+          contactsQuery = contactsQuery
+            .not('first_name', 'eq', searchValue)
+            .not('last_name', 'eq', searchValue)
+          break
+        default:
+          break
       }
       
-      // Extract unique meeting IDs from attendees
-      const attendeeMeetingIds = [...new Set(attendeesData?.map(a => a.meeting_id) || [])]
+      const { data: contactsData, error: contactsError } = await contactsQuery
       
-      // If we already have speaker meeting IDs, intersect them; otherwise use attendee IDs
-      if (hasSpeakersFilter && meetingIds.length > 0) {
-        meetingIds = meetingIds.filter(id => attendeeMeetingIds.includes(id))
+      if (contactsError) {
+        console.error("Error fetching contact data:", contactsError)
+        return { data: [], count: 0, error: contactsError }
+      }
+      
+      if (contactsData && contactsData.length > 0) {
+        const contactIds = contactsData.map((c) => c.id)
+        const { data: attendeesData, error: attendeesError } = await supabase
+          .schema("ai_transcriber")
+          .from("meeting_attendees")
+          .select("meeting_id")
+          .in('contact_id', contactIds)
+        
+        if (attendeesError) {
+          console.error("Error fetching attendee data:", attendeesError)
+          return { data: [], count: 0, error: attendeesError }
+        }
+        
+        const attendeeMeetingIds = [...new Set(attendeesData?.map((a) => a.meeting_id) || [])]
+        meetingIds = mergeMeetingIds(meetingIds, attendeeMeetingIds)
       } else {
-        meetingIds = attendeeMeetingIds
+        meetingIds = mergeMeetingIds(meetingIds, [])
       }
+    }
+  }
+
+  // If we have a tags filter, look up meeting IDs via meeting_tags
+  if (hasTagsFilter && tagsFilter) {
+    const { operator, value } = tagsFilter.value as { operator: string, value: unknown }
+    const rawValue = typeof value === 'string' ? value.trim() : value !== undefined && value !== null ? String(value) : ''
+
+    if (operator === "isEmpty") {
+      const { data: meetingsWithTags, error: meetingsWithTagsError } = await supabase
+        .schema("ai_transcriber")
+        .from("meeting_tags")
+        .select("meeting_id")
+
+      if (meetingsWithTagsError) {
+        console.error("Error fetching meeting tags for empty filter:", meetingsWithTagsError)
+        return { data: [], count: 0, error: meetingsWithTagsError }
+      }
+
+      const meetingIdsWithTags = [...new Set(meetingsWithTags?.map((item) => item.meeting_id) || [])]
+      if (meetingIdsWithTags.length > 0) {
+        excludedMeetingIds = Array.from(new Set([...excludedMeetingIds, ...meetingIdsWithTags]))
+      }
+    } else if (operator === "isNotEmpty") {
+      const { data: meetingsWithTags, error: meetingsWithTagsError } = await supabase
+        .schema("ai_transcriber")
+        .from("meeting_tags")
+        .select("meeting_id")
+
+      if (meetingsWithTagsError) {
+        console.error("Error fetching meeting tags for not empty filter:", meetingsWithTagsError)
+        return { data: [], count: 0, error: meetingsWithTagsError }
+      }
+
+      const meetingIdsWithTags = [...new Set(meetingsWithTags?.map((item) => item.meeting_id) || [])]
+      meetingIds = mergeMeetingIds(meetingIds, meetingIdsWithTags)
+    } else if (rawValue !== '') {
+      const supportedOperators = new Set(["iLike", "notILike", "eq", "ne"])
+      if (!supportedOperators.has(operator)) {
+        // Unsupported operator for tags; skip without applying additional filtering
+      } else {
+        let tagsQuery = supabase
+          .schema("ai_transcriber")
+          .from("tags")
+          .select("id")
+
+        if (operator === "iLike" || operator === "notILike") {
+          tagsQuery = tagsQuery.ilike('name', `%${rawValue}%`)
+        } else if (operator === "eq" || operator === "ne") {
+          tagsQuery = tagsQuery.eq('name', rawValue)
+        }
+
+        const { data: tagRecords, error: tagsError } = await tagsQuery
+
+        if (tagsError) {
+          console.error("Error fetching tags:", tagsError)
+          return { data: [], count: 0, error: tagsError }
+        }
+
+        if (tagRecords && tagRecords.length > 0) {
+          const tagIds = tagRecords.map((tag) => tag.id)
+          const { data: meetingTagRecords, error: meetingTagsError } = await supabase
+            .schema("ai_transcriber")
+            .from("meeting_tags")
+            .select("meeting_id, tag_id")
+            .in('tag_id', tagIds)
+
+          if (meetingTagsError) {
+            console.error("Error fetching meeting tag data:", meetingTagsError)
+            return { data: [], count: 0, error: meetingTagsError }
+          }
+
+          const tagMeetingIds = [...new Set(meetingTagRecords?.map((record) => record.meeting_id) || [])]
+
+          if (operator === "notILike" || operator === "ne") {
+            if (tagMeetingIds.length > 0) {
+              excludedMeetingIds = Array.from(new Set([...excludedMeetingIds, ...tagMeetingIds]))
+            }
+          } else {
+            meetingIds = mergeMeetingIds(meetingIds, tagMeetingIds)
+          }
+        } else if (operator === "notILike" || operator === "ne") {
+          // No matching tags means nothing to exclude, keep existing results
+        } else {
+          meetingIds = mergeMeetingIds(meetingIds, [])
+        }
+      }
+    } else if (operator === "notILike" || operator === "ne") {
+      // Empty search value with negative operator -> no change
     } else {
-      // No contacts found, so no meetings match
-      meetingIds = []
+      meetingIds = mergeMeetingIds(meetingIds, [])
     }
   }
 
@@ -202,11 +286,19 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
     `, { count: "exact" })
 
   // Apply meeting ID filter if we have speaker or attendee filter results
-  if ((hasSpeakersFilter || hasAttendeesFilter) && meetingIds.length > 0) {
-    query = query.in('id', meetingIds)
-  } else if ((hasSpeakersFilter || hasAttendeesFilter) && meetingIds.length === 0) {
-    // If no meetings match the speaker/attendee filter, return empty results
-    return { data: [], count: 0, error: null }
+  const shouldFilterByJoinIds = hasSpeakersFilter || hasAttendeesFilter || hasTagsFilter
+
+  if (shouldFilterByJoinIds && Array.isArray(meetingIds)) {
+    if (meetingIds.length > 0) {
+      query = query.in('id', meetingIds)
+    } else {
+      return { data: [], count: 0, error: null }
+    }
+  }
+
+  if (excludedMeetingIds.length > 0) {
+    const excludedFilter = `(${excludedMeetingIds.map((id) => `"${id}"`).join(',')})`
+    query = query.not('id', 'in', excludedFilter)
   }
 
   // Handle isEmpty and isNotEmpty for speakers
@@ -254,7 +346,7 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
   }
 
   // Filtering - exclude speakers and attendees filters since we handled them above
-  const nonSpeakersFilters = filters.filter(filter => filter.id !== 'speakers' && filter.id !== 'attendees')
+  const nonSpeakersFilters = filters.filter(filter => filter.id !== 'speakers' && filter.id !== 'attendees' && filter.id !== 'tags')
   
   nonSpeakersFilters.forEach(filter => {
     const { id: columnId, value: filterValue } = filter
