@@ -22,7 +22,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File, Network } from "lucide-react"
+import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File, Network, ListChecks } from "lucide-react"
 import Spinner from "@/components/ui/spinner"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
@@ -37,6 +37,7 @@ import { createPerson } from "@/app/(workspace)/workspace/contacts/_lib/actions"
 import { ContactAddForm } from "@/app/(workspace)/workspace/contacts/_components/form-wrapper"
 import { createNote } from "@/app/(workspace)/workspace/notes/_lib/actions"
 import { NoteAddForm } from "@/app/(workspace)/workspace/notes/_components/form-wrapper"
+import { TaskAddForm } from "@/app/(workspace)/workspace/tasks/_components/form-wrapper"
 import { toast } from "sonner"
 import { format, parseISO, formatDistanceToNow } from "date-fns"
 import { createClient } from "@/lib/supabase/client"
@@ -63,6 +64,7 @@ export function AppSidebar() {
   const [isLoading, setIsLoading] = useState(true)
   const [isContactSheetOpen, setIsContactSheetOpen] = useState(false)
   const [isNoteSheetOpen, setIsNoteSheetOpen] = useState(false)
+  const [isTaskSheetOpen, setIsTaskSheetOpen] = useState(false)
 
   useEffect(() => {
     const fetchMeetings = async () => {
@@ -173,7 +175,23 @@ export function AppSidebar() {
     })
   }
 
+  const handleCreateTask = () => {
+    setIsTaskSheetOpen(true)
+  }
+
+  const handleTaskCancel = () => {
+    setIsTaskSheetOpen(false)
+  }
+
   const navigationItems = [
+    {
+      label: "Contacts",
+      href: "/workspace/contacts",
+      icon: Users,
+      action: handleCreateContact,
+      isActionLoading: false,
+      actionAriaLabel: "Create new contact",
+    },
     {
       label: "Meetings",
       href: "/workspace/meetings",
@@ -183,12 +201,12 @@ export function AppSidebar() {
       actionAriaLabel: "Create new meeting",
     },
     {
-      label: "Contacts",
-      href: "/workspace/contacts",
-      icon: Users,
-      action: handleCreateContact,
+      label: "Tasks",
+      href: "/workspace/tasks",
+      icon: ListChecks,
+      action: handleCreateTask,
       isActionLoading: false,
-      actionAriaLabel: "Create new contact",
+      actionAriaLabel: "Create new task",
     },
     {
       label: "Notes",
@@ -412,6 +430,20 @@ export function AppSidebar() {
               onCancel={handleContactCancel}
               createAction={createPerson}
             />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Task Creation Sheet */}
+      <Sheet open={isTaskSheetOpen} onOpenChange={setIsTaskSheetOpen}>
+        <SheetContent className="flex flex-col sm:max-w-3xl">
+          <SheetHeader>
+            <SheetTitle>Add New Task</SheetTitle>
+            <SheetDescription>Capture a task and link it with related contacts or meetings.</SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-hidden">
+            <TaskAddForm onCancel={handleTaskCancel} />
           </div>
         </SheetContent>
       </Sheet>

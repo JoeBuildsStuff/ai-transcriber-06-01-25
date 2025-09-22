@@ -245,7 +245,7 @@ export default function TaskForm({
       availableContacts.map((contact) => ({
         value: contact.id,
         label: `${contact.first_name || ""} ${contact.last_name || ""}`.trim() || "Unknown Contact",
-        subLabel: contact.company_name ?? null,
+        subLabel: contact.company_name ?? undefined,
       })),
     [availableContacts],
   )
@@ -255,7 +255,7 @@ export default function TaskForm({
       availableMeetings.map((meeting) => ({
         value: meeting.id,
         label: meeting.title || "Untitled Meeting",
-        subLabel: meeting.meeting_at ? new Date(meeting.meeting_at).toLocaleDateString() : null,
+        subLabel: meeting.meeting_at ? new Date(meeting.meeting_at).toLocaleDateString() : undefined,
       })),
     [availableMeetings],
   )

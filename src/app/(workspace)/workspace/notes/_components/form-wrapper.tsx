@@ -140,7 +140,7 @@ export function NoteAddForm({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-0 m-0 mx-3">
         <NoteForm
           initialNoteId={realNoteId || tempNoteId}
           onChange={handleFormDataChange}
