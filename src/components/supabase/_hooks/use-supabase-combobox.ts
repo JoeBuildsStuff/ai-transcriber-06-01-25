@@ -13,6 +13,11 @@ interface UseSupabaseComboboxOptions {
   // For junction tables
   noteIdField?: string // e.g., "note_id"
   targetIdField?: string // e.g., "meeting_id", "contact_id"
+  onValueChange?: (value: string[]) => void
+  parentTable?: string
+  parentDefaults?:
+    | Record<string, unknown>
+    | ((context: { userId: string }) => Record<string, unknown>)
 }
 
 // Helper function to check if an ID is temporary
@@ -29,7 +34,10 @@ export function useSupabaseCombobox({
   onSuccess,
   onCreateSuccess,
   noteIdField = "note_id",
-  targetIdField = field
+  targetIdField = field,
+  onValueChange,
+  parentTable,
+  parentDefaults
 }: UseSupabaseComboboxOptions) {
   const [value, setValue] = useState<string[]>(initialValue)
   const [savedValue, setSavedValue] = useState<string[]>(initialValue)
@@ -52,16 +60,29 @@ export function useSupabaseCombobox({
         throw new Error("User not authenticated")
       }
 
-      // If it's a temporary ID, we need to create the note record first
+      const parentTableName = parentTable ?? "notes"
+
+      // If it's a temporary ID, we need to create the parent record first
       if (isTemporaryId(id) && !realId) {
-        // Create the note record with minimal data
+        const resolvedDefaults = typeof parentDefaults === "function"
+          ? parentDefaults({ userId: user.id })
+          : parentDefaults
+
+        const parentInsertPayload: Record<string, unknown> = {
+          ...(resolvedDefaults ?? (parentTableName === "notes" ? { title: "", content: "" } : {})),
+        }
+
+        if (!("user_id" in parentInsertPayload)) {
+          parentInsertPayload.user_id = user.id
+        }
+
+        if (!("title" in parentInsertPayload) && parentTableName === "tasks") {
+          parentInsertPayload.title = ""
+        }
+
         const { data, error } = await client
-          .from("notes")
-          .insert({ 
-            title: "", 
-            content: "",
-            user_id: user.id 
-          })
+          .from(parentTableName)
+          .insert(parentInsertPayload)
           .select()
           .single()
 
@@ -140,6 +161,7 @@ export function useSupabaseCombobox({
       // Optimistically update to the new value
       setValue(newValue)
       setSavedValue(newValue)
+      onValueChange?.(newValue)
 
       // Return a context object with the snapshotted value
       return { previousValue }
@@ -168,8 +190,9 @@ export function useSupabaseCombobox({
   // Handle value change with immediate save
   const handleChange = useCallback((newValue: string[]) => {
     setValue(newValue)
+    onValueChange?.(newValue)
     updateMutation.mutate(newValue)
-  }, [updateMutation])
+  }, [updateMutation, onValueChange])
 
   // Toggle a single value
   const toggleValue = useCallback((itemValue: string) => {

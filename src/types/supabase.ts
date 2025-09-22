@@ -976,6 +976,219 @@ export type Database = {
         }
         Relationships: []
       }
+      task_contacts: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_contacts_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_meetings: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          task_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_meetings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_meetings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_meetings_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note_id: string
+          task_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_notes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          task_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_tags_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          owner_contact_id: string | null
+          priority: Database["ai_transcriber"]["Enums"]["task_priority"]
+          start_at: string | null
+          status: Database["ai_transcriber"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          owner_contact_id?: string | null
+          priority?: Database["ai_transcriber"]["Enums"]["task_priority"]
+          start_at?: string | null
+          status?: Database["ai_transcriber"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          owner_contact_id?: string | null
+          priority?: Database["ai_transcriber"]["Enums"]["task_priority"]
+          start_at?: string | null
+          status?: Database["ai_transcriber"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_owner_contact_id_fkey"
+            columns: ["owner_contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       meeting_attendees_with_contacts: {
@@ -1073,6 +1286,13 @@ export type Database = {
       meeting_recurrence_end_type: "never" | "on" | "after"
       meeting_recurrence_frequency: "day" | "week" | "month" | "year"
       meeting_recurrence_monthly_option: "day" | "weekday"
+      task_priority: "low" | "medium" | "high" | "urgent"
+      task_status:
+        | "todo"
+        | "in_progress"
+        | "blocked"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1211,6 +1431,8 @@ export const Constants = {
       meeting_recurrence_end_type: ["never", "on", "after"],
       meeting_recurrence_frequency: ["day", "week", "month", "year"],
       meeting_recurrence_monthly_option: ["day", "weekday"],
+      task_priority: ["low", "medium", "high", "urgent"],
+      task_status: ["todo", "in_progress", "blocked", "completed", "cancelled"],
     },
   },
 } as const

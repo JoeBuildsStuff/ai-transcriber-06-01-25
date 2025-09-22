@@ -59,6 +59,25 @@ import SwitchSupabase from "@/components/supabase/_components/switch-supabase"
 />
 ```
 
+### SelectSupabase
+Auto-saving single select field that saves immediately on change.
+
+```tsx
+import SelectSupabase from "@/components/supabase/_components/select-supabase"
+
+<SelectSupabase
+  table="meetings"
+  field="status"
+  id={meetingId}
+  initialValue={meeting.status || ""}
+  options={[
+    { value: "planned", label: "Planned" },
+    { value: "completed", label: "Completed" },
+    { value: "cancelled", label: "Cancelled" }
+  ]}
+/>
+```
+
 ## Features
 
 - **Auto-saving**: Changes are automatically saved to the database
@@ -84,6 +103,7 @@ All components accept these common props:
 The components use custom hooks that can be used directly if needed:
 
 - `useSupabaseInput`: For text inputs
+- `useSupabaseSelect`: For single select fields
 - `useSupabaseDateField`: For date fields
 - `useSupabaseTimeField`: For time fields
 - `useSupabaseField`: For simple fields (switches, etc.)

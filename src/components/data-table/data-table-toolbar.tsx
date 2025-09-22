@@ -11,6 +11,7 @@ import DataTableRowEditMulti from "./data-table-row-edit-multi"
 import DataTableRowDelete from "./data-table-row-delete"
 import { DataTableViewOptions } from "./data-table-view-options"
 import DataTableSavedViews from "./data-table-saved-views"
+import DataTableCommandFilter from "./data-table-command-filter"
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
@@ -63,46 +64,49 @@ export default function DataTableToolbar<TData>({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      {createAction && (
-        <DataTableRowAdd
-          columns={table.getAllColumns().map((col) => col.columnDef)}
-          createAction={createAction}
-          customForm={customAddForm}
-        />
-      )}
-      {updateActionSingle && (
-        <DataTableRowEditSingle
-          columns={table.getAllColumns().map((col) => col.columnDef)}
-          selectedRows={selectedRows}
-          updateActionSingle={updateActionSingle}
-          customForm={customEditFormSingle}
-        />
-      )}
-      {updateActionMulti && (
-        <DataTableRowEditMulti
-          columns={table.getAllColumns().map((col) => col.columnDef)}
-          selectedRows={selectedRows}
-          selectedRowIds={selectedRowIds}
-          updateActionMulti={updateActionMulti}
-          customForm={customEditFormMulti}
-        />
-      )}
-      {deleteAction && selectedRowIds.length > 0 && (
-        <DataTableRowDelete
-          selectedRowIds={selectedRowIds}
-          deleteAction={deleteAction}
-          onComplete={handleDeleteComplete}
-        />
-      )}
+    <div className="flex flex-col items-center gap-2 w-full"> 
+      <div className="flex flex-row items-center gap-2 w-full">
+        {createAction && (
+          <DataTableRowAdd
+            columns={table.getAllColumns().map((col) => col.columnDef)}
+            createAction={createAction}
+            customForm={customAddForm}
+          />
+        )}
+        {updateActionSingle && (
+          <DataTableRowEditSingle
+            columns={table.getAllColumns().map((col) => col.columnDef)}
+            selectedRows={selectedRows}
+            updateActionSingle={updateActionSingle}
+            customForm={customEditFormSingle}
+          />
+        )}
+        {updateActionMulti && (
+          <DataTableRowEditMulti
+            columns={table.getAllColumns().map((col) => col.columnDef)}
+            selectedRows={selectedRows}
+            selectedRowIds={selectedRowIds}
+            updateActionMulti={updateActionMulti}
+            customForm={customEditFormMulti}
+          />
+        )}
+        {deleteAction && selectedRowIds.length > 0 && (
+          <DataTableRowDelete
+            selectedRowIds={selectedRowIds}
+            deleteAction={deleteAction}
+            onComplete={handleDeleteComplete}
+          />
+        )}
 
-      <DataTableSort table={table} />
-      <DataTableFilter table={table} />
+        <DataTableSort table={table} />
+        <DataTableFilter table={table} />
 
-      <div className="ml-auto flex items-center gap-2">
-        <DataTableSavedViews table={table} tableKey={tableKey} />
-        <DataTableViewOptions table={table} />
+        <div className="ml-auto flex items-center gap-2">
+          <DataTableSavedViews table={table} tableKey={tableKey} />
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
+      <DataTableCommandFilter table={table} />
     </div>
   )
 }

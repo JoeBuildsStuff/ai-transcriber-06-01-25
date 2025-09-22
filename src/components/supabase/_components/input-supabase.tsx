@@ -12,9 +12,10 @@ interface InputSupabaseProps {
   placeholder?: string
   onNoteCreated?: (id: string) => void
   className?: string
+  onValueChange?: (value: string) => void
 }
 
-export default function InputSupabase({ table, field, id, initialValue, placeholder, onNoteCreated, className }: InputSupabaseProps) {
+export default function InputSupabase({ table, field, id, initialValue, placeholder, onNoteCreated, className, onValueChange }: InputSupabaseProps) {
   const { value, handleChange, handleBlur, updating, savedValue } = useSupabaseInput({
     table,
     field,
@@ -29,7 +30,11 @@ export default function InputSupabase({ table, field, id, initialValue, placehol
   return (
     <Input 
       value={value}
-      onChange={(e) => handleChange(e.target.value)}
+      onChange={(e) => {
+        const nextValue = e.target.value
+        handleChange(nextValue)
+        onValueChange?.(nextValue)
+      }}
       onBlur={handleBlur}
       disabled={updating}
       placeholder={placeholder || `Enter ${field.replace('_', ' ')}...`}

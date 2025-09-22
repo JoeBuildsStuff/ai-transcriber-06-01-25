@@ -29,6 +29,10 @@ interface ComboboxSupabaseProps {
   // For junction tables
   noteIdField?: string
   targetIdField?: string
+  parentTable?: string
+  parentDefaults?:
+    | Record<string, unknown>
+    | ((context: { userId: string }) => Record<string, unknown>)
   // Action button props
   actionButton?: {
     label: ReactNode
@@ -38,6 +42,7 @@ interface ComboboxSupabaseProps {
   // Render props for custom display
   renderBadge?: (option: ComboboxOption, onRemove: () => void) => ReactNode
   renderOption?: (option: ComboboxOption, isSelected: boolean) => ReactNode
+  onChange?: (value: string[]) => void
 }
 
 export default function ComboboxSupabase({
@@ -53,9 +58,12 @@ export default function ComboboxSupabase({
   className,
   noteIdField,
   targetIdField,
+  parentTable,
+  parentDefaults,
   actionButton,
   renderBadge,
-  renderOption
+  renderOption,
+  onChange
 }: ComboboxSupabaseProps) {
   const { value, toggleValue, updating } = useSupabaseCombobox({
     table,
@@ -64,7 +72,10 @@ export default function ComboboxSupabase({
     initialValue,
     onCreateSuccess: onNoteCreated,
     noteIdField,
-    targetIdField
+    targetIdField,
+    onValueChange: onChange,
+    parentTable,
+    parentDefaults
   })
 
   // Get display text for selected items

@@ -12,6 +12,9 @@ interface UseSupabaseDateFieldOptions {
   onError?: (error: unknown) => void
   onSuccess?: (value: string) => void
   onCreateSuccess?: (id: string) => void
+  parentDefaults?:
+    | Record<string, unknown>
+    | ((context: { userId: string }) => Record<string, unknown>)
 }
 
 // Helper function to check if an ID is temporary
@@ -108,7 +111,8 @@ export function useSupabaseDateField({
   initialValue,
   onError,
   onSuccess,
-  onCreateSuccess
+  onCreateSuccess,
+  parentDefaults
 }: UseSupabaseDateFieldOptions) {
   const [value, setValue] = useState<DateValue | null>(isoToDateValue(initialValue))
   const [savedValue, setSavedValue] = useState<DateValue | null>(isoToDateValue(initialValue))
@@ -137,10 +141,32 @@ export function useSupabaseDateField({
       
       // If it's a temporary ID, we need to create the record first
       if (isTemporaryId(id) && !realId) {
-        // Create the record with the current value
+        const { data: { user }, error: userError } = await client.auth.getUser()
+
+        if (userError || !user) {
+          throw userError ?? new Error("User not authenticated")
+        }
+
+        const resolvedDefaults = typeof parentDefaults === "function"
+          ? parentDefaults({ userId: user.id })
+          : parentDefaults
+
+        const insertPayload: Record<string, unknown> = {
+          ...(resolvedDefaults ?? {}),
+          [field]: isoValue,
+        }
+
+        if (!("user_id" in insertPayload)) {
+          insertPayload.user_id = user.id
+        }
+
+        if (!("title" in insertPayload) && table === "tasks") {
+          insertPayload.title = ""
+        }
+
         const { data, error } = await client
           .from(table)
-          .insert({ [field]: isoValue })
+          .insert(insertPayload)
           .select()
           .single()
 
@@ -240,7 +266,8 @@ export function useSupabaseTimeField({
   initialValue,
   onError,
   onSuccess,
-  onCreateSuccess
+  onCreateSuccess,
+  parentDefaults
 }: UseSupabaseDateFieldOptions) {
   const [value, setValue] = useState<TimeValue | null>(isoToTimeValue(initialValue))
   const [savedValue, setSavedValue] = useState<TimeValue | null>(isoToTimeValue(initialValue))
@@ -269,10 +296,32 @@ export function useSupabaseTimeField({
       
       // If it's a temporary ID, we need to create the record first
       if (isTemporaryId(id) && !realId) {
-        // Create the record with the current value
+        const { data: { user }, error: userError } = await client.auth.getUser()
+
+        if (userError || !user) {
+          throw userError ?? new Error("User not authenticated")
+        }
+
+        const resolvedDefaults = typeof parentDefaults === "function"
+          ? parentDefaults({ userId: user.id })
+          : parentDefaults
+
+        const insertPayload: Record<string, unknown> = {
+          ...(resolvedDefaults ?? {}),
+          [field]: isoValue,
+        }
+
+        if (!("user_id" in insertPayload)) {
+          insertPayload.user_id = user.id
+        }
+
+        if (!("title" in insertPayload) && table === "tasks") {
+          insertPayload.title = ""
+        }
+
         const { data, error } = await client
           .from(table)
-          .insert({ [field]: isoValue })
+          .insert(insertPayload)
           .select()
           .single()
 
