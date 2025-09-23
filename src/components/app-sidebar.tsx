@@ -47,7 +47,6 @@ import { ScrollArea } from "./ui/scroll-area"
 
 interface Meeting {
   id: string;
-  original_file_name: string;
   created_at: string;
   title: string | null;
   meeting_at: string | null;
@@ -73,7 +72,7 @@ export function AppSidebar() {
       const { data: fetchedMeetings, error } = await supabase
         .from("meetings")
         .select(
-          "id, original_file_name, created_at, title, meeting_at, location, meeting_reviewed"
+          "id, created_at, title, meeting_at, location, meeting_reviewed"
         )
         .order("meeting_at", { ascending: false })
 
@@ -246,7 +245,7 @@ export function AppSidebar() {
       isActive,
       items: dateMeetings.map(meeting => ({
         id: meeting.id,
-        title: meeting.title || meeting.original_file_name || 'Untitled Meeting',
+        title: meeting.title || 'Untitled Meeting',
         url: `/workspace/meetings/${meeting.id}`,
         time: meeting.meeting_at ? format(parseISO(meeting.meeting_at), 'p') : null,
         isActive: pathname === `/workspace/meetings/${meeting.id}`,

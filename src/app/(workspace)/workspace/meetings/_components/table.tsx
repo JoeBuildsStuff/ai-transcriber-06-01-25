@@ -25,8 +25,6 @@ export default async function DataTableMeetings({
     columnVisibility: {
       created_at: false,
       updated_at: false,
-      summary: false,
-      original_file_name: false,
     },
   }
 
