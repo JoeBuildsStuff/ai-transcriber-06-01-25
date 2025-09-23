@@ -172,7 +172,7 @@ export function TaskEditForm({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto">
         <TaskForm
           initialTaskId={data.id}
           initialTitle={data.title || ""}

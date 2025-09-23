@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet"
 import { DataTableRowForm } from "./data-table-row-form"
 import { ColumnDef } from "@tanstack/react-table"
 
@@ -43,10 +43,10 @@ export default function DataTableRowAdd<TData>({
           <Plus className="size-4 shrink-0" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex flex-col sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Add New Row</SheetTitle>
-          <SheetDescription>Add a new row to the table.</SheetDescription>
+      <SheetContent className="flex flex-col sm:max-w-md gap-0">
+        <SheetHeader className="pb-1.5">
+          {/* <SheetTitle>Add New Row</SheetTitle> */}
+          {/* <SheetDescription>Add a new row to the table.</SheetDescription> */}
         </SheetHeader>
         
         <div className="flex-1 overflow-hidden">

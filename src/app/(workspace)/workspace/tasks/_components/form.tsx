@@ -72,9 +72,9 @@ interface FieldRowProps {
 function FieldRow({ icon, label, children, alignTop = false }: FieldRowProps) {
   return (
     <div className={cn("flex gap-2", alignTop ? "items-start" : "items-center")}>
-      <div className="flex items-center text-sm sm:w-fit w-[6rem] text-muted-foreground">
+      <div className="flex items-center text-sm w-fit text-muted-foreground">
         {icon}
-        <span className="whitespace-nowrap sm:hidden font-light">{label}</span>
+        <span className="whitespace-nowrap hidden font-light">{label}</span>
       </div>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
