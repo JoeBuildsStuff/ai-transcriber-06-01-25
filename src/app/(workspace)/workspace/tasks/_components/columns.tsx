@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import Link from "next/link"
-import { ArrowUpRight, Calendar, CheckCircle2, Flag, User, Users, Tags as TagsIcon } from "lucide-react"
+import { ArrowUpRight, Calendar, CalendarCheck, CircleAlert, CircleDashed, IdCard, Tag as TagIcon, Type, User } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -83,7 +83,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Title"
-        icon={<CheckCircle2 className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<Type className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -117,7 +117,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Status"
-        icon={<Flag className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<CircleDashed className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -144,7 +144,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Priority"
-        icon={<Flag className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<CircleAlert className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -206,7 +206,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Due"
-        icon={<Calendar className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<CalendarCheck className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -234,7 +234,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Contacts"
-        icon={<Users className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<IdCard className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {
@@ -370,7 +370,7 @@ export const columns: ColumnDef<TaskWithAssociations>[] = [
       <DataTableColumnHeader
         column={column}
         title="Tags"
-        icon={<TagsIcon className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
+        icon={<TagIcon className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />}
       />
     ),
     cell: ({ row }) => {

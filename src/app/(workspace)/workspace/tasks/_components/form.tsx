@@ -23,14 +23,14 @@ import {
 import { deleteTasks } from "../_lib/actions"
 import {
   Calendar,
-  CalendarClock,
-  FileText,
-  Flag,
-  ListChecks,
   Tag as TagIcon,
   Type,
-  Users,
-  UserCircle,
+  CircleDashed,
+  CircleAlert,
+  CalendarCheck,
+  User,
+  IdCard,
+  Pilcrow,
 } from "lucide-react"
 
 interface TaskFormProps {
@@ -72,9 +72,9 @@ interface FieldRowProps {
 function FieldRow({ icon, label, children, alignTop = false }: FieldRowProps) {
   return (
     <div className={cn("flex gap-2", alignTop ? "items-start" : "items-center")}>
-      <div className="flex items-center gap-2 text-sm @max-sm:w-8 w-[6rem] text-muted-foreground">
+      <div className="flex items-center text-sm sm:w-fit w-[6rem] text-muted-foreground">
         {icon}
-        <span className="whitespace-nowrap @max-sm:hidden font-light">{label}</span>
+        <span className="whitespace-nowrap sm:hidden font-light">{label}</span>
       </div>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
@@ -291,8 +291,7 @@ export default function TaskForm({
   const isTemporaryId = taskId.startsWith("temp-")
 
   return (
-    <div className={cn("flex flex-col gap-6 text-foreground w-full pt-1", className)}>
-      <div className="flex flex-col gap-4">
+    <div className={cn("flex flex-col gap-3 text-foreground w-full pt-1", className)}>
         <FieldRow icon={<Type className="size-4 shrink-0" strokeWidth={1.5} />} label="Title">
           <div className="flex items-center gap-2">
             <InputSupabase
@@ -317,96 +316,82 @@ export default function TaskForm({
           </div>
         </FieldRow>
 
-        <FieldRow
-          icon={<FileText className="size-4 shrink-0" strokeWidth={1.5} />}
-          label="Description"
-          alignTop
-        >
-          <Textarea
-            value={descriptionValue}
-            onChange={(event) => {
-              const nextValue = event.target.value
-              handleDescriptionChange(nextValue)
-              setDescription(nextValue)
-            }}
-            onBlur={handleDescriptionBlur}
-            disabled={descriptionUpdating}
-            placeholder="Add a helpful description..."
-            rows={4}
-            className={cn(
-              "bg-input/30 border-none text-sm font-light",
-              descriptionValue !== descriptionSavedValue && "text-blue-700 dark:text-blue-400"
-            )}
-          />
-        </FieldRow>
+      <div className="flex flex-col gap-3">
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <FieldRow icon={<CircleDashed className="size-4 shrink-0" strokeWidth={1.5} />} label="Status">
+              <SelectSupabase
+                table="tasks"
+                field="status"
+                id={taskId}
+                initialValue={status}
+                options={statusOptions}
+                placeholder="Select status"
+                onNoteCreated={handleTaskCreated}
+                onValueChange={(value) => setStatus(value as TaskStatus)}
+                parentDefaults={buildTaskDefaults}
+                className="text-sm font-light"
+                triggerClassName="border-none bg-input/30 shadow-none"
+              />
+            </FieldRow>
+          </div>
+          <div className="flex-1">
+            <FieldRow icon={<CircleAlert className="size-4 shrink-0" strokeWidth={1.5} />} label="Priority">
+              <SelectSupabase
+                table="tasks"
+                field="priority"
+                id={taskId}
+                initialValue={priority}
+                options={priorityOptions}
+                placeholder="Select priority"
+                onNoteCreated={handleTaskCreated}
+                onValueChange={(value) => setPriority(value as TaskPriority)}
+                parentDefaults={buildTaskDefaults}
+                className="text-sm font-light"
+                triggerClassName="border-none bg-input/30 shadow-none"
+              />
+            </FieldRow>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <FieldRow icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} label="Start">
+              <DateFieldSupabase
+                table="tasks"
+                field="start_at"
+                id={taskId}
+                initialValue={initialStartAt}
+                onNoteCreated={handleTaskCreated}
+                onSuccess={(value) => setStartAt(value)}
+                parentDefaults={buildTaskDefaults}
+                className="bg-input/30 rounded-md px-2 py-2 text-sm font-light"
+              >
+                <DateInputSupabase className="bg-transparent outline-none flex-1" />
+              </DateFieldSupabase>
+            </FieldRow>
+          </div>
+          <div className="flex-1">
+            <FieldRow icon={<CalendarCheck className="size-4 shrink-0" strokeWidth={1.5} />} label="Due">
+              <DateFieldSupabase
+                table="tasks"
+                field="due_at"
+                id={taskId}
+                initialValue={initialDueAt}
+                onNoteCreated={handleTaskCreated}
+                onSuccess={(value) => setDueAt(value)}
+                parentDefaults={buildTaskDefaults}
+                className="bg-input/30 rounded-md px-2 py-2 text-sm font-light"
+              >
+                <DateInputSupabase className="bg-transparent outline-none flex-1" />
+              </DateFieldSupabase>
+            </FieldRow>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">
-        <FieldRow icon={<ListChecks className="size-4 shrink-0" strokeWidth={1.5} />} label="Status">
-          <SelectSupabase
-            table="tasks"
-            field="status"
-            id={taskId}
-            initialValue={status}
-            options={statusOptions}
-            placeholder="Select status"
-            onNoteCreated={handleTaskCreated}
-            onValueChange={(value) => setStatus(value as TaskStatus)}
-            parentDefaults={buildTaskDefaults}
-            className="text-sm font-light"
-            triggerClassName="border-none bg-input/30 shadow-none"
-          />
-        </FieldRow>
-
-        <FieldRow icon={<Flag className="size-4 shrink-0" strokeWidth={1.5} />} label="Priority">
-          <SelectSupabase
-            table="tasks"
-            field="priority"
-            id={taskId}
-            initialValue={priority}
-            options={priorityOptions}
-            placeholder="Select priority"
-            onNoteCreated={handleTaskCreated}
-            onValueChange={(value) => setPriority(value as TaskPriority)}
-            parentDefaults={buildTaskDefaults}
-            className="text-sm font-light"
-            triggerClassName="border-none bg-input/30 shadow-none"
-          />
-        </FieldRow>
-
-        <FieldRow icon={<Calendar className="size-4 shrink-0" strokeWidth={1.5} />} label="Start">
-          <DateFieldSupabase
-            table="tasks"
-            field="start_at"
-            id={taskId}
-            initialValue={initialStartAt}
-            onNoteCreated={handleTaskCreated}
-            onSuccess={(value) => setStartAt(value)}
-            parentDefaults={buildTaskDefaults}
-            className="bg-input/30 rounded-md px-2 py-2 text-sm font-light"
-          >
-            <DateInputSupabase className="bg-transparent outline-none flex-1" />
-          </DateFieldSupabase>
-        </FieldRow>
-
-        <FieldRow icon={<CalendarClock className="size-4 shrink-0" strokeWidth={1.5} />} label="Due">
-          <DateFieldSupabase
-            table="tasks"
-            field="due_at"
-            id={taskId}
-            initialValue={initialDueAt}
-            onNoteCreated={handleTaskCreated}
-            onSuccess={(value) => setDueAt(value)}
-            parentDefaults={buildTaskDefaults}
-            className="bg-input/30 rounded-md px-2 py-2 text-sm font-light"
-          >
-            <DateInputSupabase className="bg-transparent outline-none flex-1" />
-          </DateFieldSupabase>
-        </FieldRow>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <FieldRow icon={<UserCircle className="size-4 shrink-0" strokeWidth={1.5} />} label="Owner">
+        <FieldRow icon={<User className="size-4 shrink-0" strokeWidth={1.5} />} label="Owner">
           <SelectSupabase
             table="tasks"
             field="owner_contact_id"
@@ -423,7 +408,7 @@ export default function TaskForm({
           />
         </FieldRow>
 
-        <FieldRow icon={<Users className="size-4 shrink-0" strokeWidth={1.5} />} label="Contacts">
+        <FieldRow icon={<IdCard className="size-4 shrink-0" strokeWidth={1.5} />} label="Contacts">
           <ComboboxSupabase
             table="task_contacts"
             field="contact_id"
@@ -483,6 +468,30 @@ export default function TaskForm({
           />
         </FieldRow>
       </div>
+
+
+      <FieldRow
+          icon={<Pilcrow className="size-4 shrink-0" strokeWidth={1.5} />}
+          label="Description"
+          alignTop
+        >
+          <Textarea
+            value={descriptionValue}
+            onChange={(event) => {
+              const nextValue = event.target.value
+              handleDescriptionChange(nextValue)
+              setDescription(nextValue)
+            }}
+            onBlur={handleDescriptionBlur}
+            disabled={descriptionUpdating}
+            placeholder="Add a helpful description..."
+            rows={4}
+            className={cn(
+              "bg-input/30 border-none text-sm font-light",
+              descriptionValue !== descriptionSavedValue && "text-blue-700 dark:text-blue-400"
+            )}
+          />
+        </FieldRow>
     </div>
   )
 }
