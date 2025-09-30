@@ -11,6 +11,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `search-meetings.ts` - Tool for searching existing meetings
 - `update-person.ts` - Tool for updating existing person contacts
 - `update-meeting.ts` - Tool for updating existing meetings
+- `get-meeting-outline.ts` - Tool for retrieving structured meeting outlines for meetings
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -163,3 +164,11 @@ Search for meetings by participant name, date range, title, or other criteria. U
 - `limit` (number, optional) - Maximum number of results to return (default: 10)
 
 **Usage:** All parameters are optional. The tool searches for meetings based on the provided criteria and returns formatted results with meeting details and navigation URLs. Results are sorted by meeting date (most recent first). When users ask questions like "what meetings have I had with Joe Taylor in the past week?", the AI will extract the participant name and date range to perform the search.
+
+### get_meeting_outline
+Retrieves the structured outline for a specific meeting without returning the full transcript. Use this after locating the meeting via `search_meetings` when the user requests executive summaries, action items, decisions, or other outline sections.
+
+**Parameters:**
+- `meeting_id` (string) - The unique identifier of the meeting whose outline should be returned
+
+**Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable.
