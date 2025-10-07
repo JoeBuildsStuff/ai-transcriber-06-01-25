@@ -526,6 +526,8 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
       }
     } catch (error) {
       console.error('Failed to send message:', error)
+      const description = error instanceof Error ? error.message : 'Please try again.'
+      toast.error('Unable to complete chat request', { description })
       await addChatMessage({ sessionId: sid, role: 'assistant', content: 'Sorry, I encountered an error while processing your message. Please try again.' })
       await refreshMessages(sid)
     } finally {

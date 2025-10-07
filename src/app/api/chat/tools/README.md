@@ -11,6 +11,9 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `search-meetings.ts` - Tool for searching existing meetings
 - `update-person.ts` - Tool for updating existing person contacts
 - `update-meeting.ts` - Tool for updating existing meetings
+- `create-task.ts` - Tool for creating new tasks with optional associations
+- `update-task.ts` - Tool for updating existing tasks
+- `search-tasks.ts` - Tool for querying tasks by status, priority, due dates, and owner
 - `get-meeting-outline.ts` - Tool for retrieving structured meeting outlines for meetings
 - `README.md` - This documentation file
 
@@ -172,3 +175,55 @@ Retrieves the structured outline for a specific meeting without returning the fu
 - `meeting_id` (string) - The unique identifier of the meeting whose outline should be returned
 
 **Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable.
+
+### create_task
+Creates a new task with status, priority, optional dates, and associations to contacts, meetings, and tags. Defaults to `todo` status and `medium` priority when not provided.
+
+**Parameters:**
+- `title` (string, required) - Title for the task
+- `description` (string, optional) - Detailed description of the task
+- `status` (string, optional) - Task status (`todo`, `in_progress`, `blocked`, `completed`, `cancelled`)
+- `priority` (string, optional) - Task priority (`low`, `medium`, `high`, `urgent`)
+- `start_at` (string, optional) - Start date/time in ISO format (timezone preferred)
+- `due_at` (string, optional) - Due date/time in ISO format (timezone preferred)
+- `owner_contact_id` (string, optional) - Contact ID to assign as task owner
+- `contact_ids` (array of strings, optional) - Contact IDs to associate with the task
+- `meeting_ids` (array of strings, optional) - Meeting IDs to associate with the task
+- `tag_ids` (array of strings, optional) - Tag IDs to associate with the task
+
+**Response:** Returns the created task ID, status/priority used, and a workspace URL for quick navigation.
+
+### update_task
+Updates an existing task. Provide only the fields that should change—omitted fields remain untouched. Arrays replace existing associations when supplied (empty arrays clear them).
+
+**Parameters:**
+- `id` (string, required) - ID of the task to update
+- `title` (string, optional) - New task title
+- `description` (string, optional) - Updated description
+- `status` (string, optional) - Updated status (`todo`, `in_progress`, `blocked`, `completed`, `cancelled`)
+- `priority` (string, optional) - Updated priority (`low`, `medium`, `high`, `urgent`)
+- `start_at` (string, optional) - Updated start date/time in ISO format
+- `due_at` (string, optional) - Updated due date/time in ISO format
+- `owner_contact_id` (string, optional) - Contact ID for the task owner; send empty string or `null` to clear
+- `contact_ids` (array of strings, optional) - Replace contact associations (empty array clears)
+- `meeting_ids` (array of strings, optional) - Replace meeting associations (empty array clears)
+- `tag_ids` (array of strings, optional) - Replace tag associations (empty array clears)
+
+**Response:** Returns the updated task metadata and workspace URL.
+
+### search_tasks
+Searches tasks by keywords, status, priority, due date ranges, and owner. Results include related contacts, meetings, and tags when available.
+
+**Parameters:**
+- `search_term` (string, optional) - Keyword match against the task title
+- `title` (string, optional) - Explicit title keyword filter (overrides `search_term` when both provided)
+- `status` (string, optional) - Filter by task status
+- `priority` (string, optional) - Filter by task priority
+- `owner_contact_id` (string, optional) - Filter tasks assigned to a specific contact
+- `due_after` (string, optional) - ISO date/time or `YYYY-MM-DD` for minimum due date (inclusive)
+- `due_before` (string, optional) - ISO date/time or `YYYY-MM-DD` for maximum due date (inclusive)
+- `limit` (number, optional) - Maximum number of results (default 10, max 50)
+- `sort_by` (string, optional) - Sort column (`due_at`, `created_at`, `updated_at`, `priority`, `status`)
+- `sort_direction` (string, optional) - Sort direction (`asc` or `desc`)
+
+**Response:** Returns the filtered tasks with their metadata and workspace URLs, plus a summary of applied filters.

@@ -6,6 +6,9 @@ import { searchMeetingsTool, executeSearchMeetings } from './search-meetings'
 import { updatePersonTool, executeUpdatePersonContact } from './update-person'
 import { updateMeetingTool, executeUpdateMeeting } from './update-meeting'
 import { getMeetingOutlineTool, executeGetMeetingOutline } from './get-meeting-outline'
+import { createTaskTool, executeCreateTask } from './create-task'
+import { updateTaskTool, executeUpdateTask } from './update-task'
+import { searchTasksTool, executeSearchTasks } from './search-tasks'
 
 // Export all tool definitions
 export const availableTools: Anthropic.Tool[] = [
@@ -15,7 +18,10 @@ export const availableTools: Anthropic.Tool[] = [
   searchMeetingsTool,
   updatePersonTool,
   updateMeetingTool,
-  getMeetingOutlineTool
+  getMeetingOutlineTool,
+  createTaskTool,
+  updateTaskTool,
+  searchTasksTool
 ]
 
 // Export all execution functions
@@ -26,7 +32,10 @@ export const toolExecutors: Record<string, (parameters: Record<string, unknown>)
   search_meetings: executeSearchMeetings,
   update_person_contact: executeUpdatePersonContact,
   update_meeting: executeUpdateMeeting,
-  get_meeting_outline: executeGetMeetingOutline
+  get_meeting_outline: executeGetMeetingOutline,
+  create_task: executeCreateTask,
+  update_task: executeUpdateTask,
+  search_tasks: executeSearchTasks
 }
 
 // Re-export individual tools for direct access
@@ -44,5 +53,11 @@ export {
   updateMeetingTool,
   executeUpdateMeeting,
   getMeetingOutlineTool,
-  executeGetMeetingOutline
+  executeGetMeetingOutline,
+  createTaskTool,
+  executeCreateTask,
+  updateTaskTool,
+  executeUpdateTask,
+  searchTasksTool,
+  executeSearchTasks
 }
