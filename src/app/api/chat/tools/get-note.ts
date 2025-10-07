@@ -1,5 +1,6 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { getNoteById } from '@/app/(workspace)/workspace/notes/_lib/queries'
+import type { Contact, Meeting } from '@/app/(workspace)/workspace/notes/_lib/validations'
 
 function resolveNoteId(parameters: Record<string, unknown>): string | undefined {
   const possibleKeys = ['note_id', 'id']
@@ -48,13 +49,13 @@ export async function executeGetNote(parameters: Record<string, unknown>): Promi
         note_id: note.id,
         title: note.title,
         content: note.content,
-        contacts: (note.contacts ?? []).map(contact => ({
+        contacts: (note.contacts ?? []).map((contact: Contact) => ({
           id: contact.id,
           first_name: contact.first_name ?? null,
           last_name: contact.last_name ?? null,
           company: contact.company?.name ?? null
         })),
-        meetings: (note.meetings ?? []).map(meeting => ({
+        meetings: (note.meetings ?? []).map((meeting: Meeting) => ({
           id: meeting.id,
           title: meeting.title ?? null,
           meeting_at: meeting.meeting_at ?? null
