@@ -13,6 +13,10 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `update-meeting.ts` - Tool for updating existing meetings
 - `delete-meeting.ts` - Tool for deleting meetings
 - `search-meetings.ts` - Tool for searching existing meetings
+- `create-note.ts` - Tool for creating notes with optional associations
+- `get-note.ts` - Tool for retrieving a single note with associations
+- `update-note.ts` - Tool for updating note content and associations
+- `delete-note.ts` - Tool for deleting notes
 - `create-task.ts` - Tool for creating new tasks with optional associations
 - `update-task.ts` - Tool for updating existing tasks
 - `delete-task.ts` - Tool for deleting tasks
@@ -196,6 +200,46 @@ Retrieves the structured outline for a specific meeting without returning the fu
 - `meeting_id` (string) - The unique identifier of the meeting whose outline should be returned
 
 **Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable.
+
+### create_note
+Creates a new note with required text content and optional title, contact associations, or meeting associations.
+
+**Parameters:**
+- `content` (string) - The main body of the note. Provide the full text that should be stored.
+- `title` (string, optional) - Optional note title to make the note easier to reference later.
+- `contact_ids` (array of strings, optional) - Contact IDs to link to the note. When supplied, the note is associated with each contact.
+- `meeting_ids` (array of strings, optional) - Meeting IDs to link to the note. When supplied, the note is associated with each meeting.
+
+**Usage:** Always include meaningful `content`. Associations are optional and can be provided as arrays or omitted.
+
+### get_note
+Retrieves a single note by ID, returning its content along with associated contacts and meetings.
+
+**Parameters:**
+- `note_id` (string) - ID of the note to retrieve.
+
+**Response:** Returns the note ID, title, content, timestamps, associated contacts (with basic details), associated meetings (with title and scheduled time), and a workspace URL for navigation.
+
+### update_note
+Updates an existing note. Use this to modify the title or content, or to replace the linked contacts or meetings.
+
+**Parameters:**
+- `note_id` (string) - ID of the note to update.
+- `title` (string, optional) - New title. Provide an empty string or `null` to clear the existing title.
+- `content` (string, optional) - New body content. Provide an empty string or `null` to clear the existing content.
+- `contact_ids` (array of strings, optional) - Replace contact associations. Use an empty array to remove all contacts.
+- `meeting_ids` (array of strings, optional) - Replace meeting associations. Use an empty array to remove all meetings.
+
+**Usage:** Only include the fields that should change. Associations are replaced entirely when provided.
+
+### delete_note
+Deletes one or more notes once they are no longer needed.
+
+**Parameters:**
+- `note_id` (string, optional) - Single note ID to delete.
+- `note_ids` (array of strings, optional) - Multiple note IDs to delete in batch.
+
+**Usage:** Supply either `note_id` or `note_ids`. The response includes how many notes were deleted and a link back to the notes workspace.
 
 ### create_task
 Creates a new task with status, priority, optional dates, and associations to contacts, meetings, and tags. Defaults to `todo` status and `medium` priority when not provided.
