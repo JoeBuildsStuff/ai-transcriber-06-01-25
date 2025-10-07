@@ -6,13 +6,16 @@ This directory contains the tool definitions and execution logic for the chat AP
 
 - `index.ts` - Exports all tools and executors
 - `create-person.ts` - Tool for creating person contacts
+- `update-person.ts` - Tool for updating existing person contacts
+- `delete-person.ts` - Tool for deleting person contacts
 - `search-persons.ts` - Tool for searching person contacts
 - `create-meeting.ts` - Tool for creating new meetings
-- `search-meetings.ts` - Tool for searching existing meetings
-- `update-person.ts` - Tool for updating existing person contacts
 - `update-meeting.ts` - Tool for updating existing meetings
+- `delete-meeting.ts` - Tool for deleting meetings
+- `search-meetings.ts` - Tool for searching existing meetings
 - `create-task.ts` - Tool for creating new tasks with optional associations
 - `update-task.ts` - Tool for updating existing tasks
+- `delete-task.ts` - Tool for deleting tasks
 - `search-tasks.ts` - Tool for querying tasks by status, priority, due dates, and owner
 - `get-meeting-outline.ts` - Tool for retrieving structured meeting outlines for meetings
 - `README.md` - This documentation file
@@ -118,18 +121,14 @@ Updates an existing person contact with new information. Use this when users wan
 
 **Required:** `id` - All other fields are optional and will only update if provided
 
-### update_meeting
-Updates an existing meeting with new information such as title, meeting date/time, location, review status, or summary.
+### delete_person_contact
+Deletes one or more person contacts that are no longer needed.
 
 **Parameters:**
-- `id` (string) - The unique identifier of the meeting to update
-- `title` (string, optional) - Updated title of the meeting
-- `meeting_at` (string, optional) - Updated meeting date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
-- `location` (string, optional) - Updated location (e.g., room, Zoom, address)
-- `meeting_reviewed` (boolean, optional) - Whether the meeting has been reviewed
-- `summary` (string, optional) - Updated plain-text summary for the meeting
+- `id` (string, optional) - ID of the person contact to delete
+- `ids` (array of strings, optional) - IDs of multiple contacts to delete in a single call
 
-**Required:** `id` - All other fields are optional and only applied if provided
+**Usage:** Provide either `id` for a single contact or `ids` when removing multiple contacts. The tool returns the number of deleted contacts and a link back to the contacts workspace.
 
 ### search_persons
 Search for persons by name, company, email, or phone number.
@@ -155,6 +154,28 @@ Creates a new meeting with title, meeting date/time, location, and description. 
 - `description` (string, optional) - The meeting description, body content, or notes from the meeting invitation. This should include the actual meeting content, agenda, or notes that appear in the meeting body/description area of calendar invitations, not just logistical details. For example, if the meeting invitation contains personal messages, agenda items, or meeting notes, include those here.
 
 **Usage:** All parameters are optional. The tool creates a meeting with the specified details and automatically creates an associated note for meeting notes. The description parameter is stored as the initial content of the meeting note. When processing meeting invitations from images, the AI will extract the meeting body content (personal messages, agenda items, etc.) as the description rather than just logistical details.
+
+### update_meeting
+Updates an existing meeting with new information such as title, meeting date/time, location, review status, or summary.
+
+**Parameters:**
+- `id` (string) - The unique identifier of the meeting to update
+- `title` (string, optional) - Updated title of the meeting
+- `meeting_at` (string, optional) - Updated meeting date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
+- `location` (string, optional) - Updated location (e.g., room, Zoom, address)
+- `meeting_reviewed` (boolean, optional) - Whether the meeting has been reviewed
+- `summary` (string, optional) - Updated plain-text summary for the meeting
+
+**Required:** `id` - All other fields are optional and only applied if provided
+
+### delete_meeting
+Deletes one or more meetings from the workspace after confirming they are no longer required.
+
+**Parameters:**
+- `id` (string, optional) - ID of the meeting to delete
+- `ids` (array of strings, optional) - IDs of multiple meetings to delete together
+
+**Usage:** Supply either `id` or `ids`. The tool returns how many meetings were deleted along with the meetings workspace URL.
 
 ### search_meetings
 Search for meetings by participant name, date range, title, or other criteria. Use this when users ask about meetings they have had with specific people or during specific time periods.
@@ -210,6 +231,15 @@ Updates an existing task. Provide only the fields that should change—omitted f
 - `tag_ids` (array of strings, optional) - Replace tag associations (empty array clears)
 
 **Response:** Returns the updated task metadata and workspace URL.
+
+### delete_task
+Deletes one or more tasks that are no longer relevant.
+
+**Parameters:**
+- `id` (string, optional) - ID of the task to delete
+- `ids` (array of strings, optional) - IDs of multiple tasks to delete in one request
+
+**Usage:** Provide either `id` or `ids`. When multiple IDs are included, the tool deletes them in bulk and reports the total removed alongside a link to the tasks workspace.
 
 ### search_tasks
 Searches tasks by keywords, status, priority, due date ranges, and owner. Results include related contacts, meetings, and tags when available.
