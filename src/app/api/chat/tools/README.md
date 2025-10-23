@@ -22,6 +22,7 @@ This directory contains the tool definitions and execution logic for the chat AP
 - `delete-task.ts` - Tool for deleting tasks
 - `search-tasks.ts` - Tool for querying tasks by status, priority, due dates, and owner
 - `get-meeting-outline.ts` - Tool for retrieving structured meeting outlines for meetings
+- `get-meeting-transcript.ts` - Tool for retrieving meeting transcripts with resolved speaker names
 - `README.md` - This documentation file
 
 ## Adding a New Tool
@@ -194,12 +195,24 @@ Search for meetings by participant name, date range, title, or other criteria. U
 **Usage:** All parameters are optional. The tool searches for meetings based on the provided criteria and returns formatted results with meeting details and navigation URLs. Results are sorted by meeting date (most recent first). When users ask questions like "what meetings have I had with Joe Taylor in the past week?", the AI will extract the participant name and date range to perform the search.
 
 ### get_meeting_outline
-Retrieves the structured outline for a specific meeting without returning the full transcript. Use this after locating the meeting via `search_meetings` when the user requests executive summaries, action items, decisions, or other outline sections.
+Retrieves the structured outline for a specific meeting without returning the full transcript.
 
 **Parameters:**
 - `meeting_id` (string) - The unique identifier of the meeting whose outline should be returned
 
+**Usage:** Use this after locating the meeting via `search_meetings` when users need executive summaries, action items, or other outline sections.
+
 **Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable.
+
+### get_meeting_transcript
+Returns the formatted transcript for a meeting with speaker names resolved from linked contacts when available. Use this when you need to read or quote specific dialogue from the meeting after locating it via search.
+
+**Parameters:**
+- `meeting_id` (string) - The unique identifier of the meeting whose transcript should be returned
+
+**Usage:** The response includes per-segment speaker names, timestamps, and text, along with an aggregated transcript string that mirrors the copy-to-clipboard version in the workspace UI.
+
+**Response:** Provides segment-level entries with speaker names and timestamps, a preformatted transcript string, the associated meeting URL, and an explicit flag when no transcript data is available yet.
 
 ### create_note
 Creates a new note with required text content and optional title, contact associations, or meeting associations.

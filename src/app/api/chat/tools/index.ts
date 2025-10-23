@@ -8,6 +8,7 @@ import { updateMeetingTool, executeUpdateMeeting } from './update-meeting'
 import { deleteMeetingTool, executeDeleteMeeting } from './delete-meeting'
 import { searchMeetingsTool, executeSearchMeetings } from './search-meetings'
 import { getMeetingOutlineTool, executeGetMeetingOutline } from './get-meeting-outline'
+import { getMeetingTranscriptTool, executeGetMeetingTranscript } from './get-meeting-transcript'
 import { createNoteTool, executeCreateNote } from './create-note'
 import { getNoteTool, executeGetNote } from './get-note'
 import { updateNoteTool, executeUpdateNote } from './update-note'
@@ -28,6 +29,7 @@ export const availableTools: Anthropic.Tool[] = [
   deleteMeetingTool,
   searchMeetingsTool,
   getMeetingOutlineTool,
+  getMeetingTranscriptTool,
   createNoteTool,
   getNoteTool,
   updateNoteTool,
@@ -49,6 +51,7 @@ export const toolExecutors: Record<string, (parameters: Record<string, unknown>)
   delete_meeting: executeDeleteMeeting,
   search_meetings: executeSearchMeetings,
   get_meeting_outline: executeGetMeetingOutline,
+  get_meeting_transcript: executeGetMeetingTranscript,
   create_note: executeCreateNote,
   get_note: executeGetNote,
   update_note: executeUpdateNote,
@@ -79,6 +82,8 @@ export {
   executeSearchMeetings,
   getMeetingOutlineTool,
   executeGetMeetingOutline,
+  getMeetingTranscriptTool,
+  executeGetMeetingTranscript,
   createNoteTool,
   executeCreateNote,
   getNoteTool,
