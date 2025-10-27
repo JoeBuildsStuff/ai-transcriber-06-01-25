@@ -175,6 +175,7 @@ export async function executeGetMeetingTranscript(parameters: Record<string, unk
           meeting_id: meeting.id,
           meeting_title: meeting.title ?? 'Untitled Meeting',
           meeting_at: meeting.meeting_at ?? null,
+          meeting_end_at: meeting.meeting_end_at ?? null,
           transcript_available: false,
           message: 'This meeting does not yet have a formatted transcript.',
           meeting_url: `/workspace/meetings/${meeting.id}`
@@ -213,6 +214,7 @@ export async function executeGetMeetingTranscript(parameters: Record<string, unk
         meeting_id: meeting.id,
         meeting_title: meeting.title ?? 'Untitled Meeting',
         meeting_at: meeting.meeting_at ?? null,
+        meeting_end_at: meeting.meeting_end_at ?? null,
         transcript_available: true,
         segments: normalizedTranscript,
         transcript_text: transcriptText,

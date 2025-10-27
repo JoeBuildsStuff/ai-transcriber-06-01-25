@@ -126,6 +126,7 @@ export async function executeGetMeetingOutline(parameters: Record<string, unknow
         meeting_id: meeting.id,
         meeting_title: meeting.title ?? 'Untitled Meeting',
         meeting_at: meeting.meeting_at ?? null,
+        meeting_end_at: meeting.meeting_end_at ?? null,
         outline_available: sections.length > 0,
         outline_sections: sections,
         outline,

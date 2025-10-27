@@ -155,6 +155,7 @@ Creates a new meeting with title, meeting date/time, location, and description. 
 **Parameters:**
 - `title` (string, optional) - Title for the meeting (defaults to "Untitled Meeting")
 - `meeting_at` (string, optional) - Date and time for the meeting in ISO format (defaults to current time)
+- `meeting_end_at` (string, optional) - End date and time for the meeting in ISO format
 - `location` (string, optional) - Location of the meeting (e.g., "Conference Room A", "Zoom Meeting", "123 Main St", "Zoom Meeting ID: 123 456 7890")
 - `description` (string, optional) - The meeting description, body content, or notes from the meeting invitation. This should include the actual meeting content, agenda, or notes that appear in the meeting body/description area of calendar invitations, not just logistical details. For example, if the meeting invitation contains personal messages, agenda items, or meeting notes, include those here.
 
@@ -167,6 +168,7 @@ Updates an existing meeting with new information such as title, meeting date/tim
 - `id` (string) - The unique identifier of the meeting to update
 - `title` (string, optional) - Updated title of the meeting
 - `meeting_at` (string, optional) - Updated meeting date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
+- `meeting_end_at` (string, optional) - Updated meeting end date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
 - `location` (string, optional) - Updated location (e.g., room, Zoom, address)
 - `meeting_reviewed` (boolean, optional) - Whether the meeting has been reviewed
 - `summary` (string, optional) - Updated plain-text summary for the meeting
@@ -202,7 +204,7 @@ Retrieves the structured outline for a specific meeting without returning the fu
 
 **Usage:** Use this after locating the meeting via `search_meetings` when users need executive summaries, action items, or other outline sections.
 
-**Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable.
+**Response:** Returns the available outline sections (e.g., executive summary, discussion outline, action items) ordered for easy consumption, along with a direct link to the meeting. If the meeting does not yet have an outline, the response clearly indicates that the outline is unavailable. Also includes meeting start and end times.
 
 ### get_meeting_transcript
 Returns the formatted transcript for a meeting with speaker names resolved from linked contacts when available. Use this when you need to read or quote specific dialogue from the meeting after locating it via search.
@@ -212,7 +214,7 @@ Returns the formatted transcript for a meeting with speaker names resolved from 
 
 **Usage:** The response includes per-segment speaker names, timestamps, and text, along with an aggregated transcript string that mirrors the copy-to-clipboard version in the workspace UI.
 
-**Response:** Provides segment-level entries with speaker names and timestamps, a preformatted transcript string, the associated meeting URL, and an explicit flag when no transcript data is available yet.
+**Response:** Provides segment-level entries with speaker names and timestamps, a preformatted transcript string, the associated meeting URL, and an explicit flag when no transcript data is available yet. Also includes meeting start and end times.
 
 ### create_note
 Creates a new note with required text content and optional title, contact associations, or meeting associations.

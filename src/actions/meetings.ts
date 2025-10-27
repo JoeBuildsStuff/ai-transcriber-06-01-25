@@ -34,6 +34,7 @@ async function findContactByName(firstName: string, lastName: string, userId: st
 export async function createMeeting(params?: {
   title?: string
   meeting_at?: string
+  meeting_end_at?: string
   description?: string
   location?: string
   participants?: Array<{ firstName: string; lastName: string }>
@@ -52,6 +53,7 @@ export async function createMeeting(params?: {
     title: params?.title || "Untitled Meeting",
     audio_file_path: "", // Required field, but no file yet.
     meeting_at: params?.meeting_at || new Date().toISOString(),
+    meeting_end_at: params?.meeting_end_at || null,
     location: params?.location || null,
   }
 
@@ -59,7 +61,7 @@ export async function createMeeting(params?: {
     .schema("ai_transcriber")
     .from("meetings")
     .insert(meetingData)
-    .select("id, title, meeting_at, location")
+    .select("id, title, meeting_at, meeting_end_at, location")
     .single()
 
   if (error) {

@@ -16,6 +16,10 @@ export const createMeetingTool: Anthropic.Tool = {
         type: 'string',
         description: 'Date and time for the meeting in ISO format with timezone information (optional, defaults to current time). For example: "2025-08-26T09:30:00-07:00" for Pacific Time. Always include timezone offset when available from the meeting invitation.'
       },
+      meeting_end_at: {
+        type: 'string',
+        description: 'End date and time for the meeting in ISO format with timezone information (optional). For example: "2025-08-26T10:30:00-07:00" for Pacific Time. Always include timezone offset when available from the meeting invitation.'
+      },
       location: {
         type: 'string',
         description: 'Location of the meeting (optional, e.g., "Conference Room A", "Zoom Meeting", "123 Main St", "Zoom Meeting ID: 123 456 7890")'
@@ -53,6 +57,7 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
     // Extract parameters from the LLM request
     const title = parameters.title as string | undefined
     let meeting_at = parameters.meeting_at as string | undefined
+    let meeting_end_at = parameters.meeting_end_at as string | undefined
     const location = parameters.location as string | undefined
     const description = parameters.description as string | undefined
     const participants = parameters.participants as Array<{ firstName: string; lastName: string }> | undefined
@@ -73,11 +78,20 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
         meeting_at = meeting_at.replace(/[zZ]$/, '') + client_utc_offset
       }
     }
+
+    // Handle meeting_end_at timezone if provided
+    if (meeting_end_at && String(meeting_end_at).trim()) {
+      const hasTimezone = /[zZ]|([+-]\d{2}:?\d{2})$/.test(meeting_end_at)
+      if (!hasTimezone && client_utc_offset) {
+        meeting_end_at = meeting_end_at.replace(/[zZ]$/, '') + client_utc_offset
+      }
+    }
     
     // Call the enhanced createMeeting action with parameters
     const result = await createMeeting({
       title,
       meeting_at,
+      meeting_end_at,
       location,
       description,
       participants
@@ -112,6 +126,7 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
           note_id: result.note?.id,
           title: result.meeting.title,
           meeting_at: result.meeting.meeting_at,
+          meeting_end_at: result.meeting.meeting_end_at,
           location: result.meeting.location,
           participants_summary: participantSummary || "No participants specified"
         }

@@ -20,6 +20,10 @@ export const updateMeetingTool: Anthropic.Tool = {
         type: 'string',
         description: 'Updated meeting date/time in ISO format. If timezone offset is missing, use the client UTC offset.'
       },
+      meeting_end_at: {
+        type: 'string',
+        description: 'Updated meeting end date/time in ISO format. If timezone offset is missing, use the client UTC offset.'
+      },
       location: {
         type: 'string',
         description: 'Updated location of the meeting (e.g., room, Zoom, address)'
@@ -41,6 +45,7 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
 
     // Extract and normalize fields
     let meeting_at = parameters.meeting_at as string | undefined
+    let meeting_end_at = parameters.meeting_end_at as string | undefined
     const title = parameters.title as string | undefined
     const location = parameters.location as string | undefined
 
@@ -57,10 +62,21 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
       meeting_at = undefined
     }
 
+    // If meeting_end_at provided, ensure it has timezone info; if empty string, ignore
+    if (meeting_end_at && String(meeting_end_at).trim()) {
+      const hasTimezone = /[zZ]|([+-]\d{2}:?\d{2})$/.test(meeting_end_at)
+      if (!hasTimezone && client_utc_offset) {
+        meeting_end_at = meeting_end_at.replace(/[zZ]$/, '') + client_utc_offset
+      }
+    } else {
+      meeting_end_at = undefined
+    }
+
     // Build update payload with only provided fields
     const updatePayload: Record<string, unknown> = {}
     if (title !== undefined) updatePayload.title = title
     if (meeting_at !== undefined) updatePayload.meeting_at = meeting_at
+    if (meeting_end_at !== undefined) updatePayload.meeting_end_at = meeting_end_at
     if (location !== undefined) updatePayload.location = location
 
     if (Object.keys(updatePayload).length === 0) {
@@ -70,7 +86,7 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
     const result = await updateMeeting(id, updatePayload)
 
     if (result.success) {
-      const meeting = result.data as { id: string; title?: string; meeting_at?: string; location?: string | null }
+      const meeting = result.data as { id: string; title?: string; meeting_at?: string; meeting_end_at?: string; location?: string | null }
       return {
         success: true,
         data: {
@@ -78,6 +94,7 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
           meeting_id: meeting.id,
           title: meeting.title,
           meeting_at: meeting.meeting_at,
+          meeting_end_at: meeting.meeting_end_at,
           location: meeting.location,
           meeting_url: `/workspace/meetings/${meeting.id}`
         }
