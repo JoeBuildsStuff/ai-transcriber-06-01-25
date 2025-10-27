@@ -284,6 +284,7 @@ export async function getMeeting(
       updated_at,
       title,
       meeting_at,
+      meeting_end_at,
       speaker_names,
       summary_jsonb,
       meeting_reviewed,

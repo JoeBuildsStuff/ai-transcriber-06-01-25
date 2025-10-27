@@ -26,6 +26,7 @@ export type Meetings = {
   openai_response?: Json,
   title?: string,
   meeting_at?: string,
+  meeting_end_at?: string,
   summary_jsonb?: Json,
   meeting_reviewed?: boolean,
   location?: string,

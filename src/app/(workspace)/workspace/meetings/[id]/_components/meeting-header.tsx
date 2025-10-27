@@ -21,6 +21,7 @@ interface MeetingHeaderProps {
     meetingData: {
         title?: string;
         meeting_at?: string | null;
+        meeting_end_at?: string | null;
         location?: string;
         audio_file_path?: string;
         repeat?: string;
@@ -81,6 +82,17 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     <Clock className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
                 </TimeFieldSupabase>
+                <span>to</span>
+                <TimeFieldSupabase 
+                    table="meetings" 
+                    field="meeting_end_at" 
+                    id={id} 
+                    initialValue={meetingData.meeting_end_at || null}
+                    className="flex flex-row gap-2 items-center font-extralight"
+                >
+                    <Clock className="size-4 shrink-0 text-muted-foreground" />
+                    <DateInputSupabase />
+                </TimeFieldSupabase>
                 {/* Repeat */}
                 <Repeat className="size-4 shrink-0 text-muted-foreground" />
                 <MeetingRepeat 
@@ -89,7 +101,6 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     recurrence={meetingData.recurrence}
                     recurrenceParentId={meetingData.recurrence_parent_id}
                 />
-                    
             </div>
 
             {/* Location */}

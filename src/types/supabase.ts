@@ -669,6 +669,7 @@ export type Database = {
           id: string
           location: string | null
           meeting_at: string | null
+          meeting_end_at: string | null
           meeting_reviewed: boolean | null
           openai_response: Json | null
           original_file_name: string | null
@@ -689,6 +690,7 @@ export type Database = {
           id?: string
           location?: string | null
           meeting_at?: string | null
+          meeting_end_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
           original_file_name?: string | null
@@ -709,6 +711,7 @@ export type Database = {
           id?: string
           location?: string | null
           meeting_at?: string | null
+          meeting_end_at?: string | null
           meeting_reviewed?: boolean | null
           openai_response?: Json | null
           original_file_name?: string | null
