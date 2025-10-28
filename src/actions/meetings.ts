@@ -7,6 +7,124 @@ import { revalidatePath } from "next/cache"
 type TagRow = Database["ai_transcriber"]["Tables"]["tags"]["Row"]
 type MeetingTagRow = Database["ai_transcriber"]["Tables"]["meeting_tags"]["Row"]
 
+export interface TagAttachmentSummary {
+  attached: TagRow[]
+  missing: string[]
+  error?: string
+}
+
+const sanitizeTagName = (value: string) =>
+  value
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "")
+
+const normalizeTagKey = (value: string) => sanitizeTagName(value).toLowerCase()
+
+export async function attachExistingTagsToMeeting(
+  meetingId: string,
+  tagNames: string[],
+  userId?: string
+): Promise<TagAttachmentSummary> {
+  if (tagNames.length === 0) {
+    return { attached: [], missing: [] }
+  }
+
+  const supabase = await createClient()
+
+  const requestedTags = new Map<string, { label: string; sanitized: string }>()
+  const missingTags = new Set<string>()
+
+  for (const rawName of tagNames) {
+    const trimmed = typeof rawName === "string" ? rawName.trim() : ""
+    const sanitized = sanitizeTagName(trimmed)
+
+    if (!sanitized) {
+      if (trimmed) {
+        missingTags.add(trimmed)
+      } else {
+        missingTags.add("[empty]")
+      }
+      continue
+    }
+
+    const normalized = sanitized.toLowerCase()
+    if (!requestedTags.has(normalized)) {
+      requestedTags.set(normalized, {
+        label: trimmed || sanitized,
+        sanitized,
+      })
+    }
+  }
+
+  if (requestedTags.size === 0) {
+    return { attached: [], missing: Array.from(missingTags) }
+  }
+
+  let resolvedUserId = userId
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return {
+        attached: [],
+        missing: Array.from(missingTags),
+        error: "You must be logged in to modify meeting tags.",
+      }
+    }
+    resolvedUserId = user.id
+  }
+
+  const { data: userTags, error: fetchError } = await supabase
+    .schema("ai_transcriber")
+    .from("tags")
+    .select("id, name, description, created_at, updated_at")
+    .eq("user_id", resolvedUserId)
+
+  if (fetchError) {
+    console.error("Failed to fetch tags for attachment:", fetchError.message)
+    requestedTags.forEach((value) => missingTags.add(value.label))
+    return {
+      attached: [],
+      missing: Array.from(missingTags),
+      error: "Unable to load tags while attaching to meeting.",
+    }
+  }
+
+  const existingTagMap = new Map<string, TagRow>()
+  for (const tag of userTags ?? []) {
+    const normalized = normalizeTagKey(tag.name)
+    if (normalized) {
+      existingTagMap.set(normalized, tag)
+    }
+  }
+
+  const matchedTags: TagRow[] = []
+  requestedTags.forEach((value, key) => {
+    const match = existingTagMap.get(key)
+    if (match) {
+      matchedTags.push(match)
+    } else {
+      missingTags.add(value.label)
+    }
+  })
+
+  let attachmentError: string | undefined
+  if (matchedTags.length > 0) {
+    const tagIds = matchedTags.map((tag) => tag.id)
+    const attachResult = await addTagsToMeeting(meetingId, tagIds)
+    if (attachResult.error) {
+      attachmentError = attachResult.error
+    }
+  }
+
+  return {
+    attached: matchedTags,
+    missing: Array.from(missingTags),
+    error: attachmentError,
+  }
+}
+
 // Helper function to find contact by first and last name
 // used by the LLM Agent to add attendees to a meeting
 // right now the llm specifies a first name + last name and we search for that contact and adds the first contact found
@@ -38,6 +156,7 @@ export async function createMeeting(params?: {
   description?: string
   location?: string
   participants?: Array<{ firstName: string; lastName: string }>
+  tags?: string[]
 }) {
   const supabase = await createClient()
 
@@ -168,6 +287,11 @@ export async function createMeeting(params?: {
     }
   }
 
+  let tagSummary: TagAttachmentSummary | undefined
+  if (params?.tags && params.tags.length > 0) {
+    tagSummary = await attachExistingTagsToMeeting(newMeeting.id, params.tags, userData.user.id)
+  }
+
   revalidatePath("/workspace/meetings")
   revalidatePath("/workspace")
 
@@ -175,7 +299,8 @@ export async function createMeeting(params?: {
     data: "Meeting created successfully",
     meeting: newMeeting,
     note: newNote,
-    participants: addedParticipants
+    participants: addedParticipants,
+    tags: tagSummary ?? { attached: [], missing: [] }
   }
 }
 
@@ -546,13 +671,6 @@ export async function removeTagsFromMeeting(meetingId: string, tagIds: string[])
     message: `${tagIds.length} tag(s) removed.`,
   }
 }
-
-const sanitizeTagName = (value: string) =>
-  value
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^[-_]+|[-_]+$/g, "")
 
 export async function createAndAttachTag(meetingId: string, rawName: string) {
   const supabase = await createClient()

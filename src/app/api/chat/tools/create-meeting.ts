@@ -4,7 +4,7 @@ import { createMeeting } from '@/actions/meetings'
 // Tool definition
 export const createMeetingTool: Anthropic.Tool = {
   name: 'create_meeting',
-  description: 'Creates a new meeting with title, meeting date/time, location, description, and participants. When processing meeting invitations or calendar events from images, extract the meeting body/description content as the description parameter and any attendees/participants as the participants array. This creates a meeting that can be populated with audio files, attendees, and other details later.',
+  description: 'Creates a new meeting with title, meeting date/time, location, description, participants, and tags. When processing meeting invitations or calendar events from images, extract the meeting body/description content as the description parameter, participants as the participants array, and any tag names as the tags array. Tags must already exist in the workspace; missing tags will be reported back so you can follow up with the user.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -45,6 +45,13 @@ export const createMeetingTool: Anthropic.Tool = {
           },
           required: ['firstName', 'lastName']
         }
+      },
+      tags: {
+        type: 'array',
+        description: 'Optional list of tag names to attach to the meeting. Each tag must already exist in the workspace. Tags that do not exist will be reported back to you so you can follow up with the user.',
+        items: {
+          type: 'string'
+        }
       }
     },
     required: [] // All parameters are optional
@@ -61,6 +68,8 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
     const location = parameters.location as string | undefined
     const description = parameters.description as string | undefined
     const participants = parameters.participants as Array<{ firstName: string; lastName: string }> | undefined
+    const rawTags = parameters.tags
+    const tags = Array.isArray(rawTags) ? rawTags.map((tag) => String(tag)) : undefined
     
     // Client timezone hints injected by the API layer
     const client_utc_offset = (parameters.client_utc_offset as string) || ''
@@ -94,7 +103,8 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
       meeting_end_at,
       location,
       description,
-      participants
+      participants,
+      tags
     })
     
     if (result.error) {
@@ -116,6 +126,32 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
           participantSummary += `Could not find ${notFoundParticipants.length} participant(s) in contacts: ${notFoundParticipants.map(p => p.name).join(', ')}. `
         }
       }
+
+      const tagSummaryData = result.tags ?? { attached: [], missing: [], error: undefined }
+      const attachedTagNames = (tagSummaryData.attached ?? []).map(tag => tag.name)
+      const missingTagNames = tagSummaryData.missing ?? []
+      const requestedTagCount = Array.isArray(tags) ? tags.length : 0
+      const tagSummaryParts: string[] = []
+
+      if (attachedTagNames.length > 0) {
+        tagSummaryParts.push(`Attached ${attachedTagNames.length} tag(s): ${attachedTagNames.join(', ')}`)
+      }
+
+      if (missingTagNames.length > 0) {
+        tagSummaryParts.push(`Could not find ${missingTagNames.length} tag(s): ${missingTagNames.join(', ')}`)
+      }
+
+      if (tagSummaryData.error) {
+        tagSummaryParts.push(`Tag attachment error: ${tagSummaryData.error}`)
+      }
+
+      let tagsSummary = 'No tags requested'
+      if (requestedTagCount > 0) {
+        tagsSummary = tagSummaryParts.join('. ')
+        if (!tagsSummary) {
+          tagsSummary = 'No tags were attached'
+        }
+      }
       
       return { 
         success: true, 
@@ -128,7 +164,11 @@ export async function executeCreateMeeting(parameters: Record<string, unknown>):
           meeting_at: result.meeting.meeting_at,
           meeting_end_at: result.meeting.meeting_end_at,
           location: result.meeting.location,
-          participants_summary: participantSummary || "No participants specified"
+          participants_summary: participantSummary || "No participants specified",
+          tags_summary: tagsSummary,
+          tags_attached: attachedTagNames,
+          tags_missing: missingTagNames,
+          tags_error: tagSummaryData.error ?? null
         }
       }
     }

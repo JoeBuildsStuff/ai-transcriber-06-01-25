@@ -150,7 +150,7 @@ Search for persons by name, company, email, or phone number.
 **Usage:** Provide either a `searchTerm` for general search or specific fields for targeted search
 
 ### create_meeting
-Creates a new meeting with title, meeting date/time, location, and description. When processing meeting invitations or calendar events from images, extracts the meeting body/description content as the description parameter. This creates a meeting that can be populated with audio files, attendees, and other details later.
+Creates a new meeting with title, meeting date/time, location, description, participants, and tags. When processing meeting invitations or calendar events from images, extract the meeting body/description content as the description parameter, attendees as the participants array, and any tag names as the tags array. Tag names must already exist in the workspace; any missing tags are echoed back so you can follow up with the user.
 
 **Parameters:**
 - `title` (string, optional) - Title for the meeting (defaults to "Untitled Meeting")
@@ -158,11 +158,13 @@ Creates a new meeting with title, meeting date/time, location, and description. 
 - `meeting_end_at` (string, optional) - End date and time for the meeting in ISO format
 - `location` (string, optional) - Location of the meeting (e.g., "Conference Room A", "Zoom Meeting", "123 Main St", "Zoom Meeting ID: 123 456 7890")
 - `description` (string, optional) - The meeting description, body content, or notes from the meeting invitation. This should include the actual meeting content, agenda, or notes that appear in the meeting body/description area of calendar invitations, not just logistical details. For example, if the meeting invitation contains personal messages, agenda items, or meeting notes, include those here.
+- `participants` (array of objects, optional) - Participant objects with `firstName` and `lastName`. Contacts not found are reported so you can clarify with the user.
+- `tags` (array of strings, optional) - Tag names to attach. Existing tags are linked immediately; missing tags are returned so you can ask the user to fix the spelling or create the tag and then call `update_meeting`.
 
-**Usage:** All parameters are optional. The tool creates a meeting with the specified details and automatically creates an associated note for meeting notes. The description parameter is stored as the initial content of the meeting note. When processing meeting invitations from images, the AI will extract the meeting body content (personal messages, agenda items, etc.) as the description rather than just logistical details.
+**Usage:** All parameters are optional. The tool creates a meeting with the specified details, creates an associated meeting note, attaches any participants that exist in contacts, and links any tags that already exist. The response includes `participants_summary`, `tags_attached`, `tags_missing`, and `tags_summary` so you know which follow-up questions to ask the user.
 
 ### update_meeting
-Updates an existing meeting with new information such as title, meeting date/time, location, review status, or summary.
+Updates an existing meeting with new information such as title, meeting date/time, location, and tags.
 
 **Parameters:**
 - `id` (string) - The unique identifier of the meeting to update
@@ -170,10 +172,9 @@ Updates an existing meeting with new information such as title, meeting date/tim
 - `meeting_at` (string, optional) - Updated meeting date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
 - `meeting_end_at` (string, optional) - Updated meeting end date/time in ISO format. If timezone offset is missing, the API augments with client UTC offset when available.
 - `location` (string, optional) - Updated location (e.g., room, Zoom, address)
-- `meeting_reviewed` (boolean, optional) - Whether the meeting has been reviewed
-- `summary` (string, optional) - Updated plain-text summary for the meeting
+- `tags` (array of strings, optional) - Tag names to attach. Only existing tags are linked; missing names are returned so you can ask the user to correct them or create new tags.
 
-**Required:** `id` - All other fields are optional and only applied if provided
+**Usage:** Provide at least one field to update or a non-empty `tags` array. The response includes `tags_attached`, `tags_missing`, and `tags_error` so you can surface partial successes back to the user. When no meeting fields are supplied, you can send only `tags` to attach existing tags to an already-created meeting.
 
 ### delete_meeting
 Deletes one or more meetings from the workspace after confirming they are no longer required.

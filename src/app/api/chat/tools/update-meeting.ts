@@ -1,10 +1,12 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { updateMeeting } from '@/app/(workspace)/workspace/meetings/[id]/_lib/actions'
+import { attachExistingTagsToMeeting } from '@/actions/meetings'
+import type { TagAttachmentSummary } from '@/actions/meetings'
 
 // Tool definition for updating meetings
 export const updateMeetingTool: Anthropic.Tool = {
   name: 'update_meeting',
-  description: 'Update an existing meeting with new information such as title, meeting date/time, location.',
+  description: 'Update an existing meeting with new information such as title, meeting date/time, location, and tags. Provide tag names to attach existing tags; missing tags will be reported so you can ask the user to clarify or create them.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -28,6 +30,13 @@ export const updateMeetingTool: Anthropic.Tool = {
         type: 'string',
         description: 'Updated location of the meeting (e.g., room, Zoom, address)'
       },
+      tags: {
+        type: 'array',
+        description: 'Optional list of existing tag names to attach to the meeting. Tags that do not exist will be reported back to you so you can follow up with the user.',
+        items: {
+          type: 'string'
+        }
+      },
       // TODO: Note: summary_jsonb and attendees edits are out of scope for this tool
     },
     required: ['id']
@@ -48,6 +57,8 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
     let meeting_end_at = parameters.meeting_end_at as string | undefined
     const title = parameters.title as string | undefined
     const location = parameters.location as string | undefined
+    const rawTags = parameters.tags
+    const tags = Array.isArray(rawTags) ? rawTags.map(tag => String(tag)) : undefined
 
     // Client timezone hints injected by the API layer
     const client_utc_offset = (parameters.client_utc_offset as string) || ''
@@ -79,29 +90,74 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
     if (meeting_end_at !== undefined) updatePayload.meeting_end_at = meeting_end_at
     if (location !== undefined) updatePayload.location = location
 
-    if (Object.keys(updatePayload).length === 0) {
+    const hasMeetingFieldUpdates = Object.keys(updatePayload).length > 0
+    const hasTagUpdates = Array.isArray(tags) && tags.length > 0
+
+    if (!hasMeetingFieldUpdates && !hasTagUpdates) {
       return { success: false, error: 'No fields provided to update' }
     }
 
-    const result = await updateMeeting(id, updatePayload)
+    let meeting: { id: string; title?: string; meeting_at?: string; meeting_end_at?: string; location?: string | null } | undefined
 
-    if (result.success) {
-      const meeting = result.data as { id: string; title?: string; meeting_at?: string; meeting_end_at?: string; location?: string | null }
-      return {
-        success: true,
-        data: {
-          message: 'Meeting updated successfully',
-          meeting_id: meeting.id,
-          title: meeting.title,
-          meeting_at: meeting.meeting_at,
-          meeting_end_at: meeting.meeting_end_at,
-          location: meeting.location,
-          meeting_url: `/workspace/meetings/${meeting.id}`
-        }
+    if (hasMeetingFieldUpdates) {
+      const result = await updateMeeting(id, updatePayload)
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Failed to update meeting' }
       }
+
+      meeting = result.data as { id: string; title?: string; meeting_at?: string; meeting_end_at?: string; location?: string | null }
     }
 
-    return { success: false, error: result.error || 'Failed to update meeting' }
+    let tagSummaryData: TagAttachmentSummary | undefined
+    if (hasTagUpdates) {
+      tagSummaryData = await attachExistingTagsToMeeting(id, tags ?? [])
+    }
+
+    const attachedTagNames = tagSummaryData ? tagSummaryData.attached.map(tag => tag.name) : []
+    const missingTagNames = tagSummaryData?.missing ?? []
+    const tagSummaryParts: string[] = []
+
+    if (attachedTagNames.length > 0) {
+      tagSummaryParts.push(`Attached ${attachedTagNames.length} tag(s): ${attachedTagNames.join(', ')}`)
+    }
+
+    if (missingTagNames.length > 0) {
+      tagSummaryParts.push(`Could not find ${missingTagNames.length} tag(s): ${missingTagNames.join(', ')}`)
+    }
+
+    if (tagSummaryData?.error) {
+      tagSummaryParts.push(`Tag attachment error: ${tagSummaryData.error}`)
+    }
+
+    const tagsSummary = hasTagUpdates ? (tagSummaryParts.join('. ') || 'No tags were attached') : 'No tags requested'
+
+    const messageParts: string[] = []
+    if (hasMeetingFieldUpdates) {
+      messageParts.push('Meeting fields updated')
+    }
+    if (hasTagUpdates) {
+      messageParts.push(tagsSummary)
+    }
+
+    const responseMessage = messageParts.join('. ') || 'No changes applied'
+
+    return {
+      success: true,
+      data: {
+        message: responseMessage,
+        meeting_id: meeting?.id ?? id,
+        title: meeting?.title,
+        meeting_at: meeting?.meeting_at,
+        meeting_end_at: meeting?.meeting_end_at,
+        location: meeting?.location,
+        meeting_url: `/workspace/meetings/${id}`,
+        tags_summary: tagsSummary,
+        tags_attached: attachedTagNames,
+        tags_missing: missingTagNames,
+        tags_error: tagSummaryData?.error ?? null
+      }
+    }
   } catch (error) {
     console.error('Update meeting execution error:', error)
     return {
