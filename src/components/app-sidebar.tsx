@@ -22,7 +22,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File, Network, ListChecks } from "lucide-react"
+import { AudioLines, Calendar, ChevronRight, Plus, Presentation, Users, File, Network, ListChecks, CalendarDays } from "lucide-react"
 import Spinner from "@/components/ui/spinner"
 import { SidebarLogo } from "./app-sidebar-logo"
 import { usePathname, useRouter } from "next/navigation"
@@ -198,6 +198,14 @@ export function AppSidebar() {
       action: handleCreateMeeting,
       isActionLoading: isCreatingMeeting,
       actionAriaLabel: "Create new meeting",
+    },
+    {
+      label: "Calendar",
+      href: "/workspace/calendar",
+      icon: CalendarDays,
+      action: null,
+      isActionLoading: false,
+      actionAriaLabel: "",
     },
     {
       label: "Tasks",
