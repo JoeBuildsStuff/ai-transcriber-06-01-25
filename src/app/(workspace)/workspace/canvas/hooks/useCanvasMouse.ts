@@ -1043,7 +1043,7 @@ export function useCanvasMouse(canvasRef: RefObject<HTMLDivElement | null>) {
     return () => {
       canvasElement.removeEventListener('wheel', wheelHandler);
     };
-  }, [transform, presentationMode, panCanvas]);
+  }, [transform, presentationMode, panCanvas, canvasRef]);
 
   return {
     isDragging,

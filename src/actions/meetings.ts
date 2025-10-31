@@ -78,7 +78,7 @@ export async function attachExistingTagsToMeeting(
   const { data: userTags, error: fetchError } = await supabase
     .schema("ai_transcriber")
     .from("tags")
-    .select("id, name, description, created_at, updated_at")
+    .select("id, name, description, created_at, updated_at, user_id")
     .eq("user_id", resolvedUserId)
 
   if (fetchError) {

@@ -258,7 +258,10 @@ export function useKeyboardShortcuts() {
     snapToGrid, 
     setIsShiftPressed,
     gridSize,
-    selectMultipleNodes
+    selectMultipleNodes,
+    markerFillStyle,
+    setSnapToGrid,
+    updateNodePosition
   ]);
 
   // Handle paste event for JSON data
