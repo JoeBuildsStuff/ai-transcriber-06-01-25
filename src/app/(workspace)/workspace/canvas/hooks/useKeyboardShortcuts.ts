@@ -36,7 +36,7 @@
 // - Complex algorithms (use utils)
 // ======================================================
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useCanvasStore, Node, MarkerShape } from '../lib/store/canvas-store';
 import { useCanvasMouse } from '../hooks/useCanvasMouse';
 import { toast } from 'sonner';
@@ -70,7 +70,7 @@ export function useKeyboardShortcuts() {
   const getNodesFromStore = () => useCanvasStore.getState().nodes;
   
   // Copy canvas data to clipboard
-  const copyCanvasToClipboard = () => {
+  const copyCanvasToClipboard = useCallback(() => {
     const { nodes, connections } = useCanvasStore.getState();
     
     // Check if any nodes are selected
@@ -111,7 +111,7 @@ export function useKeyboardShortcuts() {
           description: "Failed to copy to clipboard. Please try again.",
         });
       });
-  };
+  }, []);
   
   // Add event listeners for keyboard events
   useEffect(() => {

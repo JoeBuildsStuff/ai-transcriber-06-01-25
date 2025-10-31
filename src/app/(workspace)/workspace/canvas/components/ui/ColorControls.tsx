@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Square, Slash, Minus, MoreHorizontal, Grip } from 'lucide-react';
@@ -92,6 +92,16 @@ const ColorControls: React.FC<ColorControlsProps> = ({
       onIconConfigChange(iconConfig);
     }
   }, [iconConfig, onIconConfigChange, showIconControls]);
+
+  // Memoize the icon config initialization
+  const initializeIconConfig = useCallback(() => {
+    if (showIconControls) {
+      setIconConfig({
+        iconColor: strokeColor,
+        iconStrokeWidth: strokeWidth
+      });
+    }
+  }, [showIconControls, strokeColor, strokeWidth]);
 
   // Handle color selection
   const handleStrokeColorChange = (colorBase: string) => {
@@ -282,13 +292,8 @@ const ColorControls: React.FC<ColorControlsProps> = ({
     }
 
     // Initialize icon config
-    if (showIconControls) {
-      setIconConfig({
-        iconColor: strokeColor,
-        iconStrokeWidth: strokeWidth
-      });
-    }
-  }, []);
+    initializeIconConfig();
+  }, [initializeIconConfig, strokeColor, fillColor, textColor, showIconControls]);
 
   // Update selected colors when the node selection changes
   useEffect(() => {
