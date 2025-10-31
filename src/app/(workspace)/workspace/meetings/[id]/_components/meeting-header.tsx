@@ -90,7 +90,6 @@ export default function MeetingHeader({ id, meetingData, meetingAttendees, meeti
                     initialValue={meetingData.meeting_end_at || null}
                     className="flex flex-row gap-2 items-center font-extralight"
                 >
-                    <Clock className="size-4 shrink-0 text-muted-foreground" />
                     <DateInputSupabase />
                 </TimeFieldSupabase>
                 {/* Repeat */}
