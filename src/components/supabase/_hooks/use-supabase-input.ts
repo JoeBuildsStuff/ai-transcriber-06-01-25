@@ -40,7 +40,7 @@ export function useSupabaseInput({
         // Create the record with the current value
         const { data, error } = await client
           .from(table)
-          .insert({ [field]: newValue })
+          .insert({ [field]: newValue } as never)
           .select()
           .single()
 
@@ -48,9 +48,15 @@ export function useSupabaseInput({
           throw error
         }
 
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          throw new Error("Failed to create the record")
+        }
+
+        const createdRecord = data as { id: string }
+
         // Update the real ID
-        setRealId(data.id)
-        onCreateSuccess?.(data.id)
+        setRealId(createdRecord.id)
+        onCreateSuccess?.(createdRecord.id)
         return newValue
       }
 
@@ -59,7 +65,7 @@ export function useSupabaseInput({
       
       const { error } = await client
         .from(table)
-        .update({ [field]: newValue })
+        .update({ [field]: newValue } as never)
         .eq("id", targetId)
 
       if (error) {

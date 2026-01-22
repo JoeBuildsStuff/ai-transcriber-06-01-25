@@ -171,7 +171,8 @@ export async function executeUpdateTask(parameters: Record<string, unknown>): Pr
       return { success: false, error: 'No update fields provided' }
     }
 
-    const result = await updateTask(id, updatePayload)
+    type UpdateTaskResult = { success: boolean; data?: unknown; error?: string }
+    const result = await (updateTask as unknown as (taskId: string, data: Record<string, unknown>) => Promise<UpdateTaskResult>)(id, updatePayload)
 
     if (!result.success || !result.data) {
       return { success: false, error: result.error || 'Failed to update task' }

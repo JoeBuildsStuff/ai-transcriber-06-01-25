@@ -82,7 +82,7 @@ export function useSupabaseCombobox({
 
         const { data, error } = await client
           .from(parentTableName)
-          .insert(parentInsertPayload)
+          .insert(parentInsertPayload as never)
           .select()
           .single()
 
@@ -90,12 +90,18 @@ export function useSupabaseCombobox({
           throw error
         }
 
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          throw new Error("Failed to create the parent record")
+        }
+
+        const parentRecord = data as { id: string }
+
         // Update the real ID
-        setRealId(data.id)
-        onCreateSuccess?.(data.id)
+        setRealId(parentRecord.id)
+        onCreateSuccess?.(parentRecord.id)
         
         // Now handle the junction table records for the new note
-        const targetId = data.id
+        const targetId = parentRecord.id
         
         if (newValue.length > 0) {
           const recordsToInsert = newValue.map(val => ({
@@ -106,7 +112,7 @@ export function useSupabaseCombobox({
           
           const { error: junctionError } = await client
             .from(table)
-            .insert(recordsToInsert)
+            .insert(recordsToInsert as never)
           
           if (junctionError) {
             throw junctionError
@@ -141,7 +147,7 @@ export function useSupabaseCombobox({
         
         const { error: insertError } = await client
           .from(table)
-          .insert(recordsToInsert)
+          .insert(recordsToInsert as never)
         
         if (insertError) {
           throw insertError

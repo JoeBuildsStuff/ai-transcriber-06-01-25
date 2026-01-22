@@ -64,7 +64,7 @@ export function useSupabaseSelect({
 
         const { data, error } = await client
           .from(table)
-          .insert(insertPayload)
+          .insert(insertPayload as never)
           .select()
           .single()
 
@@ -72,8 +72,14 @@ export function useSupabaseSelect({
           throw error
         }
 
-        setRealId(data.id)
-        onCreateSuccess?.(data.id)
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          throw new Error("Failed to create the record")
+        }
+
+        const createdRecord = data as { id: string }
+
+        setRealId(createdRecord.id)
+        onCreateSuccess?.(createdRecord.id)
         return typeof storedValue === "string" ? storedValue : newValue
       }
 
@@ -81,7 +87,7 @@ export function useSupabaseSelect({
 
       const { error } = await client
         .from(table)
-        .update({ [field]: storedValue })
+        .update({ [field]: storedValue } as never)
         .eq("id", targetId)
 
       if (error) {

@@ -28,7 +28,7 @@ export function useSupabaseTextarea({
       const client = createClient()
       const { error } = await client
         .from(table)
-        .update({ [field]: newValue })
+        .update({ [field]: newValue } as never)
         .eq("id", id)
 
       if (error) {

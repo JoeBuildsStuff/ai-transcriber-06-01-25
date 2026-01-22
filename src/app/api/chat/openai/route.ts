@@ -341,17 +341,29 @@ if a tool responds with a url to the record, please include the url in the respo
       // Execute all tools in parallel
       const toolResults = await Promise.all(
         toolCalls.map(async (toolCall) => {
+          if (toolCall.type !== 'function') {
+            const errorMessage = `Unsupported tool call type: ${toolCall.type}`
+            const functionResult = { success: false, error: errorMessage }
+            allToolResults.push(functionResult)
+
+            return {
+              role: 'tool' as const,
+              tool_call_id: toolCall.id,
+              content: errorMessage,
+            }
+          }
+
           // Parse arguments if they're a string, otherwise use as-is
-          let parsedArgs: Record<string, unknown>;
+          let parsedArgs: Record<string, unknown>
           if (typeof toolCall.function.arguments === 'string') {
             try {
-              parsedArgs = JSON.parse(toolCall.function.arguments);
+              parsedArgs = JSON.parse(toolCall.function.arguments)
             } catch (error) {
-              console.error('Failed to parse tool arguments:', error);
-              parsedArgs = {};
+              console.error('Failed to parse tool arguments:', error)
+              parsedArgs = {}
             }
           } else {
-            parsedArgs = toolCall.function.arguments as Record<string, unknown>;
+            parsedArgs = toolCall.function.arguments as Record<string, unknown>
           }
           
           const augmentedArgs = {
@@ -359,9 +371,9 @@ if a tool responds with a url to the record, please include the url in the respo
             client_tz: clientTz,
             client_utc_offset: clientOffset,
             client_now_iso: clientNowIso,
-          };
-          const functionResult = await executeFunctionCall(toolCall.function.name, augmentedArgs);
-          allToolResults.push(functionResult);
+          }
+          const functionResult = await executeFunctionCall(toolCall.function.name, augmentedArgs)
+          allToolResults.push(functionResult)
           
           // Store tool call information
           allToolCalls.push({
@@ -369,15 +381,15 @@ if a tool responds with a url to the record, please include the url in the respo
             name: toolCall.function.name,
             arguments: augmentedArgs,
             result: functionResult
-          });
+          })
           
           return {
             role: 'tool' as const,
             tool_call_id: toolCall.id,
             content: functionResult.success ? JSON.stringify(functionResult.data) : functionResult.error || 'Unknown error',
-          };
+          }
         })
-      );
+      )
 
       // Append assistant's response to messages
       currentMessages.push(assistantMessage);

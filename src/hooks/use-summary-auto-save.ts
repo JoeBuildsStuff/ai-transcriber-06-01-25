@@ -42,7 +42,7 @@ export function useSummaryAutoSave({
         .update({ 
           summary_jsonb: newSummary,
           summary: newSummary.executive_summary || newSummary.discussion_outline || ''
-        })
+        } as never)
         .eq("id", meetingId)
 
       if (error) {

@@ -254,7 +254,7 @@ export default function RecentMeetingsPage() {
         setContacts(contactsData || [])
         
         // Process meetings with contact information
-        const processedMeetings = (meetingsData || []).map(meeting => ({
+        const processedMeetings = ((meetingsData || []) as Meeting[]).map(meeting => ({
           ...meeting,
           speaker_names: meeting.speaker_names as Record<string, string> | null,
           created_at: meeting.created_at || new Date().toISOString(),

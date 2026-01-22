@@ -162,7 +162,8 @@ export async function executeUpdateNote(parameters: Record<string, unknown>): Pr
       return { success: false, error: 'No valid update fields were provided.' }
     }
 
-    const result = await updateNote(noteId, updatePayload)
+    type UpdateNoteResult = { success: boolean; data?: unknown; error?: string }
+    const result = await (updateNote as unknown as (id: string, data: Record<string, unknown>) => Promise<UpdateNoteResult>)(noteId, updatePayload)
 
     if (!result.success || !result.data) {
       return { success: false, error: result.error || 'Failed to update note.' }

@@ -1,8 +1,18 @@
 import { createClient } from "@/lib/supabase/server"
 import { normalizeFilterValue, parseSearchParams, SearchParams } from "@/lib/data-table"
 import type { FilterVariant } from "@/lib/data-table"
-import { TaskWithAssociations, TaskContactSummary, TaskMeetingSummary, TaskOwnerSummary, TaskTagSummary } from "./validations"
+import { Task, TaskWithAssociations, TaskContactSummary, TaskMeetingSummary, TaskOwnerSummary, TaskTagSummary } from "./validations"
 import { PostgrestError } from "@supabase/supabase-js"
+
+type TaskWithRelationsRow = Task & {
+  owner: TaskOwnerSummary
+    | TaskOwnerSummary[]
+    | { company?: { name?: string | null }[]; [key: string]: unknown }
+    | null
+  contacts: { contact: TaskContactSummary | null }[] | null
+  meetings: { meeting: TaskMeetingSummary | null }[] | null
+  tags: { tag: TaskTagSummary | null }[] | null
+}
 
 export async function getContacts(): Promise<{
   data: TaskContactSummary[],
@@ -224,26 +234,8 @@ export async function getTasks(searchParams: SearchParams): Promise<{
 
   const { data, count, error } = await query
 
-  type TaskWithRelations = {
-    id: string
-    title: string | null
-    description: string | null
-    status: string | null
-    priority: string | null
-    due_date: string | null
-    completed_at: string | null
-    created_at: string | null
-    updated_at: string | null
-    user_id: string | null
-    owner: unknown
-    contacts: unknown
-    meetings: unknown
-    tags: unknown
-    [key: string]: unknown
-  }
-
   // Process the data to flatten the associations
-  const processedData = (data as TaskWithRelations[] | null)?.map(task => ({
+  const processedData = (data as TaskWithRelationsRow[] | null)?.map(task => ({
     ...task,
     owner: (() => {
       const ownerData = (task as Record<string, unknown>).owner as
@@ -270,9 +262,9 @@ export async function getTasks(searchParams: SearchParams): Promise<{
         company_name: companyName,
       } as TaskOwnerSummary
     })(),
-    contacts: task.contacts?.map((tc: { contact: TaskContactSummary }) => tc.contact).filter(Boolean) || [],
-    meetings: task.meetings?.map((tm: { meeting: TaskMeetingSummary }) => tm.meeting).filter(Boolean) || [],
-    tags: task.tags?.map((tt: { tag: TaskTagSummary }) => tt.tag).filter(Boolean) || []
+    contacts: task.contacts?.map((tc: { contact: TaskContactSummary | null }) => tc.contact).filter(Boolean) || [],
+    meetings: task.meetings?.map((tm: { meeting: TaskMeetingSummary | null }) => tm.meeting).filter(Boolean) || [],
+    tags: task.tags?.map((tt: { tag: TaskTagSummary | null }) => tt.tag).filter(Boolean) || []
   })) || []
 
   return {
@@ -342,7 +334,8 @@ export async function getTaskById(taskId: string) {
     }
 
     // Process the associations
-    const ownerData = (task as Record<string, unknown>).owner as
+    const taskWithRelations = task as TaskWithRelationsRow
+    const ownerData = (taskWithRelations as Record<string, unknown>).owner as
       | TaskOwnerSummary
       | TaskOwnerSummary[]
       | { company?: { name?: string | null }[]; [key: string]: unknown }
@@ -365,25 +358,25 @@ export async function getTaskById(taskId: string) {
       } as TaskOwnerSummary
     })()
 
-    const contacts = task.contacts?.map((tc: { contact: TaskContactSummary }) => tc.contact).filter(Boolean) || []
-    const meetings = task.meetings?.map((tm: { meeting: TaskMeetingSummary }) => tm.meeting).filter(Boolean) || []
-    const tags = task.tags?.map((tt: { tag: TaskTagSummary }) => tt.tag).filter(Boolean) || []
+    const contacts = taskWithRelations.contacts?.map((tc: { contact: TaskContactSummary | null }) => tc.contact).filter(Boolean) || []
+    const meetings = taskWithRelations.meetings?.map((tm: { meeting: TaskMeetingSummary | null }) => tm.meeting).filter(Boolean) || []
+    const tags = taskWithRelations.tags?.map((tt: { tag: TaskTagSummary | null }) => tt.tag).filter(Boolean) || []
 
     return {
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      start_at: task.start_at,
-      due_at: task.due_at,
-      owner_contact_id: task.owner_contact_id,
+      id: taskWithRelations.id,
+      title: taskWithRelations.title,
+      description: taskWithRelations.description,
+      status: taskWithRelations.status,
+      priority: taskWithRelations.priority,
+      start_at: taskWithRelations.start_at,
+      due_at: taskWithRelations.due_at,
+      owner_contact_id: taskWithRelations.owner_contact_id,
       owner,
       contacts,
       meetings,
       tags,
-      created_at: task.created_at,
-      updated_at: task.updated_at
+      created_at: taskWithRelations.created_at,
+      updated_at: taskWithRelations.updated_at
     }
   } catch (error) {
     console.error("Unexpected error fetching task:", error)

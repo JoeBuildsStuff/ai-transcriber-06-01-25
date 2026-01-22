@@ -100,7 +100,8 @@ export async function executeUpdateMeeting(parameters: Record<string, unknown>):
     let meeting: { id: string; title?: string; meeting_at?: string; meeting_end_at?: string; location?: string | null } | undefined
 
     if (hasMeetingFieldUpdates) {
-      const result = await updateMeeting(id, updatePayload)
+      type UpdateMeetingResult = { success: boolean; data?: unknown; error?: string }
+      const result = await (updateMeeting as unknown as (meetingId: string, data: Record<string, unknown>) => Promise<UpdateMeetingResult>)(id, updatePayload)
 
       if (!result.success) {
         return { success: false, error: result.error || 'Failed to update meeting' }

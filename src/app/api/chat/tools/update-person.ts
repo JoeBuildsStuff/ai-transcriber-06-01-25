@@ -80,7 +80,8 @@ export async function executeUpdatePersonContact(parameters: Record<string, unkn
       return { success: false, error: 'No fields provided to update' }
     }
 
-    const result = await updatePerson(id, filteredData)
+    type UpdatePersonResult = { success: boolean; data?: unknown; error?: string }
+    const result = await (updatePerson as unknown as (contactId: string, data: Record<string, unknown>) => Promise<UpdatePersonResult>)(id, filteredData)
     
     if (result.success) {
       return { 

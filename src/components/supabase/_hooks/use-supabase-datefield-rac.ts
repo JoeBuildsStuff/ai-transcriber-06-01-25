@@ -134,7 +134,9 @@ export function useSupabaseDateField({
           .eq("id", targetId)
           .single()
         
-        currentValue = data?.[field as keyof typeof data] as string || initialValue
+        const record = data as Record<string, unknown> | null
+        const fieldValue = record?.[field]
+        currentValue = typeof fieldValue === "string" ? fieldValue : initialValue
       }
       
       const isoValue = dateValueToISO(newValue, currentValue)
@@ -166,7 +168,7 @@ export function useSupabaseDateField({
 
         const { data, error } = await client
           .from(table)
-          .insert(insertPayload)
+          .insert(insertPayload as never)
           .select()
           .single()
 
@@ -174,15 +176,21 @@ export function useSupabaseDateField({
           throw error
         }
 
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          throw new Error("Failed to create the record")
+        }
+
+        const createdRecord = data as { id: string }
+
         // Update the real ID
-        setRealId(data.id)
-        onCreateSuccess?.(data.id)
+        setRealId(createdRecord.id)
+        onCreateSuccess?.(createdRecord.id)
         return isoValue
       }
 
       const { error } = await client
         .from(table)
-        .update({ [field]: isoValue })
+        .update({ [field]: isoValue } as never)
         .eq("id", targetId)
 
       if (error) {
@@ -289,7 +297,9 @@ export function useSupabaseTimeField({
           .eq("id", targetId)
           .single()
         
-        currentValue = data?.[field as keyof typeof data] as string || initialValue
+        const record = data as Record<string, unknown> | null
+        const fieldValue = record?.[field]
+        currentValue = typeof fieldValue === "string" ? fieldValue : initialValue
       }
       
       const isoValue = timeValueToISO(newValue, currentValue)
@@ -321,7 +331,7 @@ export function useSupabaseTimeField({
 
         const { data, error } = await client
           .from(table)
-          .insert(insertPayload)
+          .insert(insertPayload as never)
           .select()
           .single()
 
@@ -329,15 +339,21 @@ export function useSupabaseTimeField({
           throw error
         }
 
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          throw new Error("Failed to create the record")
+        }
+
+        const createdRecord = data as { id: string }
+
         // Update the real ID
-        setRealId(data.id)
-        onCreateSuccess?.(data.id)
+        setRealId(createdRecord.id)
+        onCreateSuccess?.(createdRecord.id)
         return isoValue
       }
 
       const { error } = await client
         .from(table)
-        .update({ [field]: isoValue })
+        .update({ [field]: isoValue } as never)
         .eq("id", targetId)
 
       if (error) {
