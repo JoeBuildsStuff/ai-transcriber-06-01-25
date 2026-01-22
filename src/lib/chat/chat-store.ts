@@ -89,6 +89,7 @@ interface ChatStore {
   showHistory: boolean
   currentContext: PageContext | null
   layoutMode: 'floating' | 'inset' | 'fullpage'
+  lastNonFullpageLayout: 'floating' | 'inset'
 
   // Computed properties (will be updated whenever state changes)
   currentSession: ChatSession | null
@@ -198,6 +199,7 @@ export const useChatStore = create<ChatStore>()(
       currentSession: null,
       messages: [],
       layoutMode: 'floating',
+      lastNonFullpageLayout: 'floating',
       messageBranches: {},
       currentBranchRootId: null,
 
@@ -911,6 +913,7 @@ export const useChatStore = create<ChatStore>()(
       setLayoutMode: (mode) => {
         set({
           layoutMode: mode,
+          lastNonFullpageLayout: mode === 'fullpage' ? get().lastNonFullpageLayout : mode,
           isMaximized: mode === 'inset',
           isMinimized: false,
           isOpen: mode !== 'fullpage'
@@ -1024,6 +1027,7 @@ export const useChatStore = create<ChatStore>()(
               sessions: currentData.sessions.slice(0, 1),
               currentSessionId: currentData.currentSessionId,
               layoutMode: currentData.layoutMode,
+              lastNonFullpageLayout: currentData.lastNonFullpageLayout,
             }
             const minimalSize = new Blob([JSON.stringify(minimalData)]).size
             if (minimalSize <= maxSize) {
@@ -1050,6 +1054,7 @@ export const useChatStore = create<ChatStore>()(
         })), // Keep last 10 sessions
         currentSessionId: state.currentSessionId,
         layoutMode: state.layoutMode,
+        lastNonFullpageLayout: state.lastNonFullpageLayout,
         messageBranches: state.messageBranches,
         currentBranchRootId: state.currentBranchRootId,
       }),
@@ -1079,6 +1084,9 @@ export const useChatStore = create<ChatStore>()(
           }
           if (!('currentBranchRootId' in state)) {
             ;(state as unknown as ChatStore).currentBranchRootId = null
+          }
+          if (!('lastNonFullpageLayout' in state)) {
+            ;(state as unknown as ChatStore).lastNonFullpageLayout = 'floating'
           }
 
           // Ensure signatures exist for each entry if an older state is loaded

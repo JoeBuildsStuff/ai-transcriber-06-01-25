@@ -5,15 +5,26 @@ import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
 import { ChatProvider, ChatBubble, ChatPanel } from "@/components/chat";
 import { useChatStore } from "@/lib/chat/chat-store";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"; 
 import UploadAudioProcess from "@/components/upload-audio-process";
 import { Button } from "@/components/ui/button";
 import { AudioLines } from "lucide-react";
 import ReportIssueButton from "@/components/report-issue-button";
+import { usePathname } from "next/navigation";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { isMaximized } = useChatStore()
+  const pathname = usePathname()
+  const { isMaximized, layoutMode, lastNonFullpageLayout, setLayoutMode, setOpen } = useChatStore()
+
+  useEffect(() => {
+    const isFullpageChat = pathname.startsWith('/workspace/chat/')
+    if (!isFullpageChat && layoutMode === 'fullpage') {
+      setLayoutMode(lastNonFullpageLayout)
+      setOpen(false)
+    }
+  }, [pathname, layoutMode, lastNonFullpageLayout, setLayoutMode, setOpen])
 
   return (
     <SidebarProvider> 
