@@ -386,33 +386,47 @@ export async function getContactById(contactId: string) {
       throw new Error("Contact not found")
     }
 
+    type ContactWithRelations = {
+      id: string
+      first_name: string | null
+      last_name: string | null
+      nickname: string | null
+      description: string | null
+      emails: PersonEmail[] | null
+      phones: PersonPhone[] | null
+      company: Array<{ name: string }> | null
+      [key: string]: unknown
+    }
+
+    const typedContact = contact as ContactWithRelations
+
     // Sort emails and phones by display_order
-    const sortedEmails = contact.emails?.sort((a: PersonEmail, b: PersonEmail) => a.display_order - b.display_order) || []
-    const sortedPhones = contact.phones?.sort((a: PersonPhone, b: PersonPhone) => a.display_order - b.display_order) || []
+    const sortedEmails = typedContact.emails?.sort((a: PersonEmail, b: PersonEmail) => a.display_order - b.display_order) || []
+    const sortedPhones = typedContact.phones?.sort((a: PersonPhone, b: PersonPhone) => a.display_order - b.display_order) || []
 
     // Transform to match the expected format from the page component
     return {
-      id: contact.id,
-      firstName: contact.first_name || '',
-      lastName: contact.last_name || '',
-      displayName: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown Contact',
-      nickname: contact.nickname || '',
-      tags: contact.tags || [],
+      id: typedContact.id,
+      firstName: typedContact.first_name || '',
+      lastName: typedContact.last_name || '',
+      displayName: `${typedContact.first_name || ''} ${typedContact.last_name || ''}`.trim() || 'Unknown Contact',
+      nickname: typedContact.nickname || '',
+      tags: (typedContact as { tags?: unknown[] }).tags || [],
       primaryEmail: sortedEmails[0]?.email || '',
       primaryPhone: sortedPhones[0]?.phone || '',
-      birthday: contact.birthday || '',
-      company: contact.company?.name || '',
-      jobTitle: contact.job_title || '',
-      notes: contact.notes || '',
-      isFavorite: contact.is_favorite || false,
-      city: contact.city || '',
-      state: contact.state || '',
-      linkedin: contact.linkedin || '',
-      description: contact.description || '',
+      birthday: (typedContact as { birthday?: string }).birthday || '',
+      company: typedContact.company?.[0]?.name || '',
+      jobTitle: (typedContact as { job_title?: string }).job_title || '',
+      notes: typedContact.description || '',
+      isFavorite: (typedContact as { is_favorite?: boolean }).is_favorite || false,
+      city: (typedContact as { city?: string }).city || '',
+      state: (typedContact as { state?: string }).state || '',
+      linkedin: (typedContact as { linkedin?: string }).linkedin || '',
+      description: typedContact.description || '',
       emails: sortedEmails,
       phones: sortedPhones,
-      created_at: contact.created_at,
-      updated_at: contact.updated_at
+      created_at: (typedContact as { created_at?: string }).created_at || '',
+      updated_at: (typedContact as { updated_at?: string }).updated_at || ''
     }
   } catch (error) {
     console.error("Unexpected error fetching contact:", error)

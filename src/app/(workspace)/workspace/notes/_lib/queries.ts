@@ -15,10 +15,17 @@ export async function getContacts(): Promise<{
     .order("first_name", { ascending: true })
   
   // Transform the data to match the Contact type
-  const transformedData = data?.map(contact => ({
+  type ContactWithCompany = {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    company: Array<{ id: string; name: string }> | null
+  }
+  
+  const transformedData: Contact[] = (data as ContactWithCompany[] | null)?.map(contact => ({
     id: contact.id,
-    first_name: contact.first_name,
-    last_name: contact.last_name,
+    first_name: contact.first_name || undefined,
+    last_name: contact.last_name || undefined,
     company: contact.company?.[0] ? {
       id: contact.company[0].id,
       name: contact.company[0].name
@@ -182,8 +189,20 @@ export async function getNotes(searchParams: SearchParams): Promise<{
 
   const { data, count, error } = await query
 
+  type NoteWithRelations = {
+    id: string
+    title: string | null
+    content: string | null
+    created_at: string | null
+    updated_at: string | null
+    user_id: string | null
+    contacts: Array<{ contact: Contact }> | null
+    meetings: Array<{ meeting: Meeting }> | null
+    [key: string]: unknown
+  }
+
   // Process the data to flatten the associations
-  const processedData = data?.map(note => ({
+  const processedData = (data as NoteWithRelations[] | null)?.map(note => ({
     ...note,
     contacts: note.contacts?.map((cn: { contact: Contact }) => cn.contact).filter(Boolean) || [],
     meetings: note.meetings?.map((mn: { meeting: Meeting }) => mn.meeting).filter(Boolean) || []
@@ -242,18 +261,32 @@ export async function getNoteById(noteId: string) {
       throw new Error("Note not found")
     }
 
+    type NoteWithRelations = {
+      id: string
+      title: string | null
+      content: string | null
+      created_at: string | null
+      updated_at: string | null
+      user_id: string | null
+      contacts: Array<{ contact: Contact }> | null
+      meetings: Array<{ meeting: Meeting }> | null
+      [key: string]: unknown
+    }
+
+    const typedNote = note as NoteWithRelations
+
     // Process the associations
-    const contacts = note.contacts?.map((cn: { contact: Contact }) => cn.contact).filter(Boolean) || []
-    const meetings = note.meetings?.map((mn: { meeting: Meeting }) => mn.meeting).filter(Boolean) || []
+    const contacts = typedNote.contacts?.map((cn: { contact: Contact }) => cn.contact).filter(Boolean) || []
+    const meetings = typedNote.meetings?.map((mn: { meeting: Meeting }) => mn.meeting).filter(Boolean) || []
 
     return {
-      id: note.id,
-      title: note.title,
-      content: note.content,
+      id: typedNote.id,
+      title: typedNote.title,
+      content: typedNote.content,
       contacts,
       meetings,
-      created_at: note.created_at,
-      updated_at: note.updated_at
+      created_at: typedNote.created_at,
+      updated_at: typedNote.updated_at
     }
   } catch (error) {
     console.error("Unexpected error fetching note:", error)

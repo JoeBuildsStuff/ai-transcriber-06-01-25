@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { Person } from "./validations"
 import { getCompanies as dbGetCompanies } from "./queries"
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/supabase'
 
 interface PersonWithExtras extends Omit<Person, "id" | "created_at" | "updated_at"> {
   _emails?: string[]
@@ -13,7 +11,7 @@ interface PersonWithExtras extends Omit<Person, "id" | "created_at" | "updated_a
   company_name?: string
 }
 
-async function findOrCreateCompany(supabase: SupabaseClient<Database>, companyName: string | undefined, userId: string): Promise<string | null> {
+async function findOrCreateCompany(supabase: Awaited<ReturnType<typeof createClient>>, companyName: string | undefined, userId: string): Promise<string | null> {
     if (!companyName) return null
 
     // Check if company exists for this user
@@ -30,16 +28,17 @@ async function findOrCreateCompany(supabase: SupabaseClient<Database>, companyNa
     }
 
     if (existingCompany) {
-        return existingCompany.id
+        return (existingCompany as { id: string }).id
     }
 
     // Create company if it doesn't exist
+    const insertData: { name: string; user_id: string } = {
+        name: companyName,
+        user_id: userId
+    }
     const { data: newCompany, error: createError } = await supabase
         .from("new_companies")
-        .insert({ 
-            name: companyName,
-            user_id: userId
-        })
+        .insert(insertData as never)
         .select("id")
         .single()
 
@@ -48,7 +47,11 @@ async function findOrCreateCompany(supabase: SupabaseClient<Database>, companyNa
         throw new Error(createError.message)
     }
 
-    return newCompany.id
+    if (!newCompany) {
+        throw new Error("Failed to create company")
+    }
+
+    return (newCompany as { id: string }).id
 }
 
 export async function createPerson(data: Record<string, unknown>) {
@@ -80,7 +83,7 @@ export async function createPerson(data: Record<string, unknown>) {
     // Start a transaction by creating the contact first
     const { data: newContact, error: contactError } = await supabase
       .from("new_contacts")
-      .insert([contactDataWithUserId])
+      .insert([contactDataWithUserId] as never)
       .select()
       .single()
     
@@ -89,10 +92,16 @@ export async function createPerson(data: Record<string, unknown>) {
       return { success: false, error: contactError.message }
     }
     
+    if (!newContact) {
+      return { success: false, error: "Failed to create contact" }
+    }
+    
+    const typedContact = newContact as { id: string; [key: string]: unknown }
+    
     // Create emails if provided
     if (_emails && _emails.length > 0) {
       const emailsToInsert = _emails.map((email, index) => ({
-        contact_id: newContact.id,
+        contact_id: typedContact.id,
         email: email,
         display_order: index,
         user_id: user.id
@@ -100,12 +109,12 @@ export async function createPerson(data: Record<string, unknown>) {
       
       const { error: emailError } = await supabase
         .from("new_contact_emails")
-        .insert(emailsToInsert)
+        .insert(emailsToInsert as never)
       
       if (emailError) {
         console.error("Error creating emails:", emailError)
         // Optionally rollback by deleting the contact
-        await supabase.from("new_contacts").delete().eq("id", newContact.id)
+        await supabase.from("new_contacts").delete().eq("id", typedContact.id)
         return { success: false, error: emailError.message }
       }
     }
@@ -113,7 +122,7 @@ export async function createPerson(data: Record<string, unknown>) {
     // Create phones if provided
     if (_phones && _phones.length > 0) {
       const phonesToInsert = _phones.map((phone, index) => ({
-        contact_id: newContact.id,
+        contact_id: typedContact.id,
         phone: phone,
         display_order: index,
         user_id: user.id
@@ -121,18 +130,18 @@ export async function createPerson(data: Record<string, unknown>) {
       
       const { error: phoneError } = await supabase
         .from("new_contact_phones")
-        .insert(phonesToInsert)
+        .insert(phonesToInsert as never)
       
       if (phoneError) {
         console.error("Error creating phones:", phoneError)
         // Optionally rollback
-        await supabase.from("new_contacts").delete().eq("id", newContact.id)
+        await supabase.from("new_contacts").delete().eq("id", typedContact.id)
         return { success: false, error: phoneError.message }
       }
     }
     
     revalidatePath("/contacts")
-    return { success: true, data: newContact }
+    return { success: true, data: typedContact }
   } catch (error) {
     console.error("Unexpected error creating contact:", error)
     return { success: false, error: "An unexpected error occurred" }
@@ -162,7 +171,7 @@ export async function updatePerson(id: string, data: Record<string, unknown>) {
     // Update the contact
     const { data: updatedContact, error: contactError } = await supabase
       .from("new_contacts")
-      .update(contactData)
+      .update(contactData as never)
       .eq("id", id)
       .eq("user_id", user.id) // Ensure user can only update their own contacts
       .select()
@@ -198,7 +207,7 @@ export async function updatePerson(id: string, data: Record<string, unknown>) {
         
         const { error: emailError } = await supabase
           .from("new_contact_emails")
-          .insert(emailsToInsert)
+          .insert(emailsToInsert as never)
         
         if (emailError) {
           console.error("Error creating emails:", emailError)
@@ -232,7 +241,7 @@ export async function updatePerson(id: string, data: Record<string, unknown>) {
         
         const { error: phoneError } = await supabase
           .from("new_contact_phones")
-          .insert(phonesToInsert)
+          .insert(phonesToInsert as never)
         
         if (phoneError) {
           console.error("Error creating phones:", phoneError)
@@ -282,7 +291,7 @@ export async function multiUpdatePersons(personIds: string[], data: Record<strin
     if (Object.keys(fieldsToUpdate).length > 0) {
       const { error: contactError } = await supabase
         .from("new_contacts")
-        .update(fieldsToUpdate)
+        .update(fieldsToUpdate as never)
         .in("id", personIds)
         .eq("user_id", user.id) // Ensure user can only update their own contacts
       
@@ -319,7 +328,7 @@ export async function multiUpdatePersons(personIds: string[], data: Record<strin
         
         const { error: emailError } = await supabase
           .from("new_contact_emails")
-          .insert(emailsToInsert)
+          .insert(emailsToInsert as never)
         
         if (emailError) {
           console.error("Error creating emails:", emailError)
@@ -355,7 +364,7 @@ export async function multiUpdatePersons(personIds: string[], data: Record<strin
         
         const { error: phoneError } = await supabase
           .from("new_contact_phones")
-          .insert(phonesToInsert)
+          .insert(phonesToInsert as never)
         
         if (phoneError) {
           console.error("Error creating phones:", phoneError)
@@ -439,7 +448,7 @@ export async function updateContactNotes(contactId: string, notes: string) {
 
     const { error } = await supabase
       .from("new_contacts")
-      .update({ description: notes })
+      .update({ description: notes } as never)
       .eq("id", contactId)
       .eq("user_id", userData.user.id)
 
@@ -507,7 +516,7 @@ export async function toggleContactFavorite(contactId: string, currentIsFavorite
 
   const { error } = await supabase
     .from("new_contacts")
-    .update({ is_favorite: !currentIsFavorite })
+    .update({ is_favorite: !currentIsFavorite } as never)
     .eq("id", contactId)
     .eq("user_id", userData.user.id)
     .select()
@@ -560,7 +569,16 @@ export async function getAllContacts() {
     throw new Error(`Failed to fetch contacts: ${error.message}`)
   }
 
-  return contacts.map(contact => {
+  type ContactWithRelations = {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    description: string | null
+    emails: Array<{ email: string; display_order: number }> | null
+    company: Array<{ name: string }> | null
+  }
+
+  return (contacts as ContactWithRelations[]).map(contact => {
     // Sort emails by display_order and get the primary email
     const sortedEmails = contact.emails?.sort((a, b) => a.display_order - b.display_order) || []
     const primaryEmail = sortedEmails[0]?.email || ''

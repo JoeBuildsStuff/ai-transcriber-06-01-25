@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { MeetingSpeaker, MeetingSpeakerWithContact } from "@/types"
+import type { Database } from "@/types/supabase"
 
 
 export async function updateSpeakerContacts(meetingId: string, speakerContacts: Record<number, string>) {
@@ -26,7 +27,11 @@ export async function updateSpeakerContacts(meetingId: string, speakerContacts: 
       throw new Error(`Failed to validate contacts: ${contactsError.message}`)
     }
 
-    const validContactIds = new Set(contacts.map(c => c.id))
+    if (!contacts || contacts.length === 0) {
+      throw new Error('No valid contacts found')
+    }
+
+    const validContactIds = new Set((contacts as { id: string }[]).map(c => c.id))
     const invalidContactIds = contactIds.filter(id => !validContactIds.has(id))
     
     if (invalidContactIds.length > 0) {
@@ -74,6 +79,7 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
   
   // First, check if meeting_speakers entry exists for this speaker
   const { data: existingSpeaker } = await supabase
+    .schema('ai_transcriber')
     .from('meeting_speakers')
     .select('*')
     .eq('meeting_id', meetingId)
@@ -92,38 +98,43 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
       .single()
 
     if (contact) {
-      speakerName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || `Speaker ${speakerIndex}`
+      const typedContact = contact as { first_name: string | null; last_name: string | null }
+      speakerName = `${typedContact.first_name || ''} ${typedContact.last_name || ''}`.trim() || `Speaker ${speakerIndex}`
     }
   }
 
   // Update or insert meeting_speakers record
   if (existingSpeaker) {
+    const updateData: Database['ai_transcriber']['Tables']['meeting_speakers']['Update'] = {
+      contact_id: contactId,
+      speaker_name: speakerName,
+      updated_at: now
+    }
     const { error: updateError } = await supabase
+      .schema('ai_transcriber')
       .from('meeting_speakers')
-      .update({
-        contact_id: contactId,
-        speaker_name: speakerName,
-        updated_at: now
-      })
+      .update(updateData)
       .eq('id', existingSpeaker.id)
 
     if (updateError) {
       throw new Error(`Failed to update speaker: ${updateError.message}`)
     }
   } else {
+    const insertData: Database['ai_transcriber']['Tables']['meeting_speakers']['Insert'] = {
+      meeting_id: meetingId,
+      contact_id: contactId,
+      speaker_index: speakerIndex,
+      speaker_name: speakerName,
+      role: 'attendee',
+      is_primary_speaker: speakerIndex === 0,
+      identified_at: now,
+      created_at: now,
+      updated_at: now
+    }
     const { error: insertError } = await supabase
+      .schema('ai_transcriber')
       .from('meeting_speakers')
-      .insert({
-        meeting_id: meetingId,
-        contact_id: contactId,
-        speaker_index: speakerIndex,
-        speaker_name: speakerName,
-        role: 'attendee',
-        is_primary_speaker: speakerIndex === 0,
-        identified_at: now,
-        created_at: now,
-        updated_at: now
-      })
+      .insert(insertData)
 
     if (insertError) {
       throw new Error(`Failed to create speaker: ${insertError.message}`)
@@ -158,6 +169,7 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
 
   // Get speakers from meeting_speakers table
   const { data: speakers, error } = await supabase
+    .schema('ai_transcriber')
     .from('meeting_speakers')
     .select('id, contact_id, speaker_index, speaker_name')
     .eq('meeting_id', meetingId)
@@ -195,6 +207,7 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
       
       // Retry fetching speakers
       const { data: newSpeakers } = await supabase
+        .schema('ai_transcriber')
         .from('meeting_speakers')
         .select('id, contact_id, speaker_index, speaker_name')
         .eq('meeting_id', meetingId)
@@ -260,8 +273,14 @@ async function transformSpeakersData(
       console.error('Error fetching contacts:', contactError)
     } else {
       // Transform the data to include primary_email
-      contacts = (contactData || []).map(contact => {
-        const sortedEmails = contact.emails?.sort((a: { display_order: number }, b: { display_order: number }) => a.display_order - b.display_order) || []
+      type ContactWithEmails = {
+        id: string
+        first_name: string | null
+        last_name: string | null
+        emails: Array<{ email: string; display_order: number }> | null
+      }
+      contacts = ((contactData || []) as ContactWithEmails[]).map(contact => {
+        const sortedEmails = contact.emails?.sort((a, b) => a.display_order - b.display_order) || []
         const primaryEmail = sortedEmails[0]?.email || ''
         
         return {

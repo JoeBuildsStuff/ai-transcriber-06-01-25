@@ -57,7 +57,7 @@ export function useAutoSave({
         // Create the note with the content
         const { data, error } = await client
           .from("notes")
-          .insert({ content: newContent })
+          .insert({ content: newContent } as never)
           .select()
           .single()
 
@@ -65,10 +65,16 @@ export function useAutoSave({
           throw error
         }
 
+        if (!data) {
+          throw new Error("Failed to create note")
+        }
+
+        const typedData = data as { id: string }
+
         // Update the real ID
-        setRealNoteId(data.id)
-        onNoteCreated?.(data.id)
-        return { success: true, data: data.id }
+        setRealNoteId(typedData.id)
+        onNoteCreated?.(typedData.id)
+        return { success: true, data: typedData.id }
       }
 
       // Use the real ID for updates
@@ -80,7 +86,7 @@ export function useAutoSave({
 
       const { error } = await client
         .from("notes")
-        .update({ content: newContent })
+        .update({ content: newContent } as never)
         .eq("id", targetId)
 
       if (error) {

@@ -15,7 +15,14 @@ export async function getContacts(): Promise<{
     .order("first_name", { ascending: true })
   
   // Transform the data to match the TaskContactSummary type
-  const transformedData = data?.map(contact => ({
+  type ContactWithCompany = {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    company: Array<{ name: string }> | null
+  }
+  
+  const transformedData = (data as ContactWithCompany[] | null)?.map(contact => ({
     id: contact.id,
     first_name: contact.first_name,
     last_name: contact.last_name,
@@ -48,10 +55,16 @@ export async function getTags(): Promise<{
     .select("id, name, description")
     .order("name", { ascending: true })
 
-  const transformedData = data?.map(tag => ({
+  type TagData = {
+    id: string
+    name: string
+    description: string | null
+  }
+  
+  const transformedData = (data as TagData[] | null)?.map(tag => ({
     id: tag.id,
     name: tag.name,
-    description: (tag as { description?: string | null }).description ?? null
+    description: tag.description ?? null
   })) ?? []
 
   return { data: transformedData, error }
@@ -211,8 +224,26 @@ export async function getTasks(searchParams: SearchParams): Promise<{
 
   const { data, count, error } = await query
 
+  type TaskWithRelations = {
+    id: string
+    title: string | null
+    description: string | null
+    status: string | null
+    priority: string | null
+    due_date: string | null
+    completed_at: string | null
+    created_at: string | null
+    updated_at: string | null
+    user_id: string | null
+    owner: unknown
+    contacts: unknown
+    meetings: unknown
+    tags: unknown
+    [key: string]: unknown
+  }
+
   // Process the data to flatten the associations
-  const processedData = data?.map(task => ({
+  const processedData = (data as TaskWithRelations[] | null)?.map(task => ({
     ...task,
     owner: (() => {
       const ownerData = (task as Record<string, unknown>).owner as

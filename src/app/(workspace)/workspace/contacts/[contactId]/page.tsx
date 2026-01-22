@@ -66,7 +66,7 @@ export default async function ContactDetailPage({
                 <p className="text-muted-foreground mb-2">{currentContact.nickname}</p>
               )}
               <div className="flex flex-wrap gap-2">
-                {currentContact.tags.map((tag: string, index: number) => (
+                {(currentContact.tags as string[]).map((tag: string, index: number) => (
                   <Badge key={index} variant="secondary">
                     {tag}
                   </Badge>

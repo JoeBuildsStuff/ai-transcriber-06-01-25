@@ -35,7 +35,7 @@ export async function createTask(data: Record<string, unknown>) {
     // Start a transaction by creating the task first
     const { data: newTask, error: taskError } = await supabase
       .from("tasks")
-      .insert([taskDataWithUserId])
+      .insert([taskDataWithUserId] as never)
       .select()
       .single()
     
@@ -44,22 +44,28 @@ export async function createTask(data: Record<string, unknown>) {
       return { success: false, error: taskError.message }
     }
     
+    if (!newTask) {
+      return { success: false, error: "Failed to create task" }
+    }
+    
+    const typedTask = newTask as { id: string; [key: string]: unknown }
+    
     // Create contact associations if provided
     if (contactIds && contactIds.length > 0) {
       const taskContactsToInsert = contactIds.map(contactId => ({
-        task_id: newTask.id,
+        task_id: typedTask.id,
         contact_id: contactId,
         user_id: user.id
       }))
       
       const { error: taskContactError } = await supabase
         .from("task_contacts")
-        .insert(taskContactsToInsert)
+        .insert(taskContactsToInsert as never)
       
       if (taskContactError) {
         console.error("Error creating contact associations:", taskContactError)
         // Rollback by deleting the task
-        await supabase.from("tasks").delete().eq("id", newTask.id)
+        await supabase.from("tasks").delete().eq("id", typedTask.id)
         return { success: false, error: taskContactError.message }
       }
     }
@@ -67,21 +73,21 @@ export async function createTask(data: Record<string, unknown>) {
     // Create meeting associations if provided
     if (meetingIds && meetingIds.length > 0) {
       const taskMeetingsToInsert = meetingIds.map(meetingId => ({
-        task_id: newTask.id,
+        task_id: typedTask.id,
         meeting_id: meetingId,
         user_id: user.id
       }))
       
       const { error: taskMeetingError } = await supabase
         .from("task_meetings")
-        .insert(taskMeetingsToInsert)
+        .insert(taskMeetingsToInsert as never)
       
       if (taskMeetingError) {
         console.error("Error creating meeting associations:", taskMeetingError)
         // Rollback by deleting the task and contact associations
-        await supabase.from("tasks").delete().eq("id", newTask.id)
+        await supabase.from("tasks").delete().eq("id", typedTask.id)
         if (contactIds && contactIds.length > 0) {
-          await supabase.from("task_contacts").delete().eq("task_id", newTask.id)
+          await supabase.from("task_contacts").delete().eq("task_id", typedTask.id)
         }
         return { success: false, error: taskMeetingError.message }
       }
@@ -90,31 +96,31 @@ export async function createTask(data: Record<string, unknown>) {
     // Create tag associations if provided
     if (tagIds && tagIds.length > 0) {
       const taskTagsToInsert = tagIds.map(tagId => ({
-        task_id: newTask.id,
+        task_id: typedTask.id,
         tag_id: tagId,
         user_id: user.id
       }))
       
       const { error: taskTagError } = await supabase
         .from("task_tags")
-        .insert(taskTagsToInsert)
+        .insert(taskTagsToInsert as never)
       
       if (taskTagError) {
         console.error("Error creating tag associations:", taskTagError)
         // Rollback by deleting the task and other associations
-        await supabase.from("tasks").delete().eq("id", newTask.id)
+        await supabase.from("tasks").delete().eq("id", typedTask.id)
         if (contactIds && contactIds.length > 0) {
-          await supabase.from("task_contacts").delete().eq("task_id", newTask.id)
+          await supabase.from("task_contacts").delete().eq("task_id", typedTask.id)
         }
         if (meetingIds && meetingIds.length > 0) {
-          await supabase.from("task_meetings").delete().eq("task_id", newTask.id)
+          await supabase.from("task_meetings").delete().eq("task_id", typedTask.id)
         }
         return { success: false, error: taskTagError.message }
       }
     }
     
     revalidatePath("/workspace/tasks")
-    return { success: true, data: newTask }
+    return { success: true, data: typedTask }
   } catch (error) {
     console.error("Unexpected error creating task:", error)
     return { success: false, error: "An unexpected error occurred" }
@@ -139,7 +145,7 @@ export async function updateTask(id: string, data: Record<string, unknown>) {
     // Update the task
     const { data: updatedTask, error: taskError } = await supabase
       .from("tasks")
-      .update(taskData)
+      .update(taskData as never)
       .eq("id", id)
       .eq("user_id", user.id) // Ensure user can only update their own tasks
       .select()
@@ -174,7 +180,7 @@ export async function updateTask(id: string, data: Record<string, unknown>) {
         
         const { error: taskContactError } = await supabase
           .from("task_contacts")
-          .insert(taskContactsToInsert)
+          .insert(taskContactsToInsert as never)
         
         if (taskContactError) {
           console.error("Error creating contact associations:", taskContactError)
@@ -207,7 +213,7 @@ export async function updateTask(id: string, data: Record<string, unknown>) {
         
         const { error: taskMeetingError } = await supabase
           .from("task_meetings")
-          .insert(taskMeetingsToInsert)
+          .insert(taskMeetingsToInsert as never)
         
         if (taskMeetingError) {
           console.error("Error creating meeting associations:", taskMeetingError)
@@ -240,7 +246,7 @@ export async function updateTask(id: string, data: Record<string, unknown>) {
         
         const { error: taskTagError } = await supabase
           .from("task_tags")
-          .insert(taskTagsToInsert)
+          .insert(taskTagsToInsert as never)
         
         if (taskTagError) {
           console.error("Error creating tag associations:", taskTagError)
@@ -293,7 +299,7 @@ export async function multiUpdateTasks(taskIds: string[], data: Record<string, u
     if (Object.keys(fieldsToUpdate).length > 0) {
       const { error: taskError } = await supabase
         .from("tasks")
-        .update(fieldsToUpdate)
+        .update(fieldsToUpdate as never)
         .in("id", taskIds)
         .eq("user_id", user.id) // Ensure user can only update their own tasks
       
@@ -329,7 +335,7 @@ export async function multiUpdateTasks(taskIds: string[], data: Record<string, u
         
         const { error: taskContactError } = await supabase
           .from("task_contacts")
-          .insert(taskContactsToInsert)
+          .insert(taskContactsToInsert as never)
         
         if (taskContactError) {
           console.error("Error creating contact associations:", taskContactError)
@@ -364,7 +370,7 @@ export async function multiUpdateTasks(taskIds: string[], data: Record<string, u
         
         const { error: taskMeetingError } = await supabase
           .from("task_meetings")
-          .insert(taskMeetingsToInsert)
+          .insert(taskMeetingsToInsert as never)
         
         if (taskMeetingError) {
           console.error("Error creating meeting associations:", taskMeetingError)
@@ -399,7 +405,7 @@ export async function multiUpdateTasks(taskIds: string[], data: Record<string, u
         
         const { error: taskTagError } = await supabase
           .from("task_tags")
-          .insert(taskTagsToInsert)
+          .insert(taskTagsToInsert as never)
         
         if (taskTagError) {
           console.error("Error creating tag associations:", taskTagError)

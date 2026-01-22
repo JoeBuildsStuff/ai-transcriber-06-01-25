@@ -34,7 +34,7 @@ export async function createNote(data: Record<string, unknown>) {
     // Start a transaction by creating the note first
     const { data: newNote, error: noteError } = await supabase
       .from("notes")
-      .insert([noteDataWithUserId])
+      .insert([noteDataWithUserId] as never)
       .select()
       .single()
     
@@ -43,22 +43,28 @@ export async function createNote(data: Record<string, unknown>) {
       return { success: false, error: noteError.message }
     }
     
+    if (!newNote) {
+      return { success: false, error: "Failed to create note" }
+    }
+    
+    const typedNote = newNote as { id: string; [key: string]: unknown }
+    
     // Create contact associations if provided
     if (contactIds && contactIds.length > 0) {
       const contactNotesToInsert = contactIds.map(contactId => ({
-        note_id: newNote.id,
+        note_id: typedNote.id,
         contact_id: contactId,
         user_id: user.id
       }))
       
       const { error: contactNoteError } = await supabase
         .from("contact_notes")
-        .insert(contactNotesToInsert)
+        .insert(contactNotesToInsert as never)
       
       if (contactNoteError) {
         console.error("Error creating contact associations:", contactNoteError)
         // Rollback by deleting the note
-        await supabase.from("notes").delete().eq("id", newNote.id)
+        await supabase.from("notes").delete().eq("id", typedNote.id)
         return { success: false, error: contactNoteError.message }
       }
     }
@@ -66,28 +72,28 @@ export async function createNote(data: Record<string, unknown>) {
     // Create meeting associations if provided
     if (meetingIds && meetingIds.length > 0) {
       const meetingNotesToInsert = meetingIds.map(meetingId => ({
-        note_id: newNote.id,
+        note_id: typedNote.id,
         meeting_id: meetingId,
         user_id: user.id
       }))
       
       const { error: meetingNoteError } = await supabase
         .from("meeting_notes")
-        .insert(meetingNotesToInsert)
+        .insert(meetingNotesToInsert as never)
       
       if (meetingNoteError) {
         console.error("Error creating meeting associations:", meetingNoteError)
         // Rollback by deleting the note and contact associations
-        await supabase.from("notes").delete().eq("id", newNote.id)
+        await supabase.from("notes").delete().eq("id", typedNote.id)
         if (contactIds && contactIds.length > 0) {
-          await supabase.from("contact_notes").delete().eq("note_id", newNote.id)
+          await supabase.from("contact_notes").delete().eq("note_id", typedNote.id)
         }
         return { success: false, error: meetingNoteError.message }
       }
     }
     
     revalidatePath("/notes")
-    return { success: true, data: newNote }
+    return { success: true, data: typedNote }
   } catch (error) {
     console.error("Unexpected error creating note:", error)
     return { success: false, error: "An unexpected error occurred" }
@@ -112,7 +118,7 @@ export async function updateNote(id: string, data: Record<string, unknown>) {
     // Update the note
     const { data: updatedNote, error: noteError } = await supabase
       .from("notes")
-      .update(noteData)
+      .update(noteData as never)
       .eq("id", id)
       .eq("user_id", user.id) // Ensure user can only update their own notes
       .select()
@@ -147,7 +153,7 @@ export async function updateNote(id: string, data: Record<string, unknown>) {
         
         const { error: contactNoteError } = await supabase
           .from("contact_notes")
-          .insert(contactNotesToInsert)
+          .insert(contactNotesToInsert as never)
         
         if (contactNoteError) {
           console.error("Error creating contact associations:", contactNoteError)
@@ -180,7 +186,7 @@ export async function updateNote(id: string, data: Record<string, unknown>) {
         
         const { error: meetingNoteError } = await supabase
           .from("meeting_notes")
-          .insert(meetingNotesToInsert)
+          .insert(meetingNotesToInsert as never)
         
         if (meetingNoteError) {
           console.error("Error creating meeting associations:", meetingNoteError)
@@ -229,7 +235,7 @@ export async function multiUpdateNotes(noteIds: string[], data: Record<string, u
     if (Object.keys(fieldsToUpdate).length > 0) {
       const { error: noteError } = await supabase
         .from("notes")
-        .update(fieldsToUpdate)
+        .update(fieldsToUpdate as never)
         .in("id", noteIds)
         .eq("user_id", user.id) // Ensure user can only update their own notes
       
@@ -265,7 +271,7 @@ export async function multiUpdateNotes(noteIds: string[], data: Record<string, u
         
         const { error: contactNoteError } = await supabase
           .from("contact_notes")
-          .insert(contactNotesToInsert)
+          .insert(contactNotesToInsert as never)
         
         if (contactNoteError) {
           console.error("Error creating contact associations:", contactNoteError)
@@ -300,7 +306,7 @@ export async function multiUpdateNotes(noteIds: string[], data: Record<string, u
         
         const { error: meetingNoteError } = await supabase
           .from("meeting_notes")
-          .insert(meetingNotesToInsert)
+          .insert(meetingNotesToInsert as never)
         
         if (meetingNoteError) {
           console.error("Error creating meeting associations:", meetingNoteError)
