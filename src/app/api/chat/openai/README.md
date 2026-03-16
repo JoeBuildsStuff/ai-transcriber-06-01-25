@@ -4,7 +4,7 @@ This directory contains the OpenAI integration for the chat API, supporting GPT-
 
 ## Features
 
-- **GPT-5 Models**: Support for `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`
+- **GPT-5 Models**: Support for `gpt-5.4`, `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`
 - **Function Calling**: Full support for the existing tool system (contacts, meetings, etc.)
 - **Reasoning Effort**: Configurable reasoning effort levels (low, medium, high)
 - **File Attachments**: Support for file uploads (converted to text descriptions)
@@ -29,7 +29,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 - `message` (string, required): The user's message
 - `context` (string, optional): JSON stringified page context
 - `messages` (string, optional): JSON stringified chat history
-- `model` (string, optional): OpenAI model name (defaults to `gpt-5`)
+- `model` (string, optional): OpenAI model name (defaults to `gpt-5.4`)
 - `reasoning_effort` (string, optional): Reasoning effort level - `low`, `medium`, or `high` (defaults to `medium`)
 - `attachments` (files, optional): File attachments
 
@@ -82,7 +82,7 @@ The OpenAI integration automatically converts the existing Anthropic tool defini
 ```typescript
 const formData = new FormData()
 formData.append('message', 'Create a new contact for John Doe')
-formData.append('model', 'gpt-5')
+formData.append('model', 'gpt-5.4')
 formData.append('reasoning_effort', 'high')
 
 const response = await fetch('/api/chat/openai', {

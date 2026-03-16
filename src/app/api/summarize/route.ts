@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           };
 
           const response = await openai.responses.parse({
-            model: "gpt-5",
+            model: "gpt-5.4",
             input: [
                 {
                   role: "system", 
@@ -167,4 +167,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An error occurred in summarize route' }, { status: 500 });
   }
 }
-

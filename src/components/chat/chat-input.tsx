@@ -326,10 +326,11 @@ export function ChatInput() {
                     <SelectValue placeholder="Model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-3-5-haiku-latest" className="font-light text-xs">Haiku 3.5</SelectItem>
-                    <SelectItem value="claude-sonnet-4-20250514" className="font-light text-xs">Sonnet 4</SelectItem>
-                    <SelectItem value="claude-opus-4-1-20250805" className="font-light text-xs">Opus 4.1</SelectItem>
+                    <SelectItem value="claude-haiku-4-5" className="font-light text-xs">Haiku 4.5</SelectItem>
+                    <SelectItem value="claude-sonnet-4-6" className="font-light text-xs">Sonnet 4.6</SelectItem>
+                    <SelectItem value="claude-opus-4-6" className="font-light text-xs">Opus 4.6</SelectItem>
                     <SelectItem value="gpt-oss-120b" className="font-light text-xs">GPT-OSS-120B</SelectItem>
+                    <SelectItem value="gpt-5.4" className="font-light text-xs">GPT-5.4</SelectItem>
                     <SelectItem value="gpt-5" className="font-light text-xs">GPT-5</SelectItem>
                     <SelectItem value="gpt-5-mini" className="font-light text-xs">GPT-5 Mini</SelectItem>
                     <SelectItem value="gpt-5-nano" className="font-light text-xs">GPT-5 Nano</SelectItem>

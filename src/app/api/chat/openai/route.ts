@@ -317,7 +317,7 @@ if a tool responds with a url to the record, please include the url in the respo
 
     while (maxIterations > 0) {
       const response = await openai.chat.completions.create({
-        model: model || 'gpt-5',
+        model: model || 'gpt-5.4',
         messages: currentMessages,
         tools: tools.length > 0 ? tools : undefined,
         tool_choice: tools.length > 0 ? 'auto' : undefined,

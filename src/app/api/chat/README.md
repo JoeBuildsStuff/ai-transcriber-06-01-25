@@ -26,8 +26,8 @@ This directory contains the chat API endpoints for the AI transcriber applicatio
 
 Users can select from different AI models in the chat interface:
 
-- **Anthropic Models**: `claude-3-5-haiku-latest`, `claude-sonnet-4-20250514`, `claude-opus-4-1-20250805`
-- **OpenAI Models**: `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
+- **Anthropic Models**: `claude-haiku-4-5`, `claude-sonnet-4-6`, `claude-opus-4-6`
+- **OpenAI Models**: `gpt-5.4`, `gpt-5`, `gpt-5-mini`, `gpt-5-nano`
 - **Cerebras Models**: `gpt-oss-120b`
 
 ## Reasoning Effort Control

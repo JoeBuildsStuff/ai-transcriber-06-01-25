@@ -381,7 +381,7 @@ User Locale Context:
 
   while (iteration < maxIterations) {
     const resp = await anthropic.messages.create({
-      model: model || 'claude-sonnet-4-20250514',
+      model: model || 'claude-sonnet-4-6',
       max_tokens: 2048,
       system: systemPrompt,
       tools,
