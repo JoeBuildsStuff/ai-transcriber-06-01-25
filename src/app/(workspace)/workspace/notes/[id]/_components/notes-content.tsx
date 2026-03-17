@@ -66,6 +66,9 @@ export default function NotesContent({ noteContent, noteId, onNoteIdChange }: No
           onChange={(newContent: string) => handleContentChange(newContent)}
           showFixedMenu={true}
           showBubbleMenu={true}
+          commentsDocumentId={
+            noteId && !isTemporaryId(noteId) ? noteId : undefined
+          }
           fileUploadConfig={{
             supabaseBucket: 'ai-transcriber-files',
             pathPrefix: 'notes',

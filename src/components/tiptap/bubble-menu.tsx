@@ -4,16 +4,17 @@ import { Editor, useEditorState } from '@tiptap/react'
 import { BubbleMenu as TiptapBubbleMenu } from '@tiptap/react/menus'
 import { useCallback } from 'react'
 import {
-    Strikethrough,
-    Heading1,
-    Heading2,
-    Heading3,
-    List,
-    ListOrdered,
-    Type,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
+  Strikethrough,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  MessageSquare,
 } from 'lucide-react'
 import { BoldIcon } from '@/components/icons/bold'
 import { ItalicIcon } from '@/components/icons/italic'
@@ -21,16 +22,50 @@ import { UnderlineIcon } from '@/components/icons/underline'
 import { ChevronsLeftRightIcon } from '@/components/icons/chevrons-left-right'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/tiptap/dropdown-menu-tiptap'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/tiptap/dropdown-menu-tiptap'
 import { Button } from '@/components/ui/button'
 import { LinkButton } from '@/components/tiptap/link-button'
 import TableButton from './table-button'
+import type { CommentSelectionPayload } from './types'
 
 interface BubbleMenuProps {
-    editor: Editor
+  editor: Editor
+  onRequestCommentFromSelection?: (payload: CommentSelectionPayload) => void
 }
 
-const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
+const BubbleMenuComponent = ({
+  editor,
+  onRequestCommentFromSelection,
+}: BubbleMenuProps) => {
+  const handleRequestComment = useCallback(() => {
+    const { from, to, empty } = editor.state.selection
+    if (empty || to <= from) {
+      return
+    }
+
+    const doc = editor.state.doc
+    const prefixStart = Math.max(1, from - 32)
+    const suffixEnd = Math.min(doc.content.size, to + 32)
+    const coords = editor.view.coordsAtPos(to)
+
+    onRequestCommentFromSelection?.({
+      anchorFrom: from,
+      anchorTo: to,
+      anchorExact: doc.textBetween(from, to, ' ', ' '),
+      anchorPrefix: doc.textBetween(prefixStart, from, ' ', ' '),
+      anchorSuffix: doc.textBetween(to, suffixEnd, ' ', ' '),
+      position: {
+        top: coords.bottom + 8,
+        left: (coords.left + coords.right) / 2,
+      },
+    })
+  }, [editor, onRequestCommentFromSelection])
     const editorState = useEditorState({
         editor,
         selector: (state: { editor: Editor }) => ({
@@ -66,9 +101,12 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                 placement: 'top',
             }}
             editor={editor}
-            shouldShow={({ editor }: { editor: Editor }) => {
-                const { from, to } = editor.state.selection
-                return from !== to
+            shouldShow={({ editor: ed, state }) => {
+              if (!ed.isFocused) return false
+              const { from, to, empty } = state.selection
+              if (empty) return false
+              const selectedText = state.doc.textBetween(from, to).trim()
+              return selectedText.length > 0
             }}
         >
             <div className='flex flex-row gap-0.5 border rounded-xl border-border bg-background p-1'>
@@ -242,6 +280,23 @@ const BubbleMenuComponent = ({ editor }: BubbleMenuProps) => {
                 </Tooltip>
                 <LinkButton editor={editor} size='sm' className='text-xs' />
                 <TableButton editor={editor} size='sm' className='text-xs' />
+                {onRequestCommentFromSelection ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size='sm'
+                        variant='secondary'
+                        className='text-xs'
+                        onClick={handleRequestComment}
+                      >
+                        <MessageSquare className='' />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add comment</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
             </div>
         </TiptapBubbleMenu>
     )

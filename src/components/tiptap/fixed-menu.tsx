@@ -2,16 +2,17 @@
 
 import { Editor, useEditorState } from '@tiptap/react'
 import {
-    Strikethrough,
-    Heading1,
-    Heading2,
-    Heading3,
-    List,
-    ListOrdered,
-    Type,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
+  Strikethrough,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  MessageSquare,
 } from 'lucide-react'
 import { BoldIcon } from '@/components/icons/bold'
 import { ItalicIcon } from '@/components/icons/italic'
@@ -19,17 +20,29 @@ import { UnderlineIcon } from '@/components/icons/underline'
 import { ChevronsLeftRightIcon } from '@/components/icons/chevrons-left-right'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/tiptap/dropdown-menu-tiptap'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/tiptap/dropdown-menu-tiptap'
 import { Button } from '@/components/ui/button'
 import { LinkButton } from '@/components/tiptap/link-button'
 import TableButton from '@/components/tiptap/table-button'
 import { CopyButton } from '@/components/ui/copy-button'
 
 interface FixedMenuProps {
-    editor: Editor
+  editor: Editor
+  showComments?: boolean
+  onShowCommentsChange?: (show: boolean) => void
 }
 
-const FixedMenu = ({ editor }: FixedMenuProps) => {
+const FixedMenu = ({
+  editor,
+  showComments,
+  onShowCommentsChange,
+}: FixedMenuProps) => {
     const editorState = useEditorState({
         editor,
         selector: (state: { editor: Editor }) => ({
@@ -240,6 +253,23 @@ const FixedMenu = ({ editor }: FixedMenuProps) => {
                     </div>
                 </div>
                 <div className='flex flex-row gap-1'>
+                    {onShowCommentsChange != null ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size='sm'
+                            variant={showComments ? 'secondary' : 'ghost'}
+                            className='text-xs'
+                            onClick={() => onShowCommentsChange(!showComments)}
+                          >
+                            <MessageSquare className='' />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{showComments ? 'Hide comments' : 'Show comments'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
                     <CopyButton
                         textToCopy={getContentToCopy()}
                         size='sm'

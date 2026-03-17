@@ -14,7 +14,7 @@ import { TableHeader } from '@tiptap/extension-table/header'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import { FileNode } from '@/components/tiptap/file-node'
 import { createLowlight, common } from 'lowlight'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TiptapProps } from './types'
 import { Image } from '@tiptap/extension-image'
 import { CustomImageView } from './custom-image-view'
@@ -22,10 +22,10 @@ import { deleteFile } from './supabase-file-manager'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
-    Strikethrough,
-    Type,
-    AlignLeft,
-    GripVertical,
+  Strikethrough,
+  Type,
+  AlignLeft,
+  GripVertical,
 } from 'lucide-react'
 import { BoldIcon } from '@/components/icons/bold'
 import { ItalicIcon } from '@/components/icons/italic'
@@ -38,6 +38,11 @@ import { CodeBlock } from '@/components/tiptap/code-block'
 import FixedMenu from '@/components/tiptap/fixed-menu'
 import BubbleMenuComponent from '@/components/tiptap/bubble-menu'
 import { createFileHandlerConfig } from '@/components/tiptap/file-handler'
+import { useDocumentComments } from '@/components/tiptap/use-document-comments'
+import { CommentComposerPopover } from '@/components/tiptap/comment-composer-popover'
+import { CommentsPanel } from '@/components/tiptap/comments-panel'
+import type { ThreadVisibilityFilters } from '@/components/tiptap/comment-thread-types'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const lowlight = createLowlight(common)
 const CustomCodeBlock = CodeBlockLowlight.extend({
@@ -46,16 +51,76 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   },
 })
 
-const Tiptap = ({ 
-  content, 
-  showFixedMenu = true, 
-  showBubbleMenu = true, 
-  showDragHandle = true, 
-  onChange, 
+const Tiptap = ({
+  content,
+  showFixedMenu = true,
+  showBubbleMenu = true,
+  showDragHandle = true,
+  onChange,
   onFileDrop,
   fileUploadConfig,
-  enableFileNodes = true
+  enableFileNodes = true,
+  onRequestCommentFromSelection,
+  showComments,
+  onShowCommentsChange,
+  commentsDocumentId,
 }: TiptapProps) => {
+  const commentsEnabled = Boolean(commentsDocumentId)
+  const [internalShowComments, setInternalShowComments] = useState(false)
+  const [threadFilters, setThreadFilters] = useState<ThreadVisibilityFilters>({
+    open: true,
+    resolved: false,
+  })
+
+  const effectiveShowComments = showComments ?? internalShowComments
+  const setEffectiveShowComments =
+    onShowCommentsChange ?? setInternalShowComments
+
+  const {
+    setEditor: setCommentsEditor,
+    commentExtension,
+    queueAnchorSync,
+    currentUser,
+    currentUserId,
+    displayName,
+    initials,
+    currentUserAvatarUrl,
+    composerRef,
+    composerSelection,
+    composerLeft,
+    composerTop,
+    composerContent,
+    setComposerContent,
+    isSubmittingComposer,
+    closeComposer,
+    handleOpenComposer,
+    handleSubmitComposer,
+    isLoadingThreads,
+    threads,
+    selectedThreadId,
+    setSelectedThreadId,
+    replyContent,
+    setReplyContent,
+    handleCreateReply,
+    handleToggleThreadResolved,
+    handleDeleteThread,
+    handleDeleteComment,
+    handleUpdateComment,
+  } = useDocumentComments(
+    commentsDocumentId
+      ? { documentId: commentsDocumentId, threadFilters }
+      : {}
+  )
+
+  const commentSelectionHandler = commentsEnabled
+    ? handleOpenComposer
+    : onRequestCommentFromSelection
+
+  const extensions = useMemo(
+    () => (commentsEnabled ? [commentExtension] : []),
+    [commentExtension, commentsEnabled]
+  )
+
   // Track the currently selected node for drag handle functionality
   const [, setSelectedNode] = useState<{ type: { name: string } } | null>(null)
 
@@ -135,10 +200,9 @@ const Tiptap = ({
             class: 'tiptap-image',
           }
         }),
-        ...(enableFileNodes ? [
-          FileNode
-        ] : [])
-    ],
+        ...(enableFileNodes ? [FileNode] : []),
+        ...extensions,
+      ],
     content: content || ``,
     immediatelyRender: false,
     onDelete(params: { type: string; node?: { type: { name: string }; attrs?: { src?: string } }; [key: string]: unknown }) {
@@ -154,9 +218,12 @@ const Tiptap = ({
         }
       }
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor: ed }) => {
+      if (commentsEnabled) {
+        queueAnchorSync()
+      }
       if (onChange) {
-        onChange(editor.getHTML())
+        onChange(ed.getHTML())
       }
     },
     editorProps: {
@@ -173,12 +240,17 @@ const Tiptap = ({
   })
 
   useEffect(() => {
+    if (!commentsEnabled) return
+    setCommentsEditor(editor ?? null)
+  }, [commentsEnabled, editor, setCommentsEditor])
+
+  useEffect(() => {
     if (editor) {
       const editorContent = editor.getHTML()
-      // Compare the content and update only if it's different.
-      // This prevents an infinite loop.
       if (content !== editorContent) {
-        editor.commands.setContent((content as string) || '', { emitUpdate: false })
+        editor.commands.setContent((content as string) || '', {
+          emitUpdate: false,
+        })
       }
     }
   }, [content, editor])
@@ -231,54 +303,134 @@ const Tiptap = ({
     )
   }
 
-    // Editor
-    return (
-        <div className='relative border border-border rounded-md bg-card h-full flex flex-col'>
-            <TooltipProvider>
+  return (
+    <div
+      className={
+        commentsEnabled
+          ? 'flex h-full min-h-0 gap-2'
+          : 'relative border border-border rounded-md bg-card h-full flex flex-col'
+      }
+    >
+      <div
+        className={
+          commentsEnabled
+            ? 'relative border border-border rounded-md bg-card h-full min-h-0 overflow-hidden flex flex-col flex-1 min-w-0'
+            : 'relative border border-border rounded-md bg-card h-full flex flex-col'
+        }
+      >
+        <TooltipProvider>
+          {showFixedMenu && (
+            <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-lg rounded-lg">
+              <FixedMenu
+                editor={editor}
+                {...(commentsEnabled
+                  ? {
+                      showComments: effectiveShowComments,
+                      onShowCommentsChange: setEffectiveShowComments,
+                    }
+                  : {})}
+              />
+            </div>
+          )}
 
-                {/* start fixed menu */}
-                {showFixedMenu && (
-                    <div className='sticky top-0 z-10 bg-card/80 backdrop-blur-lg rounded-lg'>
-                        <FixedMenu editor={editor} />
-                    </div>
-                )}
-                {/* end fixed menu */}
+          {showBubbleMenu &&
+            (commentSelectionHandler ? (
+              <BubbleMenuComponent
+                editor={editor}
+                onRequestCommentFromSelection={commentSelectionHandler}
+              />
+            ) : (
+              <BubbleMenuComponent editor={editor} />
+            ))}
 
-                {/* start bubble menu */}
-                {showBubbleMenu && <BubbleMenuComponent editor={editor} />}
-                {/* end bubble menu */}
+          {showDragHandle && !commentsEnabled && (
+            <DragHandle
+              editor={editor}
+              onNodeChange={({ node }) => {
+                setSelectedNode(node)
+                if (node) {
+                  // optional: highlight selected node
+                }
+              }}
+            >
+              <div className="flex items-center justify-center w-4 h-8 mr-1 hover:bg-muted/80 rounded cursor-grab active:cursor-grabbing transition-colors">
+                <GripVertical className="size-4 text-muted-foreground/70" />
+              </div>
+            </DragHandle>
+          )}
 
-                {/* start drag handle */}
-                {showDragHandle && (
-                  <DragHandle
-                    editor={editor}
-                    onNodeChange={({ node }) => {
-                      setSelectedNode(node)
-                      // You can add custom logic here to highlight the selected node
-                      if (node) {
-                        // console.log('Selected node:', node.type.name)
-                      }
-                    }}
-                  >
-                    <div className="flex items-center justify-center w-4 h-8 mr-1 hover:bg-muted/80 rounded cursor-grab active:cursor-grabbing transition-colors">
-                      <GripVertical className="size-4 text-muted-foreground/70" />
-                    </div>
-                  </DragHandle>
-                )}
-                {/* end drag handle */}
+          {commentsEnabled ? (
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="py-2 px-6 prose prose-base dark:prose-invert max-w-none">
+                <EditorContent
+                  editor={editor}
+                  className="[&_a:hover]:cursor-pointer"
+                />
+              </div>
+            </ScrollArea>
+          ) : (
+            <div className="h-full flex-1 overflow-y-auto py-2 px-6 prose prose-base dark:prose-invert max-w-none">
+              <EditorContent
+                editor={editor}
+                className="[&_a:hover]:cursor-pointer h-full flex-1"
+              />
+            </div>
+          )}
+        </TooltipProvider>
 
-                {/* start editor */}
-                <div className='h-full flex-1 overflow-y-auto py-2 px-6 prose prose-base dark:prose-invert max-w-none'>
-                    <EditorContent 
-                        editor={editor} 
-                        className='[&_a:hover]:cursor-pointer h-full flex-1' 
-                    />
-                </div>
-                {/* end editor */}
+        {commentsEnabled && composerSelection ? (
+          <CommentComposerPopover
+            composerRef={composerRef}
+            left={composerLeft}
+            top={composerTop}
+            initials={initials}
+            displayName={displayName}
+            currentUser={currentUser}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            content={composerContent}
+            onChangeContent={setComposerContent}
+            isSubmitting={isSubmittingComposer}
+            onCancel={closeComposer}
+            onSubmit={handleSubmitComposer}
+          />
+        ) : null}
+      </div>
 
-            </TooltipProvider>
+      {commentsEnabled ? (
+        <div
+          className={`flex shrink-0 overflow-hidden transition-[width] duration-200 ease-linear ${effectiveShowComments ? 'w-80' : 'w-0'}`}
+        >
+          <CommentsPanel
+            showComments={effectiveShowComments}
+            isLoadingThreads={isLoadingThreads}
+            threads={threads}
+            selectedThreadId={selectedThreadId}
+            currentUserId={currentUserId}
+            currentUserInitials={initials}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            replyContent={replyContent}
+            onReplyContentChange={setReplyContent}
+            onSelectThread={(threadId) => {
+              setSelectedThreadId(threadId)
+              editor.commands.selectCommentThread(threadId)
+              editor.commands.focusCommentThread(threadId)
+            }}
+            onHoverThread={(threadId) =>
+              editor.commands.hoverCommentThread(threadId)
+            }
+            onCreateReply={handleCreateReply}
+            onToggleThreadResolved={handleToggleThreadResolved}
+            onDeleteThread={handleDeleteThread}
+            onDeleteComment={handleDeleteComment}
+            onUpdateComment={handleUpdateComment}
+            threadFilters={threadFilters}
+            onThreadFiltersChange={setThreadFilters}
+            onCloseComments={() => setEffectiveShowComments(false)}
+          />
         </div>
-    )
+      ) : null}
+    </div>
+  )
 }
 
 export default Tiptap

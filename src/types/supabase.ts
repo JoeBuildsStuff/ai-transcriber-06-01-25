@@ -919,6 +919,94 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_threads: {
+        Row: {
+          id: string
+          document_id: string
+          created_by: string
+          status: string
+          anchor_from: number
+          anchor_to: number
+          anchor_exact: string
+          anchor_prefix: string
+          anchor_suffix: string
+          resolved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          created_by: string
+          status?: string
+          anchor_from: number
+          anchor_to: number
+          anchor_exact?: string
+          anchor_prefix?: string
+          anchor_suffix?: string
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          created_by?: string
+          status?: string
+          anchor_from?: number
+          anchor_to?: number
+          anchor_exact?: string
+          anchor_prefix?: string
+          anchor_suffix?: string
+          resolved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_threads_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      comments: {
+        Row: {
+          id: string
+          thread_id: string
+          user_id: string
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          user_id: string
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          user_id?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "comment_threads"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       saved_views: {
         Row: {
           created_at: string
@@ -1276,6 +1364,26 @@ export type Database = {
       is_session_owner: {
         Args: { p_session_id: string }
         Returns: boolean
+      }
+      create_note_comment_thread_with_root: {
+        Args: {
+          p_document_id: string
+          p_anchor_from: number
+          p_anchor_to: number
+          p_anchor_exact: string
+          p_anchor_prefix: string
+          p_anchor_suffix: string
+          p_content: string
+        }
+        Returns: { thread_id: string }[]
+      }
+      batch_update_note_comment_thread_anchors: {
+        Args: {
+          p_document_id: string
+          p_anchors: Json
+          p_now?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

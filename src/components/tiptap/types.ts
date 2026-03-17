@@ -1,3 +1,15 @@
+export type CommentSelectionPayload = {
+  anchorFrom: number
+  anchorTo: number
+  anchorExact: string
+  anchorPrefix: string
+  anchorSuffix: string
+  position: {
+    top: number
+    left: number
+  }
+}
+
 // Types for configurable Tiptap component
 export interface TiptapFileUploadConfig {
   /** Upload function that returns a promise with the uploaded file path */
@@ -23,6 +35,14 @@ export interface TiptapProps {
   fileUploadConfig?: TiptapFileUploadConfig
   /** Whether to show file nodes for non-image files */
   enableFileNodes?: boolean
+  /** Called when the user requests to comment on selected text */
+  onRequestCommentFromSelection?: (payload: CommentSelectionPayload) => void
+  /** Whether comments panel is visible */
+  showComments?: boolean
+  /** Callback when comments panel visibility should change */
+  onShowCommentsChange?: (show: boolean) => void
+  /** Document id used by built-in comments CRUD (e.g. note id) */
+  commentsDocumentId?: string
 }
 
 export interface FileUploadResult {

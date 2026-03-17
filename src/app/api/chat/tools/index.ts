@@ -13,6 +13,14 @@ import { createNoteTool, executeCreateNote } from './create-note'
 import { getNoteTool, executeGetNote } from './get-note'
 import { updateNoteTool, executeUpdateNote } from './update-note'
 import { deleteNoteTool, executeDeleteNote } from './delete-note'
+import {
+  notesGetCommentsTool,
+  notesAddCommentTool,
+  notesReplyToCommentTool,
+  executeNotesGetComments,
+  executeNotesAddComment,
+  executeNotesReplyToComment,
+} from './note-comment-tools'
 import { createTaskTool, executeCreateTask } from './create-task'
 import { updateTaskTool, executeUpdateTask } from './update-task'
 import { deleteTaskTool, executeDeleteTask } from './delete-task'
@@ -34,6 +42,9 @@ export const availableTools: Anthropic.Tool[] = [
   getNoteTool,
   updateNoteTool,
   deleteNoteTool,
+  notesGetCommentsTool,
+  notesAddCommentTool,
+  notesReplyToCommentTool,
   createTaskTool,
   updateTaskTool,
   deleteTaskTool,
@@ -56,6 +67,9 @@ export const toolExecutors: Record<string, (parameters: Record<string, unknown>)
   get_note: executeGetNote,
   update_note: executeUpdateNote,
   delete_note: executeDeleteNote,
+  notes_get_comments: executeNotesGetComments,
+  notes_add_comment: executeNotesAddComment,
+  notes_reply_to_comment: executeNotesReplyToComment,
   create_task: executeCreateTask,
   update_task: executeUpdateTask,
   delete_task: executeDeleteTask,
@@ -92,6 +106,12 @@ export {
   executeUpdateNote,
   deleteNoteTool,
   executeDeleteNote,
+  notesGetCommentsTool,
+  executeNotesGetComments,
+  notesAddCommentTool,
+  executeNotesAddComment,
+  notesReplyToCommentTool,
+  executeNotesReplyToComment,
   createTaskTool,
   executeCreateTask,
   updateTaskTool,
