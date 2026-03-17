@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           };
 
           const response = await openai.responses.parse({
-            model: "gpt-5.4",
+            model: "gpt-5",
             input: [
                 {
                   role: "system", 
