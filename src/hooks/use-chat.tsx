@@ -520,8 +520,15 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
           }
           await refreshMessages(sid)
         } else {
-          // Default API call (Anthropic)
-          await sendToAPI(content, currentContext, attachments, model, reasoningEffort)
+          // Anthropic only supports the standard low/medium/high reasoning set here.
+          const anthropicReasoningEffort =
+            reasoningEffort === 'low' ||
+            reasoningEffort === 'medium' ||
+            reasoningEffort === 'high'
+              ? reasoningEffort
+              : undefined
+
+          await sendToAPI(content, currentContext, attachments, model, anthropicReasoningEffort)
         }
       }
     } catch (error) {
