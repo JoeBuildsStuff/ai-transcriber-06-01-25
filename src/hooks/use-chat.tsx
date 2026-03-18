@@ -272,7 +272,7 @@ export function useChat({ onSendMessage, onActionClick }: UseChatProps = {}) {
   }, [ensureSession, refreshMessages])
 
   // Handle sending a new message
-  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'low' | 'medium' | 'high', options?: { skipUserAdd?: boolean }) => {
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], model?: string, reasoningEffort?: 'none' | 'low' | 'medium' | 'high' | 'xhigh', options?: { skipUserAdd?: boolean }) => {
     if (!content.trim() && (!attachments || attachments.length === 0) || isLoading) return
 
     // Ensure we have a server-backed session first so optimistic add targets the right session
