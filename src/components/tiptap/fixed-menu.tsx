@@ -31,6 +31,9 @@ import { Button } from '@/components/ui/button'
 import { LinkButton } from '@/components/tiptap/link-button'
 import TableButton from '@/components/tiptap/table-button'
 import { CopyButton } from '@/components/ui/copy-button'
+import TurndownService from 'turndown'
+import { gfm } from 'turndown-plugin-gfm'
+import { useMemo } from 'react'
 
 interface FixedMenuProps {
   editor: Editor
@@ -43,6 +46,16 @@ const FixedMenu = ({
   showComments,
   onShowCommentsChange,
 }: FixedMenuProps) => {
+    const turndownService = useMemo(() => {
+        const service = new TurndownService({
+            headingStyle: 'atx',
+            codeBlockStyle: 'fenced',
+            bulletListMarker: '-',
+        })
+        service.use(gfm)
+        return service
+    }, [])
+
     const editorState = useEditorState({
         editor,
         selector: (state: { editor: Editor }) => ({
@@ -65,12 +78,17 @@ const FixedMenu = ({
 
     const getContentToCopy = () => {
         if (!editor) return ''
-        
-        const htmlContent = editor.getHTML()
-        const textContent = editor.getText()
-        
-        // Return HTML content if it's different from plain text, otherwise return plain text
-        return htmlContent !== textContent ? htmlContent : textContent
+
+        const htmlContent = editor.getHTML().trim()
+        if (!htmlContent) return ''
+
+        try {
+            const markdownContent = turndownService.turndown(htmlContent).trim()
+            return markdownContent || editor.getText()
+        } catch (error) {
+            console.error('Failed to convert TipTap content to markdown:', error)
+            return editor.getText()
+        }
     }
     
     return (
