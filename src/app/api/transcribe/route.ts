@@ -5,6 +5,28 @@ import { createClient as supabaseClient } from "@/lib/supabase/server";
 const deepgram = deepgramClient(process.env.DEEPGRAM_API_KEY!);
 const encoder = new TextEncoder();
 
+type ClaimOrResumeMemoIngestParams = {
+  p_bump_attempt?: boolean;
+  p_content_fingerprint: string;
+  p_create_meeting_if_needed?: boolean;
+  p_desktop_memo_key?: string | null;
+  p_last_error?: string | null;
+  p_local_path_snapshot?: string | null;
+  p_meeting_at?: string | null;
+  p_original_file_name?: string | null;
+  p_recording_created_at?: string | null;
+  p_source: string;
+  p_stage?: string | null;
+  p_storage_path?: string | null;
+};
+
+type ClaimOrResumeMemoIngestRow = {
+  ingest_id: string;
+  meeting_id: string | null;
+  stage: string;
+  storage_path: string | null;
+};
+
 export async function POST(req: NextRequest) {
 
   console.log('Received request to transcribe');
@@ -51,23 +73,30 @@ export async function POST(req: NextRequest) {
         typeof contentFingerprint === 'string' &&
         contentFingerprint.length >= 32
       ) {
-        const { data: claimRows, error: claimError } = await supabase.rpc(
-          'claim_or_resume_memo_ingest',
-          {
-            p_content_fingerprint: contentFingerprint,
-            p_source: 'web_upload',
-            p_stage: 'uploaded',
-            p_original_file_name: originalFileName,
-            p_recording_created_at: meetingAt ?? null,
-            p_storage_path: filePath,
-            p_desktop_memo_key: null,
-            p_local_path_snapshot: null,
-            p_create_meeting_if_needed: true,
-            p_meeting_at: meetingAt ?? null,
-            p_last_error: null,
-            p_bump_attempt: false,
+        const { data: claimRows, error: claimError } = await (
+          supabase as unknown as {
+            rpc: (
+              name: 'claim_or_resume_memo_ingest',
+              params: ClaimOrResumeMemoIngestParams
+            ) => Promise<{
+              data: ClaimOrResumeMemoIngestRow[] | null;
+              error: Error | null;
+            }>;
           }
-        );
+        ).rpc('claim_or_resume_memo_ingest', {
+          p_content_fingerprint: contentFingerprint,
+          p_source: 'web_upload',
+          p_stage: 'uploaded',
+          p_original_file_name: originalFileName,
+          p_recording_created_at: meetingAt ?? null,
+          p_storage_path: filePath,
+          p_desktop_memo_key: null,
+          p_local_path_snapshot: null,
+          p_create_meeting_if_needed: true,
+          p_meeting_at: meetingAt ?? null,
+          p_last_error: null,
+          p_bump_attempt: false,
+        });
 
         if (claimError) {
           console.error('claim_or_resume_memo_ingest error:', claimError);
@@ -117,6 +146,10 @@ export async function POST(req: NextRequest) {
         console.error('Meeting not found or access denied:', meetingCheckError);
         throw new Error('Meeting not found or access denied');
       }
+    }
+
+    if (!finalMeetingId) {
+      throw new Error('No meeting ID available for transcription');
     }
 
     const { data: downloadData, error: downloadError } = await supabase.storage

@@ -27,6 +27,19 @@ type BackfillResult = {
   stage?: string
 }
 
+type BackfillVoiceMemoIngestParams = {
+  p_meeting_id: string
+  p_content_fingerprint: string
+  p_source?: string
+}
+
+type BackfillVoiceMemoIngestRow = {
+  content_fingerprint: string
+  ingest_id: string
+  meeting_id: string
+  stage: string
+}
+
 function clampBatchSize(value: unknown): number {
   if (typeof value !== 'number' || Number.isNaN(value)) return 25
   return Math.min(100, Math.max(1, Math.floor(value)))
@@ -161,14 +174,21 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      const { data: rpcRows, error: rpcError } = await supabase.rpc(
-        'backfill_voice_memo_ingest_from_meeting',
-        {
-          p_meeting_id: meeting.id,
-          p_content_fingerprint: contentFingerprint,
-          p_source: 'web_upload',
+      const { data: rpcRows, error: rpcError } = await (
+        supabase as unknown as {
+          rpc: (
+            name: 'backfill_voice_memo_ingest_from_meeting',
+            params: BackfillVoiceMemoIngestParams
+          ) => Promise<{
+            data: BackfillVoiceMemoIngestRow[] | null
+            error: Error | null
+          }>
         }
-      )
+      ).rpc('backfill_voice_memo_ingest_from_meeting', {
+        p_meeting_id: meeting.id,
+        p_content_fingerprint: contentFingerprint,
+        p_source: 'web_upload',
+      })
 
       if (rpcError) {
         results.push({
