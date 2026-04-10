@@ -1280,6 +1280,78 @@ export type Database = {
           },
         ]
       }
+      voice_memo_ingest: {
+        Row: {
+          attempt_count: number
+          client_instance_id: string | null
+          content_fingerprint: string
+          created_at: string
+          desktop_memo_key: string | null
+          id: string
+          last_error: string | null
+          local_path_snapshot: string | null
+          meeting_id: string | null
+          original_file_name: string | null
+          recording_created_at: string | null
+          source: string
+          stage: string
+          storage_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          client_instance_id?: string | null
+          content_fingerprint: string
+          created_at?: string
+          desktop_memo_key?: string | null
+          id?: string
+          last_error?: string | null
+          local_path_snapshot?: string | null
+          meeting_id?: string | null
+          original_file_name?: string | null
+          recording_created_at?: string | null
+          source: string
+          stage: string
+          storage_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          client_instance_id?: string | null
+          content_fingerprint?: string
+          created_at?: string
+          desktop_memo_key?: string | null
+          id?: string
+          last_error?: string | null
+          local_path_snapshot?: string | null
+          meeting_id?: string | null
+          original_file_name?: string | null
+          recording_created_at?: string | null
+          source?: string
+          stage?: string
+          storage_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_memo_ingest_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_memo_ingest_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       meeting_attendees_with_contacts: {
@@ -1355,8 +1427,51 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_memo_ingest_stage_stats: {
+        Row: {
+          row_count: number | null
+          stage: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      claim_or_resume_memo_ingest: {
+        Args: {
+          p_bump_attempt?: boolean
+          p_content_fingerprint: string
+          p_create_meeting_if_needed?: boolean
+          p_desktop_memo_key?: string | null
+          p_last_error?: string | null
+          p_local_path_snapshot?: string | null
+          p_meeting_at?: string | null
+          p_original_file_name?: string | null
+          p_recording_created_at?: string | null
+          p_source: string
+          p_stage?: string | null
+          p_storage_path?: string | null
+        }
+        Returns: {
+          ingest_id: string
+          meeting_id: string | null
+          stage: string
+          storage_path: string | null
+        }[]
+      }
+      backfill_voice_memo_ingest_from_meeting: {
+        Args: {
+          p_content_fingerprint: string
+          p_meeting_id: string
+          p_source?: string
+        }
+        Returns: {
+          content_fingerprint: string
+          ingest_id: string
+          meeting_id: string
+          stage: string
+        }[]
+      }
       is_message_owner: {
         Args: { p_message_id: string }
         Returns: boolean

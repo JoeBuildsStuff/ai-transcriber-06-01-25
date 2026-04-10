@@ -22,7 +22,19 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id;
 
-    const { filePath, originalFileName, meetingAt, meetingId } = await req.json();
+    const {
+      filePath,
+      originalFileName,
+      meetingAt,
+      meetingId,
+      contentFingerprint,
+    } = await req.json() as {
+      filePath?: string;
+      originalFileName?: string;
+      meetingAt?: string;
+      meetingId?: string;
+      contentFingerprint?: string;
+    };
 
     if (!filePath) {
       throw new Error('No file path provided');
@@ -35,24 +47,60 @@ export async function POST(req: NextRequest) {
 
     // Only create meeting record if meetingId is not provided
     if (!meetingId) {
-      const { data: meetingData, error: meetingInsertError } = await supabase
-        .schema('ai_transcriber')
-        .from('meetings')
-        .insert({
-          user_id: userId,
-          audio_file_path: filePath,
-          original_file_name: originalFileName,
-          meeting_at: meetingAt,
-        })
-        .select('id')
-        .single();
+      if (
+        typeof contentFingerprint === 'string' &&
+        contentFingerprint.length >= 32
+      ) {
+        const { data: claimRows, error: claimError } = await supabase.rpc(
+          'claim_or_resume_memo_ingest',
+          {
+            p_content_fingerprint: contentFingerprint,
+            p_source: 'web_upload',
+            p_stage: 'uploaded',
+            p_original_file_name: originalFileName,
+            p_recording_created_at: meetingAt ?? null,
+            p_storage_path: filePath,
+            p_desktop_memo_key: null,
+            p_local_path_snapshot: null,
+            p_create_meeting_if_needed: true,
+            p_meeting_at: meetingAt ?? null,
+            p_last_error: null,
+            p_bump_attempt: false,
+          }
+        );
 
-      if (meetingInsertError || !meetingData) {
-        console.error('Error creating meeting record:', meetingInsertError);
-        throw new Error(`Failed to create meeting record: ${meetingInsertError?.message}`);
+        if (claimError) {
+          console.error('claim_or_resume_memo_ingest error:', claimError);
+          throw new Error(`Failed to claim memo ingest: ${claimError.message}`);
+        }
+
+        const row = Array.isArray(claimRows) ? claimRows[0] : null;
+        const claimedId = row?.meeting_id as string | undefined | null;
+        if (!claimedId) {
+          throw new Error('Ingest RPC returned no meeting_id');
+        }
+        finalMeetingId = claimedId;
+        console.log('Meeting from voice_memo_ingest claim:', finalMeetingId);
+      } else {
+        const { data: meetingData, error: meetingInsertError } = await supabase
+          .schema('ai_transcriber')
+          .from('meetings')
+          .insert({
+            user_id: userId,
+            audio_file_path: filePath,
+            original_file_name: originalFileName,
+            meeting_at: meetingAt,
+          })
+          .select('id')
+          .single();
+
+        if (meetingInsertError || !meetingData) {
+          console.error('Error creating meeting record:', meetingInsertError);
+          throw new Error(`Failed to create meeting record: ${meetingInsertError?.message}`);
+        }
+        finalMeetingId = meetingData.id;
+        console.log('Created meeting record with ID:', finalMeetingId);
       }
-      finalMeetingId = meetingData.id;
-      console.log('Created meeting record with ID:', finalMeetingId);
     } else {
       console.log('Using existing meeting ID:', meetingId);
       
@@ -163,6 +211,11 @@ export async function POST(req: NextRequest) {
             // Or handle this more gracefully depending on requirements
           } else {
             console.log('Meeting record updated with transcription for ID:', finalMeetingId);
+            await supabase
+              .schema('ai_transcriber')
+              .from('voice_memo_ingest')
+              .update({ stage: 'transcribed' })
+              .eq('meeting_id', finalMeetingId);
           }
 
           // Create initial meeting_speakers rows for each detected speaker

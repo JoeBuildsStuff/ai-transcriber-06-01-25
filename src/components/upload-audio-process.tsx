@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DeepgramWord, FileProcessingState, FormattedTranscriptGroup, TranscriptionData } from '@/types'
 import Spinner from './ui/spinner'
+import { sha256HexFromFile } from '@/lib/audio-fingerprint'
 
 const supabase = createClient()
 
@@ -99,6 +100,7 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
     // --- Transcription ---
     updateFileState(id, { status: 'transcribing', summaryStatus: "Initiating transcription..." })
     try {
+      const contentFingerprint = await sha256HexFromFile(file)
       const transcribeResponse = await fetch('/api/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,6 +108,7 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
           filePath,
           originalFileName: file.name,
           meetingAt: meetingAt.toISOString(),
+          contentFingerprint,
         }),
       })
 

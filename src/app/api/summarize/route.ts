@@ -135,6 +135,11 @@ export async function POST(req: NextRequest) {
               console.error('Error updating meeting with summary:', updateError);
               controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "Failed to save summary to database", meetingId, details: updateError.message }) + "\n\n"));
             } else {
+              await supabase
+                .schema('ai_transcriber')
+                .from('voice_memo_ingest')
+                .update({ stage: 'summarized' })
+                .eq('meeting_id', meetingId);
               controller.enqueue(encoder.encode("data: " + JSON.stringify({ summary: rawContent.meeting_outline, title: rawContent.title, meetingId }) + "\n\n"));
             }
           } else {

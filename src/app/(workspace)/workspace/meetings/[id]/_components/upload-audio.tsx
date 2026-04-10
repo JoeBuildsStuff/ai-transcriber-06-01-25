@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { sha256HexFromFile } from '@/lib/audio-fingerprint'
 import { DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup } from '@/types'
 
 interface UploadAudioProps {
@@ -146,7 +147,9 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
   
       // Step 3: Call transcription API
       console.log('Starting transcription for meeting:', meetingId)
-      
+
+      const contentFingerprint = await sha256HexFromFile(selectedFile)
+
       const transcribeResponse = await fetch('/api/transcribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,6 +158,7 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
           originalFileName: selectedFile.name,
           meetingAt: new Date().toISOString(),
           meetingId: meetingId,
+          contentFingerprint,
         }),
       })
   
