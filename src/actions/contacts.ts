@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { MeetingSpeaker, MeetingSpeakerWithContact } from "@/types"
 import type { Database } from "@/types/supabase"
+import { storeVoiceProfile } from "@/lib/speaker-id"
 
 
 export async function updateSpeakerContacts(meetingId: string, speakerContacts: Record<number, string>) {
@@ -141,9 +142,28 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
     }
   }
 
+  if (contactId) {
+    const { data: meeting } = await supabase
+      .schema('ai_transcriber')
+      .from('meetings')
+      .select('audio_file_path, transcription')
+      .eq('id', meetingId)
+      .single()
+
+    if (meeting?.audio_file_path && meeting?.transcription) {
+      storeVoiceProfile({
+        audioStoragePath: meeting.audio_file_path,
+        contactId,
+        meetingId,
+        userId: userData.user.id,
+        speakerIndex,
+        transcription: meeting.transcription as Record<string, unknown>,
+      }).catch(() => {})
+    }
+  }
+
   revalidatePath(`/workspace/meetings/${meetingId}`)
   
-  // Return the updated speaker data
   return {
     id: existingSpeaker?.id || '',
     meeting_id: meetingId,
