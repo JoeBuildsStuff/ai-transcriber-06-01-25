@@ -117,7 +117,13 @@ export async function POST(req: NextRequest) {
         .filter((meetingId): meetingId is string => typeof meetingId === 'string')
     )
 
-    const targets = candidates
+    const candidatesWithAudioPath = candidates.filter(
+      (meeting) =>
+        typeof meeting.audio_file_path === 'string' &&
+        meeting.audio_file_path.trim().length > 0
+    )
+
+    const targets = candidatesWithAudioPath
       .filter((meeting) => includeLinked || !alreadyLinked.has(meeting.id))
       .slice(0, batchSize)
 
@@ -217,6 +223,8 @@ export async function POST(req: NextRequest) {
       includeLinked,
       batchSize,
       totalCandidates: candidates.length,
+      candidatesWithAudioPath: candidatesWithAudioPath.length,
+      skippedMissingAudioPath: candidates.length - candidatesWithAudioPath.length,
       attempted: targets.length,
       results,
     })

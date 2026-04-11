@@ -79,7 +79,7 @@ begin
     v_meeting.meeting_at,
     null
   )
-  on conflict (user_id, content_fingerprint) do update
+  on conflict on constraint voice_memo_ingest_user_fingerprint_unique do update
   set
     updated_at = now(),
     meeting_id = coalesce(
