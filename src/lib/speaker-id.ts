@@ -8,6 +8,7 @@ interface StoreProfileParams {
   userId: string
   speakerIndex: number
   transcription: Record<string, unknown>
+  accessToken?: string
 }
 
 /**
@@ -19,7 +20,9 @@ export async function storeVoiceProfile(params: StoreProfileParams): Promise<voi
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     }
-    if (SPEAKER_ID_API_KEY) {
+    if (params.accessToken) {
+      headers["Authorization"] = `Bearer ${params.accessToken}`
+    } else if (SPEAKER_ID_API_KEY) {
       headers["X-API-Key"] = SPEAKER_ID_API_KEY
     }
 

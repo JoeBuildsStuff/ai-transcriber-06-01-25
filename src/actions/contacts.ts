@@ -151,6 +151,7 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
       .single()
 
     if (meeting?.audio_file_path && meeting?.transcription) {
+      const { data: { session } } = await supabase.auth.getSession()
       storeVoiceProfile({
         audioStoragePath: meeting.audio_file_path,
         contactId,
@@ -158,6 +159,7 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
         userId: userData.user.id,
         speakerIndex,
         transcription: meeting.transcription as Record<string, unknown>,
+        accessToken: session?.access_token,
       }).catch(() => {})
     }
   }
