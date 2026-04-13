@@ -1,4 +1,4 @@
-import { FormattedTranscriptGroup, MeetingSpeakerWithContact } from "@/types";
+import { FormattedTranscriptGroup, MeetingSpeakerWithContact, SpeakerIdentifyResponse } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Meetings } from "../_lib/validations";
@@ -13,6 +13,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 interface MeetingTranscriptProps {
     meetingData: Meetings;
     meetingSpeakers: MeetingSpeakerWithContact[];
+    speakerSuggestions: SpeakerIdentifyResponse;
     meetingId: string;
     onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
     onSeekAndPlay?: (time: number) => void;
@@ -20,7 +21,16 @@ interface MeetingTranscriptProps {
     onUploadSuccess?: () => void;
 }
 
-export default function MeetingTranscript({ meetingData, meetingSpeakers, meetingId, onSpeakersUpdate, onSeekAndPlay, currentTime = 0, onUploadSuccess }: MeetingTranscriptProps) {
+export default function MeetingTranscript({
+    meetingData,
+    meetingSpeakers,
+    speakerSuggestions,
+    meetingId,
+    onSpeakersUpdate,
+    onSeekAndPlay,
+    currentTime = 0,
+    onUploadSuccess,
+}: MeetingTranscriptProps) {
     const { getSpeakerColor, getSpeakerDisplayName } = useSpeakerUtils(meetingSpeakers);
     const transcriptRef = useRef<HTMLDivElement>(null);
     const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -129,6 +139,7 @@ export default function MeetingTranscript({ meetingData, meetingSpeakers, meetin
             {/* Speaker badges row */}
             <SpeakerBadgeHeader 
                 meetingSpeakers={meetingSpeakers} 
+                speakerSuggestions={speakerSuggestions}
                 meetingId={meetingId}
                 onSpeakersUpdate={onSpeakersUpdate}
                 formattedTranscript={meetingData.formatted_transcript as unknown as FormattedTranscriptGroup[]}

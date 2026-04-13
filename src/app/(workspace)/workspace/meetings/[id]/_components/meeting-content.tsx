@@ -5,7 +5,7 @@ import { AudioPlayerRef } from '@/components/audio-player-lazy';
 import MeetingHeader from './meeting-header';
 import MeetingBody from './meeting-body';
 import { Meetings } from '@/app/(workspace)/workspace/meetings/[id]/_lib/validations';
-import { MeetingSpeakerWithContact, MeetingAttendeeViewData } from '@/types';
+import { MeetingSpeakerWithContact, MeetingAttendeeViewData, SpeakerIdentifyResponse } from '@/types';
 import type { Database } from '@/types/supabase';
 
 type TagRow = Database['ai_transcriber']['Tables']['tags']['Row'];
@@ -14,12 +14,21 @@ interface MeetingContentProps {
     id: string;
     meetingData: Meetings;
     meetingSpeakers: MeetingSpeakerWithContact[];
+    speakerSuggestions: SpeakerIdentifyResponse;
     meetingAttendees: MeetingAttendeeViewData[];
     meetingTags: TagRow[];
     onUploadSuccess?: () => void;
 }
 
-export default function MeetingContent({ id, meetingData, meetingSpeakers, meetingAttendees, meetingTags, onUploadSuccess }: MeetingContentProps) {
+export default function MeetingContent({
+    id,
+    meetingData,
+    meetingSpeakers,
+    speakerSuggestions,
+    meetingAttendees,
+    meetingTags,
+    onUploadSuccess,
+}: MeetingContentProps) {
     const audioPlayerRef = useRef<AudioPlayerRef>(null);
     const [currentTime, setCurrentTime] = useState(0);
 
@@ -56,6 +65,7 @@ export default function MeetingContent({ id, meetingData, meetingSpeakers, meeti
             <MeetingBody 
                 meetingData={meetingData} 
                 meetingSpeakers={meetingSpeakers} 
+                speakerSuggestions={speakerSuggestions}
                 meetingId={id}
                 onSeekAndPlay={handleSeekAndPlay}
                 currentTime={currentTime}

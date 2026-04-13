@@ -2,9 +2,30 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { MeetingSpeaker, MeetingSpeakerWithContact } from "@/types"
+import {
+  MeetingSpeaker,
+  MeetingSpeakerWithContact,
+  SpeakerAssignmentSource,
+  SpeakerIdentifyResponse,
+  SpeakerSuggestionSnapshot,
+} from "@/types"
 import type { Database } from "@/types/supabase"
-import { storeVoiceProfile } from "@/lib/speaker-id"
+import { identifySpeakers, storeVoiceProfile } from "@/lib/speaker-id"
+
+type ApplyMeetingSpeakerAssignmentArgs =
+  Database["ai_transcriber"]["Functions"]["apply_meeting_speaker_assignment"]["Args"]
+
+type ApplyMeetingSpeakerAssignmentRow =
+  Database["ai_transcriber"]["Functions"]["apply_meeting_speaker_assignment"]["Returns"][number]
+
+export interface UpdateMeetingSpeakerInput {
+  meetingId: string
+  speakerIndex: number
+  contactId: string | null
+  assignmentSource: SpeakerAssignmentSource
+  suggestions?: SpeakerSuggestionSnapshot | null
+  modelVersion?: string | null
+}
 
 
 export async function updateSpeakerContacts(meetingId: string, speakerContacts: Record<number, string>) {
@@ -65,7 +86,14 @@ export async function updateSpeakerContacts(meetingId: string, speakerContacts: 
   return data.speaker_names
 }
 
-export async function updateMeetingSpeaker(meetingId: string, speakerIndex: number, contactId: string | null) {
+export async function updateMeetingSpeaker({
+  meetingId,
+  speakerIndex,
+  contactId,
+  assignmentSource,
+  suggestions = null,
+  modelVersion = null,
+}: UpdateMeetingSpeakerInput) {
   const supabase = await createClient()
 
   const { data: userData } = await supabase.auth.getUser()
@@ -73,74 +101,31 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
     throw new Error("You must be logged in to update speaker associations.")
   }
 
-  // For now, let's create a simplified version that works with the existing structure
-  // We'll use a hybrid approach - update meeting_speakers table and also keep speaker_names in sync
-
-  const now = new Date().toISOString()
-  
-  // First, check if meeting_speakers entry exists for this speaker
-  const { data: existingSpeaker } = await supabase
-    .schema('ai_transcriber')
-    .from('meeting_speakers')
-    .select('*')
-    .eq('meeting_id', meetingId)
-    .eq('speaker_index', speakerIndex)
-    .maybeSingle()
-
-  let speakerName = `Speaker ${speakerIndex}`
-  
-  // Get contact name if contactId is provided
-  if (contactId) {
-    const { data: contact } = await supabase
-      .from('new_contacts')
-      .select('first_name, last_name')
-      .eq('id', contactId)
-      .eq('user_id', userData.user.id)
-      .single()
-
-    if (contact) {
-      const typedContact = contact as { first_name: string | null; last_name: string | null }
-      speakerName = `${typedContact.first_name || ''} ${typedContact.last_name || ''}`.trim() || `Speaker ${speakerIndex}`
+  const { data, error } = await (
+    supabase as unknown as {
+      rpc: (
+        name: "apply_meeting_speaker_assignment",
+        params: ApplyMeetingSpeakerAssignmentArgs
+      ) => Promise<{
+        data: ApplyMeetingSpeakerAssignmentRow[] | null
+        error: { message: string } | null
+      }>
     }
+  ).rpc("apply_meeting_speaker_assignment", {
+    p_meeting_id: meetingId,
+    p_speaker_index: speakerIndex,
+    p_contact_id: contactId,
+    p_client: "web",
+    p_assignment_source: assignmentSource,
+    p_suggestions: suggestions as ApplyMeetingSpeakerAssignmentArgs["p_suggestions"],
+    p_model_version: modelVersion,
+  })
+
+  if (error || !data?.[0]) {
+    throw new Error(error?.message ?? "Failed to update speaker association")
   }
 
-  // Update or insert meeting_speakers record
-  if (existingSpeaker) {
-    const updateData: Database['ai_transcriber']['Tables']['meeting_speakers']['Update'] = {
-      contact_id: contactId,
-      speaker_name: speakerName,
-      updated_at: now
-    }
-    const { error: updateError } = await supabase
-      .schema('ai_transcriber')
-      .from('meeting_speakers')
-      .update(updateData)
-      .eq('id', existingSpeaker.id)
-
-    if (updateError) {
-      throw new Error(`Failed to update speaker: ${updateError.message}`)
-    }
-  } else {
-    const insertData: Database['ai_transcriber']['Tables']['meeting_speakers']['Insert'] = {
-      meeting_id: meetingId,
-      contact_id: contactId,
-      speaker_index: speakerIndex,
-      speaker_name: speakerName,
-      role: 'attendee',
-      is_primary_speaker: speakerIndex === 0,
-      identified_at: now,
-      created_at: now,
-      updated_at: now
-    }
-    const { error: insertError } = await supabase
-      .schema('ai_transcriber')
-      .from('meeting_speakers')
-      .insert(insertData)
-
-    if (insertError) {
-      throw new Error(`Failed to create speaker: ${insertError.message}`)
-    }
-  }
+  const speakerRow = data[0]
 
   if (contactId) {
     const { data: meeting } = await supabase
@@ -165,20 +150,53 @@ export async function updateMeetingSpeaker(meetingId: string, speakerIndex: numb
   }
 
   revalidatePath(`/workspace/meetings/${meetingId}`)
-  
-  return {
-    id: existingSpeaker?.id || '',
-    meeting_id: meetingId,
-    contact_id: contactId,
-    speaker_index: speakerIndex,
-    speaker_name: speakerName,
-    confidence_score: null,
-    role: 'attendee',
-    is_primary_speaker: speakerIndex === 0,
-    identified_at: now,
-    created_at: existingSpeaker?.created_at || now,
-    updated_at: now
-  } as MeetingSpeaker
+
+  return speakerRow as MeetingSpeaker
+}
+
+export async function getMeetingSpeakerSuggestions(meetingId: string): Promise<SpeakerIdentifyResponse> {
+  const supabase = await createClient()
+
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    throw new Error("You must be logged in to view speaker suggestions.")
+  }
+
+  const { data: meeting, error } = await supabase
+    .schema("ai_transcriber")
+    .from("meetings")
+    .select("audio_file_path, transcription")
+    .eq("id", meetingId)
+    .eq("user_id", userData.user.id)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to load meeting audio for speaker suggestions: ${error.message}`)
+  }
+
+  if (!meeting?.audio_file_path || !meeting.transcription) {
+    return {
+      speakers: [],
+      model_version: null,
+    }
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession()
+
+  try {
+    return await identifySpeakers({
+      audioStoragePath: meeting.audio_file_path,
+      userId: userData.user.id,
+      transcription: meeting.transcription as Record<string, unknown>,
+      accessToken: sessionData.session?.access_token,
+    })
+  } catch (identifyError) {
+    console.error("Failed to load speaker suggestions", identifyError)
+    return {
+      speakers: [],
+      model_version: null,
+    }
+  }
 }
 
 export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpeakerWithContact[]> {
@@ -359,5 +377,3 @@ async function transformSpeakersData(
     }
   }) as MeetingSpeakerWithContact[]
 }
-
-

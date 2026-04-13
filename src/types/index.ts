@@ -105,6 +105,37 @@ export interface MeetingSpeakerWithContact extends MeetingSpeaker {
   contact: Contact | null;
 }
 
+export type SpeakerAssignmentSource = 'manual' | 'suggestion' | 'new_contact'
+
+export interface SpeakerSuggestionMatch {
+  contact_id: string
+  first_name: string
+  last_name: string
+  similarity: number
+}
+
+export interface SpeakerSuggestionResult {
+  speaker_index: number
+  matches: SpeakerSuggestionMatch[]
+}
+
+export interface SpeakerSuggestionSnapshotMatch {
+  contact_id: string
+  similarity: number
+  rank: number
+}
+
+export interface SpeakerSuggestionSnapshot {
+  top_contact_id: string | null
+  top_similarity: number | null
+  matches: SpeakerSuggestionSnapshotMatch[]
+}
+
+export interface SpeakerIdentifyResponse {
+  speakers: SpeakerSuggestionResult[]
+  model_version: string | null
+}
+
 // ===== MEETING ATTENDEE TYPES =====
 export interface MeetingAttendee {
   id: string;

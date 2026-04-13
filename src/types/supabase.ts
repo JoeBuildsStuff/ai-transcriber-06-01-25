@@ -276,6 +276,94 @@ export type Database = {
           },
         ]
       }
+      comment_threads: {
+        Row: {
+          anchor_exact: string
+          anchor_from: number
+          anchor_prefix: string
+          anchor_suffix: string
+          anchor_to: number
+          created_at: string
+          created_by: string
+          document_id: string
+          id: string
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anchor_exact?: string
+          anchor_from: number
+          anchor_prefix?: string
+          anchor_suffix?: string
+          anchor_to: number
+          created_at?: string
+          created_by: string
+          document_id: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anchor_exact?: string
+          anchor_from?: number
+          anchor_prefix?: string
+          anchor_suffix?: string
+          anchor_to?: number
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_threads_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "comment_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_notes: {
         Row: {
           contact_id: string
@@ -359,6 +447,75 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      local_voice_memos: {
+        Row: {
+          absolute_path: string
+          base64_id: string
+          checksum: string | null
+          created_at: string
+          created_at_local: string | null
+          duration_seconds: number | null
+          file_name: string
+          id: string
+          last_seen_at: string
+          linked_meeting_id: string | null
+          metadata: Json | null
+          normalized_identifiers: string[]
+          supabase_audio_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          absolute_path: string
+          base64_id: string
+          checksum?: string | null
+          created_at?: string
+          created_at_local?: string | null
+          duration_seconds?: number | null
+          file_name: string
+          id: string
+          last_seen_at?: string
+          linked_meeting_id?: string | null
+          metadata?: Json | null
+          normalized_identifiers?: string[]
+          supabase_audio_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          absolute_path?: string
+          base64_id?: string
+          checksum?: string | null
+          created_at?: string
+          created_at_local?: string | null
+          duration_seconds?: number | null
+          file_name?: string
+          id?: string
+          last_seen_at?: string
+          linked_meeting_id?: string | null
+          metadata?: Json | null
+          normalized_identifiers?: string[]
+          supabase_audio_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "local_voice_memos_linked_meeting_id_fkey"
+            columns: ["linked_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "local_voice_memos_linked_meeting_id_fkey"
+            columns: ["linked_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meeting_attendees: {
         Row: {
@@ -611,6 +768,90 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      speaker_match_events: {
+        Row: {
+          client: string
+          created_at: string
+          id: string
+          meeting_id: string
+          model_version: string | null
+          previous_contact_id: string | null
+          selected_contact_id: string | null
+          selection_kind: string
+          speaker_index: number
+          suggestions_jsonb: Json | null
+          top_suggested_contact_id: string | null
+          top_suggested_similarity: number | null
+          user_id: string
+        }
+        Insert: {
+          client: string
+          created_at?: string
+          id?: string
+          meeting_id: string
+          model_version?: string | null
+          previous_contact_id?: string | null
+          selected_contact_id?: string | null
+          selection_kind: string
+          speaker_index: number
+          suggestions_jsonb?: Json | null
+          top_suggested_contact_id?: string | null
+          top_suggested_similarity?: number | null
+          user_id?: string
+        }
+        Update: {
+          client?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          model_version?: string | null
+          previous_contact_id?: string | null
+          selected_contact_id?: string | null
+          selection_kind?: string
+          speaker_index?: number
+          suggestions_jsonb?: Json | null
+          top_suggested_contact_id?: string | null
+          top_suggested_similarity?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_match_events_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_match_events_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_match_events_previous_contact_id_fkey"
+            columns: ["previous_contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_match_events_selected_contact_id_fkey"
+            columns: ["selected_contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_match_events_top_suggested_contact_id_fkey"
+            columns: ["top_suggested_contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -919,94 +1160,6 @@ export type Database = {
         }
         Relationships: []
       }
-      comment_threads: {
-        Row: {
-          id: string
-          document_id: string
-          created_by: string
-          status: string
-          anchor_from: number
-          anchor_to: number
-          anchor_exact: string
-          anchor_prefix: string
-          anchor_suffix: string
-          resolved_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          document_id: string
-          created_by: string
-          status?: string
-          anchor_from: number
-          anchor_to: number
-          anchor_exact?: string
-          anchor_prefix?: string
-          anchor_suffix?: string
-          resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          document_id?: string
-          created_by?: string
-          status?: string
-          anchor_from?: number
-          anchor_to?: number
-          anchor_exact?: string
-          anchor_prefix?: string
-          anchor_suffix?: string
-          resolved_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "comment_threads_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "notes"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      comments: {
-        Row: {
-          id: string
-          thread_id: string
-          user_id: string
-          content: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          thread_id: string
-          user_id: string
-          content: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          thread_id?: string
-          user_id?: string
-          content?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "comments_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "comment_threads"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       saved_views: {
         Row: {
           created_at: string
@@ -1039,6 +1192,61 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      speaker_voice_profiles: {
+        Row: {
+          contact_id: string
+          created_at: string
+          embedding: string
+          id: string
+          meeting_id: string
+          model_version: string
+          segment_count: number
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          embedding: string
+          id?: string
+          meeting_id: string
+          model_version?: string
+          segment_count?: number
+          user_id?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          embedding?: string
+          id?: string
+          meeting_id?: string
+          model_version?: string
+          segment_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_voice_profiles_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "new_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_voice_profiles_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_voice_profiles_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings_with_attendee_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -1440,28 +1648,28 @@ export type Database = {
       }
     }
     Functions: {
-      claim_or_resume_memo_ingest: {
+      apply_meeting_speaker_assignment: {
         Args: {
-          p_bump_attempt?: boolean
-          p_content_fingerprint: string
-          p_create_meeting_if_needed?: boolean
-          p_desktop_memo_key?: string | null
-          p_last_error?: string | null
-          p_local_path_snapshot?: string | null
-          p_meeting_at?: string | null
-          p_original_file_name?: string | null
-          p_recording_created_at?: string | null
-          p_source: string
-          p_stage?: string | null
-          p_status?: string | null
-          p_storage_path?: string | null
+          p_assignment_source?: string
+          p_client?: string
+          p_contact_id?: string | null
+          p_meeting_id: string
+          p_model_version?: string | null
+          p_speaker_index: number
+          p_suggestions?: Json | null
         }
         Returns: {
-          ingest_id: string
-          meeting_id: string | null
-          stage: string
-          status: string
-          storage_path: string | null
+          confidence_score: number | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          identified_at: string | null
+          is_primary_speaker: boolean | null
+          meeting_id: string
+          role: string | null
+          speaker_index: number
+          speaker_name: string | null
+          updated_at: string | null
         }[]
       }
       backfill_voice_memo_ingest_from_meeting: {
@@ -1478,34 +1686,50 @@ export type Database = {
           status: string
         }[]
       }
-      is_message_owner: {
-        Args: { p_message_id: string }
-        Returns: boolean
+      batch_update_note_comment_thread_anchors: {
+        Args: { p_anchors: Json; p_document_id: string; p_now?: string }
+        Returns: undefined
       }
-      is_session_owner: {
-        Args: { p_session_id: string }
-        Returns: boolean
+      claim_or_resume_memo_ingest: {
+        Args: {
+          p_bump_attempt?: boolean
+          p_content_fingerprint: string
+          p_create_meeting_if_needed?: boolean
+          p_desktop_memo_key?: string
+          p_last_error?: string
+          p_local_path_snapshot?: string
+          p_meeting_at?: string
+          p_original_file_name?: string
+          p_recording_created_at?: string
+          p_source: string
+          p_stage?: string
+          p_status?: string
+          p_storage_path?: string
+        }
+        Returns: {
+          ingest_id: string
+          meeting_id: string
+          stage: string
+          status: string
+          storage_path: string
+        }[]
       }
       create_note_comment_thread_with_root: {
         Args: {
-          p_document_id: string
-          p_anchor_from: number
-          p_anchor_to: number
           p_anchor_exact: string
+          p_anchor_from: number
           p_anchor_prefix: string
           p_anchor_suffix: string
+          p_anchor_to: number
           p_content: string
-        }
-        Returns: { thread_id: string }[]
-      }
-      batch_update_note_comment_thread_anchors: {
-        Args: {
           p_document_id: string
-          p_anchors: Json
-          p_now?: string
         }
-        Returns: undefined
+        Returns: {
+          thread_id: string
+        }[]
       }
+      is_message_owner: { Args: { p_message_id: string }; Returns: boolean }
+      is_session_owner: { Args: { p_session_id: string }; Returns: boolean }
     }
     Enums: {
       chat_action_type:

@@ -1,7 +1,13 @@
 "use client";
 
-import { MeetingSpeakerWithContact, FormattedTranscriptGroup } from "@/types";
-
+import {
+    FormattedTranscriptGroup,
+    MeetingSpeakerWithContact,
+    SpeakerAssignmentSource,
+    SpeakerIdentifyResponse,
+    SpeakerSuggestionResult,
+    SpeakerSuggestionSnapshot,
+} from "@/types";
 import { useSpeakerUtils } from "@/hooks/use-speaker-utils";
 import { getAllContacts } from "@/app/(workspace)/workspace/contacts/_lib/actions";
 import { updateMeetingSpeaker } from "@/actions/contacts";
@@ -19,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface SpeakerBadgeHeaderProps {
     meetingSpeakers: MeetingSpeakerWithContact[];
+    speakerSuggestions: SpeakerIdentifyResponse;
     meetingId: string;
     onSpeakersUpdate: (speakers: MeetingSpeakerWithContact[]) => void;
     formattedTranscript?: FormattedTranscriptGroup[];
@@ -37,9 +44,10 @@ interface Contact {
     user_id?: string;
 }
 
-export default function SpeakerBadgeHeader({ 
-    meetingSpeakers, 
-    meetingId, 
+export default function SpeakerBadgeHeader({
+    meetingSpeakers,
+    speakerSuggestions,
+    meetingId,
     onSpeakersUpdate,
     formattedTranscript,
     onSeekAndPlay
@@ -51,6 +59,26 @@ export default function SpeakerBadgeHeader({
     const [isLoading, setIsLoading] = useState(false);
     const [, startTransition] = useTransition();
 
+    const getSuggestionResult = (speakerIndex: number): SpeakerSuggestionResult | undefined =>
+        speakerSuggestions.speakers.find((speaker) => speaker.speaker_index === speakerIndex);
+
+    const buildSuggestionSnapshot = (speakerIndex: number): SpeakerSuggestionSnapshot | null => {
+        const suggestion = getSuggestionResult(speakerIndex);
+        if (!suggestion) return null;
+
+        const matches = suggestion.matches.map((match, index) => ({
+            contact_id: match.contact_id,
+            similarity: match.similarity,
+            rank: index + 1,
+        }));
+
+        return {
+            top_contact_id: matches[0]?.contact_id ?? null,
+            top_similarity: matches[0]?.similarity ?? null,
+            matches,
+        };
+    };
+
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
@@ -59,33 +87,28 @@ export default function SpeakerBadgeHeader({
 
     const getSpeakerTimestamps = (speakerIndex: number) => {
         if (!formattedTranscript) return [];
-        
-        // Get all segments for this speaker
+
         const speakerSegments = formattedTranscript.filter(segment => segment.speaker === speakerIndex);
-        
-        // Calculate duration for each segment by finding the next segment in the full transcript
+
         const segmentsWithDuration = speakerSegments.map((segment) => {
-            // Find the index of this segment in the full transcript
-            const segmentIndex = formattedTranscript.findIndex(s => 
+            const segmentIndex = formattedTranscript.findIndex(s =>
                 s.speaker === segment.speaker && s.start === segment.start && s.text === segment.text
             );
-            
-            // Get the next segment in the full transcript (regardless of speaker)
+
             const nextSegment = formattedTranscript[segmentIndex + 1];
-            const nextStartTime = nextSegment ? nextSegment.start : segment.start + 5; // Default 5 seconds if no next segment
+            const nextStartTime = nextSegment ? nextSegment.start : segment.start + 5;
             const duration = nextStartTime - segment.start;
-            
+
             return {
                 start: segment.start,
-                duration: duration,
+                duration,
                 text: segment.text
             };
         });
-        
-        // Sort by duration (longest first) and return segments with duration info
+
         return segmentsWithDuration
             .sort((a, b) => b.duration - a.duration)
-            .slice(0, 10); // Limit to first 10 timestamps
+            .slice(0, 10);
     };
 
     useEffect(() => {
@@ -96,7 +119,7 @@ export default function SpeakerBadgeHeader({
                 setContacts(contactsData);
                 setFilteredContacts(contactsData);
             } catch (error) {
-                console.error('Error loading contacts:', error);
+                console.error("Error loading contacts:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -105,52 +128,63 @@ export default function SpeakerBadgeHeader({
         loadContacts();
     }, []);
 
-    // Filter contacts based on search term
     useEffect(() => {
         if (!searchTerm.trim()) {
             setFilteredContacts(contacts);
         } else {
-            const filtered = contacts.filter(contact => 
-                contact.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                contact.primary_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                contact.company.toLowerCase().includes(searchTerm.toLowerCase())
+            const lowerSearch = searchTerm.toLowerCase();
+            const filtered = contacts.filter(contact =>
+                contact.display_name.toLowerCase().includes(lowerSearch) ||
+                contact.primary_email.toLowerCase().includes(lowerSearch) ||
+                contact.company.toLowerCase().includes(lowerSearch)
             );
             setFilteredContacts(filtered);
         }
     }, [searchTerm, contacts]);
 
-    const handleAssociateContact = (speakerIndex: number, contactId: string | null) => {
+    const handleAssociateContact = (
+        speakerIndex: number,
+        contactId: string | null,
+        assignmentSource: SpeakerAssignmentSource
+    ) => {
         startTransition(async () => {
             try {
-                await updateMeetingSpeaker(meetingId, speakerIndex, contactId);
-                
-                // Update the speakers list
-                const updatedSpeakers = meetingSpeakers.map(speaker => {
-                    if (speaker.speaker_index === speakerIndex) {
-                        if (contactId) {
-                            const contact = contacts.find(c => c.id === contactId);
-                            return { 
-                                ...speaker, 
-                                contact_id: contactId, 
-                                contact: contact ? {
-                                    ...contact,
-                                    created_at: contact.created_at || '',
-                                    updated_at: contact.updated_at || '',
-                                    user_id: contact.user_id || ''
-                                } : null
-                            };
-                        } else {
-                            return { ...speaker, contact_id: null, contact: null };
-                        }
-                    }
-                    return speaker;
+                await updateMeetingSpeaker({
+                    meetingId,
+                    speakerIndex,
+                    contactId,
+                    assignmentSource,
+                    suggestions: buildSuggestionSnapshot(speakerIndex),
+                    modelVersion: speakerSuggestions.model_version,
                 });
-                
+
+                const updatedSpeakers = meetingSpeakers.map(speaker => {
+                    if (speaker.speaker_index !== speakerIndex) {
+                        return speaker;
+                    }
+
+                    if (!contactId) {
+                        return { ...speaker, contact_id: null, contact: null };
+                    }
+
+                    const contact = contacts.find(c => c.id === contactId);
+                    return {
+                        ...speaker,
+                        contact_id: contactId,
+                        contact: contact ? {
+                            ...contact,
+                            created_at: contact.created_at || "",
+                            updated_at: contact.updated_at || "",
+                            user_id: contact.user_id || ""
+                        } : null
+                    };
+                });
+
                 onSpeakersUpdate(updatedSpeakers);
-                toast.success('Speaker association updated successfully');
+                toast.success("Speaker association updated successfully");
             } catch (error) {
-                console.error('Error updating speaker association:', error);
-                const errorMessage = error instanceof Error ? error.message : 'Failed to update speaker association';
+                console.error("Error updating speaker association:", error);
+                const errorMessage = error instanceof Error ? error.message : "Failed to update speaker association";
                 toast.error(errorMessage);
             }
         });
@@ -160,16 +194,19 @@ export default function SpeakerBadgeHeader({
         <div className="sticky top-0 z-10 flex flex-row gap-2 items-center bg-card/80 backdrop-blur-lg rounded-lg p-3 font-extralight">
             <span className="text-sm font-extralight">Speakers:</span>
             <div className="flex flex-wrap gap-2">
-                {meetingSpeakers.map((speaker) => (
-                    <Popover key={speaker.speaker_index}>
-                        <PopoverTrigger>
-                            <Badge
-                                className={`${getSpeakerColor(speaker.speaker_index)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-extralight`}
-                            >
-                                {getSpeakerDisplayName(speaker.speaker_index)}
-                            </Badge>
-                        </PopoverTrigger>
-                        <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[20rem] h-[22rem] p-2.5 relative">
+                {meetingSpeakers.map((speaker) => {
+                    const suggestionMatches = getSuggestionResult(speaker.speaker_index)?.matches.slice(0, 3) ?? [];
+
+                    return (
+                        <Popover key={speaker.speaker_index}>
+                            <PopoverTrigger>
+                                <Badge
+                                    className={`${getSpeakerColor(speaker.speaker_index)} inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-extralight`}
+                                >
+                                    {getSpeakerDisplayName(speaker.speaker_index)}
+                                </Badge>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" side="bottom" className="rounded-2xl gap-2 flex flex-col w-[22rem] h-[26rem] p-2.5 relative">
                                 <ScrollArea className="h-fit w-full">
                                     <div className="flex flex-row gap-2">
                                         {getSpeakerTimestamps(speaker.speaker_index).length > 0 ? (
@@ -181,7 +218,7 @@ export default function SpeakerBadgeHeader({
                                                                 className="cursor-pointer font-extralight"
                                                                 onClick={() => onSeekAndPlay?.(segment.start)}
                                                             >
-                                                                <Badge 
+                                                                <Badge
                                                                     variant="secondary"
                                                                     className="hover:bg-secondary/80 font-extralight"
                                                                 >
@@ -190,7 +227,9 @@ export default function SpeakerBadgeHeader({
                                                             </div>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="font-extralight">
-                                                            <p className="font-extralight">Jump to {formatTime(segment.start)} ({segment.duration.toFixed(1)}s)</p>
+                                                            <p className="font-extralight">
+                                                                Jump to {formatTime(segment.start)} ({segment.duration.toFixed(1)}s)
+                                                            </p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
@@ -203,7 +242,56 @@ export default function SpeakerBadgeHeader({
                                     </div>
                                     <ScrollBar orientation="horizontal" />
                                 </ScrollArea>
+
                                 <div className="flex flex-col gap-2">
+                                    {suggestionMatches.length > 0 && (
+                                        <div className="flex flex-col gap-2 rounded-xl border bg-accent/40 p-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-medium text-muted-foreground">
+                                                    Voice match suggestions
+                                                </span>
+                                                {speakerSuggestions.model_version && (
+                                                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                                                        {speakerSuggestions.model_version}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {suggestionMatches.map((match) => {
+                                                const isAssigned = speaker.contact_id === match.contact_id;
+                                                const displayName = [match.first_name, match.last_name].filter(Boolean).join(" ").trim() || "Unknown Contact";
+
+                                                return (
+                                                    <div
+                                                        key={`${speaker.speaker_index}-${match.contact_id}`}
+                                                        className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1.5"
+                                                    >
+                                                        <div className="flex min-w-0 flex-1 flex-col">
+                                                            <span className="truncate text-sm font-medium">
+                                                                {displayName}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {Math.round(match.similarity * 100)}% match
+                                                            </span>
+                                                        </div>
+                                                        <Button
+                                                            variant={isAssigned ? "secondary" : "outline"}
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs"
+                                                            disabled={isAssigned}
+                                                            onClick={() => handleAssociateContact(
+                                                                speaker.speaker_index,
+                                                                match.contact_id,
+                                                                "suggestion"
+                                                            )}
+                                                        >
+                                                            {isAssigned ? "Assigned" : "Use"}
+                                                        </Button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
                                     <div className="relative">
                                         <Input
                                             placeholder="Search contacts..."
@@ -215,22 +303,27 @@ export default function SpeakerBadgeHeader({
                                             <SearchIcon size={16} />
                                         </div>
                                         {searchTerm && (
-                                            <Button variant="ghost" size="icon" onClick={() => setSearchTerm("")} className="text-muted-foreground/80 absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setSearchTerm("")}
+                                                className="text-muted-foreground/80 absolute inset-y-0 end-0 flex items-center justify-center pe-3 peer-disabled:opacity-50"
+                                            >
                                                 <X size={16} />
                                             </Button>
                                         )}
                                     </div>
-                                    <ScrollArea className="h-[13rem] w-full">
+
+                                    <ScrollArea className="h-[14rem] w-full">
                                         <div className="flex flex-col gap-2">
                                             {isLoading ? (
                                                 <div className="text-sm text-muted-foreground">Loading contacts...</div>
-                                            ) : filteredContacts.length > 0 ? (
+                                            ) : (
                                                 <>
-                                                    {/* Remove association option if speaker has a contact */}
                                                     {speaker.contact_id && (
-                                                        <div 
+                                                        <div
                                                             className="flex flex-col gap-1 p-2 rounded-md border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 cursor-pointer transition-colors font-extralight"
-                                                            onClick={() => handleAssociateContact(speaker.speaker_index, null)}
+                                                            onClick={() => handleAssociateContact(speaker.speaker_index, null, "manual")}
                                                         >
                                                             <div className="text-sm text-destructive flex items-center gap-2 font-extralight">
                                                                 <X size={14} />
@@ -238,20 +331,19 @@ export default function SpeakerBadgeHeader({
                                                             </div>
                                                         </div>
                                                     )}
-                                                    
-                                                    {/* Contact list */}
-                                                    {filteredContacts.map((contact) => {
+
+                                                    {filteredContacts.length > 0 ? filteredContacts.map((contact) => {
                                                         const isSelected = speaker.contact_id === contact.id;
                                                         return (
-                                                            <div 
-                                                                key={contact.id} 
+                                                            <div
+                                                                key={contact.id}
                                                                 className={cn(
                                                                     "flex flex-col gap-1 p-2 rounded-md border cursor-pointer transition-colors font-extralight",
-                                                                    isSelected 
-                                                                        ? 'bg-secondary border-primary' 
-                                                                        : 'hover:bg-secondary/50'
+                                                                    isSelected
+                                                                        ? "bg-secondary border-primary"
+                                                                        : "hover:bg-secondary/50"
                                                                 )}
-                                                                onClick={() => handleAssociateContact(speaker.speaker_index, contact.id)}
+                                                                onClick={() => handleAssociateContact(speaker.speaker_index, contact.id, "manual")}
                                                             >
                                                                 <div className="text-sm font-extralight">
                                                                     {contact.display_name}
@@ -268,25 +360,30 @@ export default function SpeakerBadgeHeader({
                                                                 )}
                                                             </div>
                                                         );
-                                                    })}
+                                                    }) : searchTerm ? (
+                                                        <div className="text-sm text-muted-foreground font-extralight">
+                                                            No contacts match your search
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-sm text-muted-foreground font-extralight">
+                                                            No contacts found
+                                                        </div>
+                                                    )}
                                                 </>
-                                            ) : searchTerm ? (
-                                                <div className="text-sm text-muted-foreground font-extralight">No contacts match your search</div>
-                                            ) : (
-                                                <div className="text-sm text-muted-foreground font-extralight">No contacts found</div>
                                             )}
                                         </div>
                                         <ScrollBar orientation="vertical" />
                                     </ScrollArea>
                                 </div>
-                                <Separator className="absolute bottom-13.5 -mx-2.5"  />
-                                {/* TODO: Enable this button to create a new contact */}
+
+                                <Separator className="absolute bottom-13.5 -mx-2.5" />
                                 <Button variant="secondary" className="w-full rounded-t-none rounded-b-lg border border-border font-extralight mt-1">
                                     Add new contact
                                 </Button>
-                        </PopoverContent>
-                    </Popover>
-                ))}
+                            </PopoverContent>
+                        </Popover>
+                    );
+                })}
             </div>
         </div>
     );

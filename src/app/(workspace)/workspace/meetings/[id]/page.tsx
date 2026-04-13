@@ -3,12 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMeeting } from "@/app/(workspace)/workspace/meetings/[id]/_lib/actions";
-import { getMeetingSpeakers, getMeetingAttendeesWithContacts } from "@/actions/contacts";
+import {
+    getMeetingAttendeesWithContacts,
+    getMeetingSpeakerSuggestions,
+    getMeetingSpeakers,
+} from "@/actions/contacts";
 import { getMeetingTags } from "@/actions/meetings";
 import MeetingContent from "./_components/meeting-content";
 import MeetingIdSkeleton from "./_components/skeleton";
 import { Meetings } from "./_lib/validations";
-import { MeetingSpeakerWithContact, MeetingAttendeeViewData, Tag } from "@/types";
+import {
+    MeetingSpeakerWithContact,
+    MeetingAttendeeViewData,
+    SpeakerIdentifyResponse,
+    Tag,
+} from "@/types";
 
 export default function Page({
     params,
@@ -21,6 +30,10 @@ export default function Page({
     const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>([]);
     const [meetingAttendees, setMeetingAttendees] = useState<MeetingAttendeeViewData[]>([]);
     const [meetingTags, setMeetingTags] = useState<Tag[]>([]);
+    const [speakerSuggestions, setSpeakerSuggestions] = useState<SpeakerIdentifyResponse>({
+        speakers: [],
+        model_version: null,
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -40,11 +53,12 @@ export default function Page({
             setError(null);
             
             try {
-                const [meeting, speakers, attendees, tags] = await Promise.all([
+                const [meeting, speakers, attendees, tags, suggestions] = await Promise.all([
                     getMeeting(id),
                     getMeetingSpeakers(id),
                     getMeetingAttendeesWithContacts(id),
-                    getMeetingTags(id)
+                    getMeetingTags(id),
+                    getMeetingSpeakerSuggestions(id),
                 ]);
 
                 if (!meeting || !meeting.data) {
@@ -56,6 +70,7 @@ export default function Page({
                 setMeetingSpeakers(speakers);
                 setMeetingAttendees(attendees);
                 setMeetingTags(tags);
+                setSpeakerSuggestions(suggestions);
             } catch (err) {
                 setError('Failed to load meeting data');
                 console.error('Error loading meeting data:', err);
@@ -73,11 +88,12 @@ export default function Page({
         // Also manually reload the data
         if (id) {
             const reloadData = async () => {
-                const [meeting, speakers, attendees, tags] = await Promise.all([
+                const [meeting, speakers, attendees, tags, suggestions] = await Promise.all([
                     getMeeting(id),
                     getMeetingSpeakers(id),
                     getMeetingAttendeesWithContacts(id),
-                    getMeetingTags(id)
+                    getMeetingTags(id),
+                    getMeetingSpeakerSuggestions(id),
                 ]);
 
                 if (meeting?.data) {
@@ -85,6 +101,7 @@ export default function Page({
                     setMeetingSpeakers(speakers);
                     setMeetingAttendees(attendees);
                     setMeetingTags(tags);
+                    setSpeakerSuggestions(suggestions);
                 }
             };
             reloadData();
@@ -104,6 +121,7 @@ export default function Page({
             id={id}
             meetingData={meetingData}
             meetingSpeakers={meetingSpeakers}
+            speakerSuggestions={speakerSuggestions}
             meetingAttendees={meetingAttendees}
             meetingTags={meetingTags}
             onUploadSuccess={handleUploadSuccess}

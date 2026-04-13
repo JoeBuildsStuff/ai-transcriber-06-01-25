@@ -6,18 +6,27 @@ import MeetingTranscript from "./meeting-transcript";
 import Summary from "./meeting-outline";
 import MeetingNotes from "./meeting-notes";
 import { Meetings } from "@/app/(workspace)/workspace/meetings/[id]/_lib/validations";
-import { MeetingSpeakerWithContact } from "@/types";
+import { MeetingSpeakerWithContact, SpeakerIdentifyResponse } from "@/types";
 
 interface MeetingBodyProps {
     meetingData: Meetings;
     meetingSpeakers: MeetingSpeakerWithContact[];
+    speakerSuggestions: SpeakerIdentifyResponse;
     meetingId: string;
     onSeekAndPlay?: (time: number) => void;
     currentTime?: number;
     onUploadSuccess?: () => void;
 }
 
-export default function MeetingBody({ meetingData, meetingSpeakers: initialMeetingSpeakers, meetingId, onSeekAndPlay, currentTime = 0, onUploadSuccess }: MeetingBodyProps) {
+export default function MeetingBody({
+    meetingData,
+    meetingSpeakers: initialMeetingSpeakers,
+    speakerSuggestions,
+    meetingId,
+    onSeekAndPlay,
+    currentTime = 0,
+    onUploadSuccess,
+}: MeetingBodyProps) {
     const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>(initialMeetingSpeakers);
 
     useEffect(() => {
@@ -36,6 +45,7 @@ export default function MeetingBody({ meetingData, meetingSpeakers: initialMeeti
                     <MeetingTranscript 
                         meetingData={meetingData} 
                         meetingSpeakers={meetingSpeakers} 
+                        speakerSuggestions={speakerSuggestions}
                         meetingId={meetingId}
                         onSpeakersUpdate={setMeetingSpeakers}
                         onSeekAndPlay={onSeekAndPlay}
