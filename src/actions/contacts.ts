@@ -11,6 +11,10 @@ import {
 } from "@/types"
 import type { Database } from "@/types/supabase"
 import { identifySpeakers, storeVoiceProfile } from "@/lib/speaker-id"
+import {
+  fetchCachedSpeakerSuggestions,
+  replaceCachedSpeakerSuggestions,
+} from "@/lib/speaker-suggestion-cache"
 
 type ApplyMeetingSpeakerAssignmentArgs =
   Database["ai_transcriber"]["Functions"]["apply_meeting_speaker_assignment"]["Args"]
@@ -162,6 +166,11 @@ export async function getMeetingSpeakerSuggestions(meetingId: string): Promise<S
     throw new Error("You must be logged in to view speaker suggestions.")
   }
 
+  const cached = await fetchCachedSpeakerSuggestions(supabase, meetingId)
+  if (cached) {
+    return cached
+  }
+
   const { data: meeting, error } = await supabase
     .schema("ai_transcriber")
     .from("meetings")
@@ -184,12 +193,18 @@ export async function getMeetingSpeakerSuggestions(meetingId: string): Promise<S
   const { data: sessionData } = await supabase.auth.getSession()
 
   try {
-    return await identifySpeakers({
+    const response = await identifySpeakers({
       audioStoragePath: meeting.audio_file_path,
       userId: userData.user.id,
       transcription: meeting.transcription as Record<string, unknown>,
       accessToken: sessionData.session?.access_token,
     })
+    try {
+      await replaceCachedSpeakerSuggestions(supabase, meetingId, userData.user.id, response)
+    } catch (cacheError) {
+      console.error("Failed to save cached speaker suggestions", cacheError)
+    }
+    return response
   } catch (identifyError) {
     console.error("Failed to load speaker suggestions", identifyError)
     return {

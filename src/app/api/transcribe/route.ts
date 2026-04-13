@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as deepgramClient } from "@deepgram/sdk";
 import { createClient as supabaseClient } from "@/lib/supabase/server";
+import { identifySpeakers } from "@/lib/speaker-id";
+import { replaceCachedSpeakerSuggestions } from "@/lib/speaker-suggestion-cache";
 
 const deepgram = deepgramClient(process.env.DEEPGRAM_API_KEY!);
 const encoder = new TextEncoder();
@@ -258,6 +260,31 @@ export async function POST(req: NextRequest) {
               .from('voice_memo_ingest')
               .update({ stage: 'processing', status: 'transcribed', last_error: null })
               .eq('meeting_id', finalMeetingId);
+          }
+
+          try {
+            await supabase
+              .schema('ai_transcriber')
+              .from('voice_memo_ingest')
+              .update({ stage: 'processing', status: 'identifying_speakers', last_error: null })
+              .eq('meeting_id', finalMeetingId);
+
+            const suggestions = await identifySpeakers({
+              audioStoragePath: filePath,
+              userId,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              transcription: deepgramResult as any,
+            });
+
+            await replaceCachedSpeakerSuggestions(supabase, finalMeetingId, userId, suggestions);
+
+            await supabase
+              .schema('ai_transcriber')
+              .from('voice_memo_ingest')
+              .update({ stage: 'processing', status: 'speakers_predicted', last_error: null })
+              .eq('meeting_id', finalMeetingId);
+          } catch (speakerSuggestionError) {
+            console.error('Failed to cache speaker suggestions during transcription:', speakerSuggestionError);
           }
 
           // Create initial meeting_speakers rows for each detected speaker
