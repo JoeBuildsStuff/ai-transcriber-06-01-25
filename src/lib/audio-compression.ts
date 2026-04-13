@@ -49,6 +49,12 @@ const convertFloat32ToInt16 = (samples: Float32Array): Int16Array => {
   return buffer
 }
 
+const toArrayBuffer = (chunk: Int8Array): ArrayBuffer => {
+  const bytes = new Uint8Array(chunk.length)
+  bytes.set(chunk)
+  return bytes.buffer
+}
+
 const getLameEncoderModule = async (): Promise<LameEncoderModule> => {
   if (lameEncoderModule) {
     return lameEncoderModule
@@ -94,19 +100,19 @@ const encodeMp3 = async (monoSamples: Float32Array, bitrateKbps: number): Promis
   const mp3Encoder = new lamejs.Mp3Encoder(1, TARGET_SAMPLE_RATE, bitrateKbps)
   const pcm16 = convertFloat32ToInt16(monoSamples)
   const chunkSize = 1152
-  const chunks: Int8Array[] = []
+  const chunks: ArrayBuffer[] = []
 
   for (let index = 0; index < pcm16.length; index += chunkSize) {
     const sampleChunk = pcm16.subarray(index, index + chunkSize)
     const encodedChunk = mp3Encoder.encodeBuffer(sampleChunk)
     if (encodedChunk.length > 0) {
-      chunks.push(encodedChunk)
+      chunks.push(toArrayBuffer(encodedChunk))
     }
   }
 
   const flushChunk = mp3Encoder.flush()
   if (flushChunk.length > 0) {
-    chunks.push(flushChunk)
+    chunks.push(toArrayBuffer(flushChunk))
   }
 
   return new Blob(chunks, { type: 'audio/mpeg' })
