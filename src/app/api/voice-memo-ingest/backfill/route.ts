@@ -25,6 +25,7 @@ type BackfillResult = {
   contentFingerprint?: string
   ingestId?: string
   stage?: string
+  ingestStatus?: string
 }
 
 type BackfillVoiceMemoIngestParams = {
@@ -38,6 +39,7 @@ type BackfillVoiceMemoIngestRow = {
   ingest_id: string
   meeting_id: string
   stage: string
+  status: string
 }
 
 function clampBatchSize(value: unknown): number {
@@ -215,6 +217,7 @@ export async function POST(req: NextRequest) {
         contentFingerprint,
         ingestId: row?.ingest_id ?? undefined,
         stage: row?.stage ?? undefined,
+        ingestStatus: row?.status ?? undefined,
       })
     }
 

@@ -201,49 +201,55 @@ export async function getMeetingSpeakers(meetingId: string): Promise<MeetingSpea
     throw new Error(`Failed to fetch speakers: ${error.message}`)
   }
 
-  // If no speakers exist in meeting_speakers table, try to create them from the meeting's speaker_names
-  if (!speakers || speakers.length === 0) {
-    console.log(`No speakers found in meeting_speakers table for meeting ${meetingId}, checking speaker_names...`)
-    
-    // Get the meeting to check speaker_names
-    //TODO: This is likely not needed anymore since refactoring
-    const { data: meeting } = await supabase
-      .schema('ai_transcriber')
-      .from('meetings')
-      .select('speaker_names')
-      .eq('id', meetingId)
-      .eq('user_id', userData.user.id)
-      .single()
+  const meetingSpeakers = speakers || []
 
-         if (meeting?.speaker_names) {
-       const speakerNumbers = Object.keys(meeting.speaker_names).map(k => parseInt(k, 10)).sort((a, b) => a - b)
-       
-       // Create meeting_speakers rows for each speaker
-       for (const speakerIndex of speakerNumbers) {
-         try {
-           await updateMeetingSpeaker(meetingId, speakerIndex, null)
-         } catch (error) {
-           console.error(`Failed to create speaker row for speaker ${speakerIndex}:`, error)
-         }
-       }
-      
-      // Retry fetching speakers
-      const { data: newSpeakers } = await supabase
-        .schema('ai_transcriber')
-        .from('meeting_speakers')
-        .select('id, contact_id, speaker_index, speaker_name')
-        .eq('meeting_id', meetingId)
-        .order('speaker_index')
-      
-      if (newSpeakers) {
-        return transformSpeakersData(newSpeakers, userData.user.id, supabase, meetingId)
-      }
-    }
-    
-    return []
+  // Merge saved rows with detected speaker indices from meeting payloads so
+  // orphaned diarized speakers remain visible in the UI.
+  const { data: meeting } = await supabase
+    .schema('ai_transcriber')
+    .from('meetings')
+    .select('speaker_names, formatted_transcript')
+    .eq('id', meetingId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle()
+
+  const speakerIndices = new Set<number>(meetingSpeakers.map(s => s.speaker_index))
+
+  if (meeting?.speaker_names && typeof meeting.speaker_names === 'object') {
+    Object.keys(meeting.speaker_names).forEach((key) => {
+      const parsed = Number.parseInt(key, 10)
+      if (!Number.isNaN(parsed)) speakerIndices.add(parsed)
+    })
   }
 
-  return transformSpeakersData(speakers, userData.user.id, supabase, meetingId)
+  if (Array.isArray(meeting?.formatted_transcript)) {
+    for (const row of meeting.formatted_transcript as Array<Record<string, unknown>>) {
+      const rawSpeaker = row.speaker
+      const parsed = typeof rawSpeaker === 'number'
+        ? rawSpeaker
+        : typeof rawSpeaker === 'string'
+          ? Number.parseInt(rawSpeaker, 10)
+          : Number.NaN
+      if (!Number.isNaN(parsed)) speakerIndices.add(parsed)
+    }
+  }
+
+  const existingByIndex = new Map(meetingSpeakers.map(s => [s.speaker_index, s]))
+  const mergedSpeakers = Array.from(speakerIndices)
+    .sort((a, b) => a - b)
+    .map((speakerIndex) => {
+      const existing = existingByIndex.get(speakerIndex)
+      if (existing) return existing
+
+      return {
+        id: `virtual-${meetingId}-${speakerIndex}`,
+        contact_id: null,
+        speaker_index: speakerIndex,
+        speaker_name: `Speaker ${speakerIndex}`,
+      }
+    })
+
+  return transformSpeakersData(mergedSpeakers, userData.user.id, supabase, meetingId)
 }
 
 export async function getMeetingAttendeesWithContacts(meetingId: string) {

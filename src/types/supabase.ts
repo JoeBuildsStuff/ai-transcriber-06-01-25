@@ -1295,6 +1295,7 @@ export type Database = {
           recording_created_at: string | null
           source: string
           stage: string
+          status: string
           storage_path: string | null
           updated_at: string
           user_id: string
@@ -1313,6 +1314,7 @@ export type Database = {
           recording_created_at?: string | null
           source: string
           stage: string
+          status: string
           storage_path?: string | null
           updated_at?: string
           user_id: string
@@ -1331,6 +1333,7 @@ export type Database = {
           recording_created_at?: string | null
           source?: string
           stage?: string
+          status?: string
           storage_path?: string | null
           updated_at?: string
           user_id?: string
@@ -1450,12 +1453,14 @@ export type Database = {
           p_recording_created_at?: string | null
           p_source: string
           p_stage?: string | null
+          p_status?: string | null
           p_storage_path?: string | null
         }
         Returns: {
           ingest_id: string
           meeting_id: string | null
           stage: string
+          status: string
           storage_path: string | null
         }[]
       }
@@ -1470,6 +1475,7 @@ export type Database = {
           ingest_id: string
           meeting_id: string
           stage: string
+          status: string
         }[]
       }
       is_message_owner: {

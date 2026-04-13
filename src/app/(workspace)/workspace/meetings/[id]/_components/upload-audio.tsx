@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { sha256HexFromFile } from '@/lib/audio-fingerprint'
 import { DeepgramTranscription, DeepgramWord, FormattedTranscriptGroup } from '@/types'
+import { compressAudioForUpload } from '@/lib/audio-compression'
 
 interface UploadAudioProps {
   meetingId: string
@@ -99,6 +100,19 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
     
     setIsUploading(true)
     try {
+      let fileToUpload = selectedFile
+      try {
+        const compressedResult = await compressAudioForUpload({ file: selectedFile })
+        fileToUpload = compressedResult.file
+        if (compressedResult.didCompress) {
+          toast.info(
+            `Compressed ${selectedFile.name} (${compressedResult.originalSizeMb.toFixed(1)}MB -> ${compressedResult.finalSizeMb.toFixed(1)}MB)`
+          )
+        }
+      } catch (error) {
+        console.warn(`Audio compression failed for ${selectedFile.name}; uploading original`, error)
+      }
+
       // Step 1: Upload file to Supabase Storage
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -107,13 +121,13 @@ export default function UploadAudio({ meetingId, onUploadSuccess }: UploadAudioP
       }
       
       const uploadPath = user.id
-      const filePath = `${uploadPath}/${Date.now()}-${selectedFile.name}`
+      const filePath = `${uploadPath}/${Date.now()}-${fileToUpload.name}`
       
       console.log('Starting upload for:', selectedFile.name)
       
       const { error: uploadError } = await supabase.storage
         .from('ai-transcriber-audio')
-        .upload(filePath, selectedFile, {
+        .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false,
         })

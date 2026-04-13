@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
 
           controller.enqueue(encoder.encode("data: " + JSON.stringify({ message: "Request received for summary", meetingId }) + "\n\n"));
 
+          await supabase
+            .schema('ai_transcriber')
+            .from('voice_memo_ingest')
+            .update({ stage: 'processing', status: 'summarizing', last_error: null })
+            .eq('meeting_id', meetingId);
+
           for (let i = 1; i <= 3; i++) {
             await new Promise(resolve => setTimeout(resolve, 700));
             controller.enqueue(encoder.encode("data: " + JSON.stringify({ message: `Processing summary... ${i * 33}%`, meetingId }) + "\n\n"));
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
               await supabase
                 .schema('ai_transcriber')
                 .from('voice_memo_ingest')
-                .update({ stage: 'summarized' })
+                .update({ stage: 'review', status: 'awaiting_review', last_error: null })
                 .eq('meeting_id', meetingId);
               controller.enqueue(encoder.encode("data: " + JSON.stringify({ summary: rawContent.meeting_outline, title: rawContent.title, meetingId }) + "\n\n"));
             }
@@ -154,6 +160,17 @@ export async function POST(req: NextRequest) {
         } catch (error) {
           console.error("Error in summary stream processing:", error);
           const meetingIdFromError = error && typeof error === 'object' && 'meetingId' in error && typeof (error as { meetingId: unknown }).meetingId === 'string' ? (error as { meetingId: string }).meetingId : undefined;
+          if (meetingIdFromError) {
+            await supabase
+              .schema('ai_transcriber')
+              .from('voice_memo_ingest')
+              .update({
+                stage: 'processing',
+                status: 'failed_summarization',
+                last_error: error instanceof Error ? error.message : String(error),
+              })
+              .eq('meeting_id', meetingIdFromError);
+          }
           controller.enqueue(encoder.encode("data: " + JSON.stringify({ error: "Error during summary generation", details: error instanceof Error ? error.message : String(error), meetingId: meetingIdFromError }) + "\n\n"));
           controller.error(error);
         }

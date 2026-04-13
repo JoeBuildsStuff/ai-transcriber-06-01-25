@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DeepgramWord, FileProcessingState, FormattedTranscriptGroup, TranscriptionData } from '@/types'
 import Spinner from './ui/spinner'
 import { sha256HexFromFile } from '@/lib/audio-fingerprint'
+import { compressAudioForUpload } from '@/lib/audio-compression'
 
 const supabase = createClient()
 
@@ -76,12 +77,25 @@ export default function UploadAudioProcess({ children }: { children: ReactNode }
 
   const uploadFile = useCallback(async (file: File) => {
     try {
+      let fileToUpload = file
+      try {
+        const compressedResult = await compressAudioForUpload({ file })
+        fileToUpload = compressedResult.file
+        if (compressedResult.didCompress) {
+          toast.info(
+            `Compressed ${file.name} (${compressedResult.originalSizeMb.toFixed(1)}MB -> ${compressedResult.finalSizeMb.toFixed(1)}MB)`
+          )
+        }
+      } catch (error) {
+        console.warn(`Audio compression failed for ${file.name}; uploading original`, error)
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       const uploadPath = user?.id ? user.id : 'anonymous'
-      const filePath = `${uploadPath}/${Date.now()}-${file.name}`
+      const filePath = `${uploadPath}/${Date.now()}-${fileToUpload.name}`
       const { error } = await supabase.storage
         .from('ai-transcriber-audio')
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           cacheControl: '3600',
           upsert: false,
         })

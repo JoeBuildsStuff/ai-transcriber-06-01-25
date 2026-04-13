@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type FileRejection, useDropzone } from 'react-dropzone'
 import { FileWithPreview, UseSupabaseUploadOptions } from '@/types'
+import { compressAudioForUpload } from '@/lib/audio-compression'
 
 const supabase = createClient()
 
@@ -82,10 +83,19 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
     const responses = await Promise.all(
       filesToUpload.map(async (file) => {
-        const filePath = !!path ? `${path}/${file.name}` : file.name;
+        let fileToUpload: File = file
+        try {
+          const compressedResult = await compressAudioForUpload({ file })
+          fileToUpload = compressedResult.file
+        } catch (error) {
+          console.warn(`Audio compression failed for ${file.name}; using original file`, error)
+        }
+
+        const uploadFileName = fileToUpload.name
+        const filePath = !!path ? `${path}/${uploadFileName}` : uploadFileName
         const { error } = await supabase.storage
           .from(bucketName)
-          .upload(filePath, file, {
+          .upload(filePath, fileToUpload, {
             cacheControl: cacheControl.toString(),
             upsert,
           })

@@ -17,6 +17,7 @@ type ClaimOrResumeMemoIngestParams = {
   p_recording_created_at?: string | null;
   p_source: string;
   p_stage?: string | null;
+  p_status?: string | null;
   p_storage_path?: string | null;
 };
 
@@ -24,6 +25,7 @@ type ClaimOrResumeMemoIngestRow = {
   ingest_id: string;
   meeting_id: string | null;
   stage: string;
+  status: string;
   storage_path: string | null;
 };
 
@@ -86,7 +88,8 @@ export async function POST(req: NextRequest) {
         ).rpc('claim_or_resume_memo_ingest', {
           p_content_fingerprint: contentFingerprint,
           p_source: 'web_upload',
-          p_stage: 'uploaded',
+          p_stage: 'processing',
+          p_status: 'uploaded',
           p_original_file_name: originalFileName,
           p_recording_created_at: meetingAt ?? null,
           p_storage_path: filePath,
@@ -195,6 +198,12 @@ export async function POST(req: NextRequest) {
           // Send initial processing message with meetingId
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: "Processing started", meetingId: finalMeetingId })}\n\n`));
 
+          await supabase
+            .schema('ai_transcriber')
+            .from('voice_memo_ingest')
+            .update({ stage: 'processing', status: 'transcribing' })
+            .eq('meeting_id', finalMeetingId);
+
           // Call Deepgram API
           const { result: deepgramResult, error: deepgramError } = await deepgram.listen.prerecorded.transcribeFile(
             Buffer.from(arrayBuffer),
@@ -247,7 +256,7 @@ export async function POST(req: NextRequest) {
             await supabase
               .schema('ai_transcriber')
               .from('voice_memo_ingest')
-              .update({ stage: 'transcribed' })
+              .update({ stage: 'processing', status: 'transcribed', last_error: null })
               .eq('meeting_id', finalMeetingId);
           }
 
@@ -268,6 +277,17 @@ export async function POST(req: NextRequest) {
 
         } catch (error) {
           console.error('Error in stream processing:', error);
+          if (finalMeetingId) {
+            await supabase
+              .schema('ai_transcriber')
+              .from('voice_memo_ingest')
+              .update({
+                stage: 'processing',
+                status: 'failed_transcription',
+                last_error: error instanceof Error ? error.message : String(error),
+              })
+              .eq('meeting_id', finalMeetingId);
+          }
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Error during transcription processing", details: error instanceof Error ? error.message : String(error), meetingId: finalMeetingId })}\n\n`));
           controller.error(error);
         }
