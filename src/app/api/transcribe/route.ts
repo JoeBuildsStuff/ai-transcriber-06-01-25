@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as deepgramClient } from "@deepgram/sdk";
 import { createClient as supabaseClient } from "@/lib/supabase/server";
 import { identifySpeakers } from "@/lib/speaker-id";
-import { replaceCachedSpeakerSuggestions } from "@/lib/speaker-suggestion-cache";
+import {
+  replaceCachedSpeakerSuggestions,
+  type SpeakerSuggestionCacheClient,
+} from "@/lib/speaker-suggestion-cache";
 
 const deepgram = deepgramClient(process.env.DEEPGRAM_API_KEY!);
 const encoder = new TextEncoder();
@@ -276,7 +279,12 @@ export async function POST(req: NextRequest) {
               transcription: deepgramResult as any,
             });
 
-            await replaceCachedSpeakerSuggestions(supabase, finalMeetingId, userId, suggestions);
+            await replaceCachedSpeakerSuggestions(
+              supabase as unknown as SpeakerSuggestionCacheClient,
+              finalMeetingId,
+              userId,
+              suggestions
+            );
 
             await supabase
               .schema('ai_transcriber')

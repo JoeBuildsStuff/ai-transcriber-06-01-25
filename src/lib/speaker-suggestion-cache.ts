@@ -1,7 +1,5 @@
 import type { SpeakerIdentifyResponse, SpeakerSuggestionResult } from "@/types"
 
-type JsonObject = Record<string, unknown>
-
 type CachedMatch = {
   contact_id: string
   first_name: string
@@ -13,6 +11,50 @@ type PredictionRow = {
   speaker_index: number
   matches_jsonb: CachedMatch[] | null
   model_version: string | null
+}
+
+type SpeakerPredictionInsertRow = {
+  meeting_id: string
+  user_id: string
+  speaker_index: number
+  matches_jsonb: CachedMatch[]
+  top_contact_id: string | null
+  top_similarity: number | null
+  model_version: string | null
+}
+
+type QueryError = {
+  message: string
+} | null
+
+type SelectPredictionRowsQuery = {
+  eq: (column: string, value: string) => {
+    order: (column: string) => Promise<{
+      data: PredictionRow[] | null
+      error: QueryError
+    }>
+  }
+}
+
+type DeletePredictionRowsQuery = {
+  eq: (column: string, value: string) => Promise<{
+    error: QueryError
+  }>
+}
+
+type MeetingSpeakerPredictionsTable = {
+  select: (columns: string) => SelectPredictionRowsQuery
+  delete: () => DeletePredictionRowsQuery
+  upsert: (
+    rows: SpeakerPredictionInsertRow[],
+    options: { onConflict: string }
+  ) => Promise<{
+    error: QueryError
+  }>
+}
+
+export type SpeakerSuggestionCacheClient = {
+  from: (table: "meeting_speaker_predictions") => MeetingSpeakerPredictionsTable
 }
 
 function isCachedMatch(value: unknown): value is CachedMatch {
@@ -46,9 +88,7 @@ export function mapPredictionRowsToResponse(rows: PredictionRow[]): SpeakerIdent
 }
 
 export async function fetchCachedSpeakerSuggestions(
-  // The helper is shared by server actions and API routes with slightly different
-  // Supabase client typings, so keep the boundary loose here.
-  supabase: any,
+  supabase: SpeakerSuggestionCacheClient,
   meetingId: string
 ): Promise<SpeakerIdentifyResponse | null> {
   const { data, error } = await supabase
@@ -69,7 +109,7 @@ export async function fetchCachedSpeakerSuggestions(
 }
 
 export async function replaceCachedSpeakerSuggestions(
-  supabase: any,
+  supabase: SpeakerSuggestionCacheClient,
   meetingId: string,
   userId: string,
   response: SpeakerIdentifyResponse

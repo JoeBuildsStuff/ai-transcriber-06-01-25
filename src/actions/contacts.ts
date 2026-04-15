@@ -14,6 +14,7 @@ import { identifySpeakers, storeVoiceProfile } from "@/lib/speaker-id"
 import {
   fetchCachedSpeakerSuggestions,
   replaceCachedSpeakerSuggestions,
+  type SpeakerSuggestionCacheClient,
 } from "@/lib/speaker-suggestion-cache"
 
 type ApplyMeetingSpeakerAssignmentArgs =
@@ -166,7 +167,10 @@ export async function getMeetingSpeakerSuggestions(meetingId: string): Promise<S
     throw new Error("You must be logged in to view speaker suggestions.")
   }
 
-  const cached = await fetchCachedSpeakerSuggestions(supabase, meetingId)
+  const cached = await fetchCachedSpeakerSuggestions(
+    supabase as unknown as SpeakerSuggestionCacheClient,
+    meetingId
+  )
   if (cached) {
     return cached
   }
@@ -200,7 +204,12 @@ export async function getMeetingSpeakerSuggestions(meetingId: string): Promise<S
       accessToken: sessionData.session?.access_token,
     })
     try {
-      await replaceCachedSpeakerSuggestions(supabase, meetingId, userData.user.id, response)
+      await replaceCachedSpeakerSuggestions(
+        supabase as unknown as SpeakerSuggestionCacheClient,
+        meetingId,
+        userData.user.id,
+        response
+      )
     } catch (cacheError) {
       console.error("Failed to save cached speaker suggestions", cacheError)
     }
