@@ -6,7 +6,7 @@ import MeetingTranscript from "./meeting-transcript";
 import Summary from "./meeting-outline";
 import MeetingNotes from "./meeting-notes";
 import { Meetings } from "@/app/(workspace)/workspace/meetings/[id]/_lib/validations";
-import { MeetingSpeakerWithContact, SpeakerIdentifyResponse } from "@/types";
+import { FormattedTranscriptGroup, MeetingSpeakerWithContact, SpeakerIdentifyResponse } from "@/types";
 
 interface MeetingBodyProps {
     meetingData: Meetings;
@@ -28,6 +28,16 @@ export default function MeetingBody({
     onUploadSuccess,
 }: MeetingBodyProps) {
     const [meetingSpeakers, setMeetingSpeakers] = useState<MeetingSpeakerWithContact[]>(initialMeetingSpeakers);
+
+    const speakerDetails = meetingSpeakers.reduce<Record<string, string>>((acc, speaker) => {
+        const speakerKey = speaker.speaker_index.toString();
+        const fullName = [speaker.contact?.first_name, speaker.contact?.last_name]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+        acc[speakerKey] = fullName || speaker.speaker_name || `Speaker ${speaker.speaker_index}`;
+        return acc;
+    }, {});
 
     useEffect(() => {
         setMeetingSpeakers(initialMeetingSpeakers);
@@ -58,6 +68,8 @@ export default function MeetingBody({
                         outline={meetingData.summary_jsonb as Record<string, string> || {}} 
                         meetingId={meetingId}
                         audioFilePath={meetingData.audio_file_path}
+                        formattedTranscript={meetingData.formatted_transcript as unknown as FormattedTranscriptGroup[] | null}
+                        speakerDetails={speakerDetails}
                         onUploadSuccess={onUploadSuccess}
                     />
                 </TabsContent>

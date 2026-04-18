@@ -8,18 +8,34 @@ import React, { useEffect } from "react";
 import { marked } from "marked";
 import Tiptap from "@/components/tiptap/tiptap";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSummaryAutoSave } from "@/hooks/use-summary-auto-save";
 import UploadAudio from "./upload-audio";
+import { FormattedTranscriptGroup } from "@/types";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface OutlineProps {
   outline: Record<string, string>;
   meetingId: string;
   audioFilePath?: string;
+  formattedTranscript?: FormattedTranscriptGroup[] | null;
+  speakerDetails?: Record<string, string>;
   onUploadSuccess?: () => void;
 }
 
-const Outline: React.FC<OutlineProps> = ({ outline, meetingId, audioFilePath, onUploadSuccess }) => {
+const Outline: React.FC<OutlineProps> = ({
+  outline,
+  meetingId,
+  audioFilePath,
+  formattedTranscript,
+  speakerDetails,
+  onUploadSuccess
+}) => {
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<string | null>(null);
   const {
     summary: editableOutline,
     saveStatus,
@@ -100,8 +116,117 @@ const Outline: React.FC<OutlineProps> = ({ outline, meetingId, audioFilePath, on
     return indexA - indexB;
   });
 
+  const transcript = Array.isArray(formattedTranscript) ? formattedTranscript : [];
+  const hasTranscript = transcript.length > 0;
+
+  const handleGenerateOutline = async () => {
+    if (!hasTranscript) {
+      toast.error("No transcript available to summarize yet.");
+      return;
+    }
+
+    setIsGeneratingOutline(true);
+    setGenerationStatus("Starting outline generation...");
+
+    try {
+      const summarizeResponse = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          meetingId,
+          speakerDetails,
+        }),
+      });
+
+      if (!summarizeResponse.ok || !summarizeResponse.body) {
+        const errorBody = await summarizeResponse.text();
+        throw new Error(`Summarization API request failed: ${errorBody}`);
+      }
+
+      const summaryReader = summarizeResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let summaryAccumulatedData = '';
+      let completed = false;
+
+      while (true) {
+        const { value, done } = await summaryReader.read();
+        if (done) {
+          break;
+        }
+
+        summaryAccumulatedData += decoder.decode(value, { stream: true });
+
+        let eventSeparatorIndex;
+        while ((eventSeparatorIndex = summaryAccumulatedData.indexOf('\n\n')) !== -1) {
+          const eventDataString = summaryAccumulatedData.substring(0, eventSeparatorIndex);
+          summaryAccumulatedData = summaryAccumulatedData.substring(eventSeparatorIndex + 2);
+
+          if (!eventDataString.startsWith('data:')) {
+            continue;
+          }
+
+          const jsonString = eventDataString.substring(5).trim();
+          if (!jsonString) {
+            continue;
+          }
+
+          const eventData = JSON.parse(jsonString) as {
+            message?: string;
+            status?: string;
+            error?: string;
+          };
+
+          if (eventData.error) {
+            throw new Error(eventData.error);
+          }
+
+          if (eventData.message) {
+            setGenerationStatus(eventData.message);
+          }
+
+          if (eventData.status === 'Processing completed') {
+            completed = true;
+            setGenerationStatus("Outline generated.");
+          }
+        }
+      }
+
+      if (!completed) {
+        setGenerationStatus("Outline generation finished.");
+      }
+      toast.success("Outline generated successfully.");
+      onUploadSuccess?.();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate outline";
+      toast.error(errorMessage);
+      setGenerationStatus(errorMessage);
+    } finally {
+      setIsGeneratingOutline(false);
+    }
+  };
+
   if (sections.length === 0) {
-    return <p className="text-center text-muted-foreground p-4">Waiting for outline...</p>;
+    return (
+      <Card className="h-full p-6">
+        <div className="h-full flex flex-col items-center justify-center gap-3 text-center">
+          <p className="text-muted-foreground font-light">
+            {hasTranscript
+              ? "No outline has been generated for this meeting yet."
+              : "No transcript available yet. Upload and transcribe audio first."}
+          </p>
+          {hasTranscript && (
+            <Button onClick={handleGenerateOutline} disabled={isGeneratingOutline}>
+              {isGeneratingOutline && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {isGeneratingOutline ? "Generating outline..." : "Generate outline"}
+            </Button>
+          )}
+          {generationStatus && (
+            <p className="text-xs text-muted-foreground">{generationStatus}</p>
+          )}
+        </div>
+      </Card>
+    );
   }
 
   return (
