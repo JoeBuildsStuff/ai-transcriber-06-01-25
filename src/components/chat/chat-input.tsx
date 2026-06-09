@@ -54,8 +54,8 @@ export function ChatInput() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage } = useChat()
   const { isLoading, layoutMode } = useChatStore()
-  const [selectedModel, setSelectedModel] = useState('gpt-5.4-mini')
-  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium')
+  const [selectedModel, setSelectedModel] = useState('gpt-5')
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('low')
   const selectedModelLabel =
     MODEL_OPTIONS.find((option) => option.value === selectedModel)?.label ?? 'Model'
 

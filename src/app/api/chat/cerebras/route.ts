@@ -28,6 +28,7 @@ interface CerebrasAPIRequest {
   clientTz?: string
   clientOffset?: string
   clientNowIso?: string
+  clientPath?: string
 }
 
 interface CerebrasAPIResponse {
@@ -140,6 +141,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       const clientTz = (formData.get('client_tz') as string) || ''
       const clientOffset = (formData.get('client_utc_offset') as string) || ''
       const clientNowIso = (formData.get('client_now_iso') as string) || ''
+      const clientPath = (formData.get('client_path') as string) || ''
       
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
       const messages = messagesStr ? JSON.parse(messagesStr) : []
@@ -171,7 +173,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
         attachments,
         clientTz,
         clientOffset,
-        clientNowIso 
+        clientNowIso,
+        clientPath,
       }
     } else {
       // Handle JSON request
@@ -191,7 +194,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       attachments = [],
       clientTz = '',
       clientOffset = '',
-      clientNowIso = '' 
+      clientNowIso = '',
+      clientPath = '',
     } = body
 
     // Validate input
@@ -222,7 +226,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CerebrasA
       top_p,
       clientTz,
       clientOffset,
-      clientNowIso
+      clientNowIso,
+      clientPath
     )
 
     return NextResponse.json(response)
@@ -272,7 +277,8 @@ async function getCerebrasResponse(
   top_p: number = 1,
   clientTz: string = '',
   clientOffset: string = '',
-  clientNowIso: string = ''
+  clientNowIso: string = '',
+  clientPath: string = ''
 ): Promise<CerebrasAPIResponse> {
   try {
     // 1. System Prompt
@@ -311,6 +317,10 @@ if a tool responds with a url to the record, please include the url in the respo
     // Provide user locale/timezone context to the model
     if (clientTz || clientOffset || clientNowIso) {
       systemPrompt += `\n\nUser Locale Context:\n- Timezone: ${clientTz || 'unknown'}\n- UTC offset (at request): ${clientOffset || 'unknown'}\n- Local time at request: ${clientNowIso || 'unknown'}`
+    }
+
+    if (clientPath) {
+      systemPrompt += `\n\nUser Navigation Context:\n- Current path: ${clientPath}\n- If the path is /workspace/notes/{id}, use that {id} as noteId for note tools.\n- If the path is /workspace/meetings/{id}, use that {id} as meetingId for meeting tools.\n- Contacts, tasks, and notes tables under /workspace provide page context when available.`
     }
     
     if (context) {
@@ -477,6 +487,7 @@ if a tool responds with a url to the record, please include the url in the respo
                 client_tz: clientTz,
                 client_utc_offset: clientOffset,
                 client_now_iso: clientNowIso,
+                client_path: clientPath,
               };
               const functionResult = await executeFunctionCall(
                 toolCall.function.name, 

@@ -90,6 +90,7 @@ interface ChatStore {
   currentContext: PageContext | null
   layoutMode: 'floating' | 'inset' | 'fullpage'
   lastNonFullpageLayout: 'floating' | 'inset'
+  openSessionIds: string[]
 
   // Computed properties (will be updated whenever state changes)
   currentSession: ChatSession | null
@@ -143,6 +144,8 @@ interface ChatStore {
   toggleChat: () => void
   setShowHistory: (show: boolean) => void
   setLayoutMode: (mode: 'floating' | 'inset' | 'fullpage') => void
+  openSessionTab: (sessionId: string) => void
+  closeSessionTab: (sessionId: string) => void
 
   // Context management
   updatePageContext: (context: PageContext) => void
@@ -200,6 +203,7 @@ export const useChatStore = create<ChatStore>()(
       messages: [],
       layoutMode: 'floating',
       lastNonFullpageLayout: 'floating',
+      openSessionIds: [],
       messageBranches: {},
       currentBranchRootId: null,
 
@@ -226,6 +230,9 @@ export const useChatStore = create<ChatStore>()(
             currentSession,
             messages,
             showHistory: false,
+            openSessionIds: state.openSessionIds.includes(sessionId)
+              ? state.openSessionIds
+              : [...state.openSessionIds, sessionId],
           }
         })
 
@@ -259,6 +266,7 @@ export const useChatStore = create<ChatStore>()(
             currentSessionId: newCurrentId,
             currentSession,
             messages,
+            openSessionIds: state.openSessionIds.filter((id) => id !== sessionId),
           }
         })
       },
@@ -273,10 +281,18 @@ export const useChatStore = create<ChatStore>()(
 
           const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, state.currentSessionId)
 
+          const oldSession = state.sessions.find((s) => s.id === sessionId)
+          const titleGenerated = oldSession?.title === 'New Chat' && title !== 'New Chat'
+          const openSessionIds =
+            titleGenerated && !state.openSessionIds.includes(sessionId)
+              ? [...state.openSessionIds, sessionId]
+              : state.openSessionIds
+
           return {
             sessions: updatedSessions,
             currentSession,
             messages,
+            openSessionIds,
           }
         })
       },
@@ -364,6 +380,11 @@ export const useChatStore = create<ChatStore>()(
           })
 
           const { currentSession, messages } = computeCurrentSessionAndMessages(updatedSessions, currentSessionId)
+          const updatedCurrentSession = updatedSessions.find((session) => session.id === currentSessionId)
+          const openSessionIds =
+            updatedCurrentSession?.title !== 'New Chat' && !state.openSessionIds.includes(currentSessionId)
+              ? [...state.openSessionIds, currentSessionId]
+              : state.openSessionIds
 
           // If branching is active, update the active branch tail with new messages after the root
           let messageBranches = state.messageBranches
@@ -390,6 +411,7 @@ export const useChatStore = create<ChatStore>()(
             currentSession,
             messages,
             messageBranches,
+            openSessionIds,
           }
         })
       },
@@ -483,11 +505,18 @@ export const useChatStore = create<ChatStore>()(
             sessions,
             state.currentSessionId ?? session.id
           )
+          const oldSession = state.sessions.find((s) => s.id === session.id)
+          const titleGenerated = oldSession?.title === 'New Chat' && session.title !== 'New Chat'
+          const openSessionIds =
+            titleGenerated && !state.openSessionIds.includes(session.id)
+              ? [...state.openSessionIds, session.id]
+              : state.openSessionIds
 
           return {
             sessions,
             currentSession,
             messages,
+            openSessionIds,
           }
         })
       },
@@ -920,6 +949,19 @@ export const useChatStore = create<ChatStore>()(
         })
       },
 
+      openSessionTab: (sessionId) => {
+        set((state) => {
+          if (state.openSessionIds.includes(sessionId)) return state
+          return { openSessionIds: [...state.openSessionIds, sessionId] }
+        })
+      },
+
+      closeSessionTab: (sessionId) => {
+        set((state) => ({
+          openSessionIds: state.openSessionIds.filter((id) => id !== sessionId),
+        }))
+      },
+
       // Context management
       updatePageContext: (context) => {
         set({ currentContext: context })
@@ -945,8 +987,9 @@ export const useChatStore = create<ChatStore>()(
         const totalSize = new Blob([JSON.stringify({
           sessions: sessions,
           currentSessionId: get().currentSessionId,
-          layoutMode: get().layoutMode,
-        })]).size
+        layoutMode: get().layoutMode,
+        openSessionIds: get().openSessionIds,
+      })]).size
 
         const maxStorageSize = 10 * 1024 * 1024 // 10MB
         const usagePercentage = (totalSize / maxStorageSize) * 100
@@ -1028,6 +1071,7 @@ export const useChatStore = create<ChatStore>()(
               currentSessionId: currentData.currentSessionId,
               layoutMode: currentData.layoutMode,
               lastNonFullpageLayout: currentData.lastNonFullpageLayout,
+              openSessionIds: currentData.openSessionIds || [],
             }
             const minimalSize = new Blob([JSON.stringify(minimalData)]).size
             if (minimalSize <= maxSize) {
@@ -1055,6 +1099,7 @@ export const useChatStore = create<ChatStore>()(
         currentSessionId: state.currentSessionId,
         layoutMode: state.layoutMode,
         lastNonFullpageLayout: state.lastNonFullpageLayout,
+        openSessionIds: state.openSessionIds,
         messageBranches: state.messageBranches,
         currentBranchRootId: state.currentBranchRootId,
       }),
@@ -1087,6 +1132,9 @@ export const useChatStore = create<ChatStore>()(
           }
           if (!('lastNonFullpageLayout' in state)) {
             ;(state as unknown as ChatStore).lastNonFullpageLayout = 'floating'
+          }
+          if (!('openSessionIds' in state) || !state.openSessionIds) {
+            ;(state as unknown as ChatStore).openSessionIds = []
           }
 
           // Ensure signatures exist for each entry if an older state is loaded

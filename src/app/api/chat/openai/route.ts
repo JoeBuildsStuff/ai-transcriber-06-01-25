@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import type { Response, ResponseFunctionToolCall, ResponseInputContent, ResponseInputItem, Tool } from 'openai/resources/responses/responses'
 import type { ChatMessage, PageContext } from '@/types/chat'
 import { availableTools, toolExecutors } from '../tools'
 import { createClient as supabaseClient } from '@/lib/supabase/server';
@@ -24,6 +25,7 @@ interface OpenAIAPIRequest {
   clientTz?: string
   clientOffset?: string
   clientNowIso?: string
+  clientPath?: string
 }
 
 interface OpenAIAPIResponse {
@@ -85,6 +87,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<OpenAIAPI
       const clientTz = (formData.get('client_tz') as string) || ''
       const clientOffset = (formData.get('client_utc_offset') as string) || ''
       const clientNowIso = (formData.get('client_now_iso') as string) || ''
+      const clientPath = (formData.get('client_path') as string) || ''
       const attachmentCount = parseInt(formData.get('attachmentCount') as string || '0')
       
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
@@ -104,13 +107,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<OpenAIAPI
         }
       }
       
-      body = { message, context, messages, model, reasoningEffort, attachments, clientTz, clientOffset, clientNowIso } as unknown as OpenAIAPIRequest
+      body = { message, context, messages, model, reasoningEffort, attachments, clientTz, clientOffset, clientNowIso, clientPath } as unknown as OpenAIAPIRequest
     } else {
       // Handle JSON request (backward compatibility)
       body = await request.json()
     }
 
-    const { message, context, messages = [], model, attachments = [], clientTz = '', clientOffset = '', clientNowIso = '' } = body
+    const {
+      message,
+      context,
+      messages = [],
+      model,
+      reasoningEffort,
+      attachments = [],
+      clientTz = '',
+      clientOffset = '',
+      clientNowIso = '',
+      clientPath = '',
+    } = body
 
     // Validate input
     if (!message || typeof message !== 'string') {
@@ -127,7 +141,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<OpenAIAPI
       )
     }
 
-    const response = await getOpenAIResponse(messages, message, context || null, attachments, model, clientTz, clientOffset, clientNowIso)
+    const response = await getOpenAIResponse(
+      messages,
+      message,
+      context || null,
+      attachments,
+      model,
+      reasoningEffort,
+      clientTz,
+      clientOffset,
+      clientNowIso,
+      clientPath
+    )
 
     return NextResponse.json(response)
   } catch (error) {
@@ -162,15 +187,14 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// Convert Anthropic tools to OpenAI function format
-function convertToolsToOpenAI() {
-  return availableTools.map(tool => ({
-    type: 'function' as const,
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.input_schema
-    }
+// Convert Anthropic tools to OpenAI Responses API function format
+function convertToolsToOpenAI(): Tool[] {
+  return availableTools.map((tool): Tool => ({
+    type: 'function',
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.input_schema,
+    strict: false,
   }))
 }
 
@@ -194,9 +218,11 @@ async function getOpenAIResponse(
   context: PageContext | null,
   attachments: Array<{ file: File; name: string; type: string; size: number }> = [],
   model?: string,
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high' | 'xhigh',
   clientTz: string = '',
   clientOffset: string = '',
-  clientNowIso: string = ''
+  clientNowIso: string = '',
+  clientPath: string = ''
 ): Promise<OpenAIAPIResponse> {
   try {
     // 1. System Prompt
@@ -239,13 +265,17 @@ if a tool responds with a url to the record, please include the url in the respo
     if (clientTz || clientOffset || clientNowIso) {
       systemPrompt += `\n\nUser Locale Context:\n- Timezone: ${clientTz || 'unknown'}\n- UTC offset (at request): ${clientOffset || 'unknown'}\n- Local time at request: ${clientNowIso || 'unknown'}`
     }
+
+    if (clientPath) {
+      systemPrompt += `\n\nUser Navigation Context:\n- Current path: ${clientPath}\n- If the path is /workspace/notes/{id}, use that {id} as noteId for note tools.\n- If the path is /workspace/meetings/{id}, use that {id} as meetingId for meeting tools.\n- Contacts, tasks, and notes tables under /workspace provide page context when available.`
+    }
     
     if (context) {
       systemPrompt += `\n\n## Current Page Context:\n- Total items: ${context.totalCount}\n- Current filters: ${JSON.stringify(context.currentFilters, null, 2)}\n- Current sorting: ${JSON.stringify(context.currentSort, null, 2)}\n- Visible data sample: ${JSON.stringify(context.visibleData.slice(0, 3), null, 2)}`
     }
 
-    // 2. Map history to OpenAI's format (filter out system messages)
-    const openaiHistory: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = history
+    // 2. Map history to OpenAI Responses API input (filter out system messages)
+    const openaiHistory: ResponseInputItem[] = history
       .filter(msg => msg.role !== 'system')
       .map(msg => ({
         role: msg.role as 'user' | 'assistant',
@@ -253,35 +283,31 @@ if a tool responds with a url to the record, please include the url in the respo
       }));
 
     // 3. Construct the new user message with attachments
-    const newUserContent: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
+    const newUserContent: ResponseInputItem = {
       role: 'user',
       content: newUserMessage
     };
 
-    // Process attachments - OpenAI supports images via base64 data URLs
+    // Process attachments for the Responses API.
     if (attachments.length > 0) {
-      const contentBlocks: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-        { type: 'text', text: newUserMessage }
+      const contentBlocks: ResponseInputContent[] = [
+        { type: 'input_text', text: newUserMessage }
       ];
 
       for (const attachment of attachments) {
         if (attachment.type.startsWith('image/')) {
-          // Convert image to base64 data URL
           const arrayBuffer = await attachment.file.arrayBuffer();
           const base64 = Buffer.from(arrayBuffer).toString('base64');
           const dataUrl = `data:${attachment.type};base64,${base64}`;
           
           contentBlocks.push({
-            type: 'image_url',
-            image_url: {
-              url: dataUrl,
-              detail: 'auto' // Let the model decide detail level
-            }
+            type: 'input_image',
+            image_url: dataUrl,
+            detail: 'auto'
           });
         } else {
-          // Non-image files as text description
           contentBlocks.push({
-            type: 'text',
+            type: 'input_text',
             text: `\n\nFile attachment: ${attachment.name} (${attachment.type}, ${formatFileSize(attachment.size)})`
           });
         }
@@ -289,11 +315,10 @@ if a tool responds with a url to the record, please include the url in the respo
 
       newUserContent.content = contentBlocks;
     }
-    
-    const messagesForAPI: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        ...openaiHistory,
-        newUserContent
+
+    const initialInput: ResponseInputItem[] = [
+      ...openaiHistory,
+      newUserContent
     ];
 
     // 4. Prepare tools
@@ -301,8 +326,9 @@ if a tool responds with a url to the record, please include the url in the respo
 
     // 5. Iterative tool calling with maximum of 5 iterations
     let maxIterations = 5;
-    const currentMessages = [...messagesForAPI];
-    let finalResponse = null;
+    let previousResponseId: string | undefined;
+    let nextInput: ResponseInputItem[] = initialInput;
+    let finalResponse: Response | null = null;
     const allToolResults: Array<{ success: boolean; data?: unknown; error?: string }> = [];
     const allToolCalls: Array<{
       id: string
@@ -316,54 +342,46 @@ if a tool responds with a url to the record, please include the url in the respo
     }> = [];
 
     while (maxIterations > 0) {
-      const response = await openai.chat.completions.create({
+      const effort =
+        reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
+          ? reasoningEffort
+          : reasoningEffort === 'xhigh'
+            ? 'high'
+            : undefined
+
+      const response = await openai.responses.create({
         model: model || 'gpt-5',
-        messages: currentMessages,
+        instructions: systemPrompt,
+        input: nextInput,
+        previous_response_id: previousResponseId,
         tools: tools.length > 0 ? tools : undefined,
         tool_choice: tools.length > 0 ? 'auto' : undefined,
-        // max_completion_tokens: 2048,
+        reasoning: effort ? { effort } : undefined,
       });
 
-      const assistantMessage = response.choices[0]?.message;
-      if (!assistantMessage) {
-        break;
-      }
+      previousResponseId = response.id;
 
-      // Check for tool calls
-      const toolCalls = assistantMessage.tool_calls;
+      const toolCalls = response.output.filter(
+        (item): item is ResponseFunctionToolCall =>
+          item.type === 'function_call' &&
+          typeof item.call_id === 'string' &&
+          typeof item.name === 'string' &&
+          typeof item.arguments === 'string'
+      );
 
-      if (!toolCalls || toolCalls.length === 0) {
-        // No more tools to execute, this is our final response
+      if (toolCalls.length === 0) {
         finalResponse = response;
         break;
       }
 
-      // Execute all tools in parallel
-      const toolResults = await Promise.all(
+      nextInput = await Promise.all(
         toolCalls.map(async (toolCall) => {
-          if (toolCall.type !== 'function') {
-            const errorMessage = `Unsupported tool call type: ${toolCall.type}`
-            const functionResult = { success: false, error: errorMessage }
-            allToolResults.push(functionResult)
-
-            return {
-              role: 'tool' as const,
-              tool_call_id: toolCall.id,
-              content: errorMessage,
-            }
-          }
-
-          // Parse arguments if they're a string, otherwise use as-is
           let parsedArgs: Record<string, unknown>
-          if (typeof toolCall.function.arguments === 'string') {
-            try {
-              parsedArgs = JSON.parse(toolCall.function.arguments)
-            } catch (error) {
-              console.error('Failed to parse tool arguments:', error)
-              parsedArgs = {}
-            }
-          } else {
-            parsedArgs = toolCall.function.arguments as Record<string, unknown>
+          try {
+            parsedArgs = JSON.parse(toolCall.arguments)
+          } catch (error) {
+            console.error('Failed to parse tool arguments:', error)
+            parsedArgs = {}
           }
           
           const augmentedArgs = {
@@ -371,39 +389,34 @@ if a tool responds with a url to the record, please include the url in the respo
             client_tz: clientTz,
             client_utc_offset: clientOffset,
             client_now_iso: clientNowIso,
+            client_path: clientPath,
           }
-          const functionResult = await executeFunctionCall(toolCall.function.name, augmentedArgs)
+          const functionResult = await executeFunctionCall(toolCall.name, augmentedArgs)
           allToolResults.push(functionResult)
           
-          // Store tool call information
           allToolCalls.push({
-            id: toolCall.id,
-            name: toolCall.function.name,
+            id: toolCall.id || toolCall.call_id,
+            name: toolCall.name,
             arguments: augmentedArgs,
             result: functionResult
           })
           
           return {
-            role: 'tool' as const,
-            tool_call_id: toolCall.id,
-            content: functionResult.success ? JSON.stringify(functionResult.data) : functionResult.error || 'Unknown error',
+            type: 'function_call_output' as const,
+            call_id: toolCall.call_id,
+            output: functionResult.success
+              ? JSON.stringify(functionResult.data ?? {})
+              : JSON.stringify({ error: functionResult.error || 'Unknown error' }),
           }
         })
       )
-
-      // Append assistant's response to messages
-      currentMessages.push(assistantMessage);
-      
-      // Append tool results to messages
-      currentMessages.push(...toolResults);
 
       maxIterations--;
     }
 
     // Handle the final response
     if (finalResponse) {
-      const assistantMessage = finalResponse.choices[0]?.message;
-      const content = assistantMessage?.content || 'No response generated';
+      const content = finalResponse.output_text || 'No response generated';
 
       // Get the first successful result for legacy response format
       const firstSuccessfulResult = allToolResults.find(result => result.success);

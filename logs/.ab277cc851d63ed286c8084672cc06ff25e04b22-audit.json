@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/josephtaylor/CodeProjects3/ai-transcriber-06-01-25/logs/.ab277cc851d63ed286c8084672cc06ff25e04b22-audit.json",
+    "files": [
+        {
+            "date": 1780971265011,
+            "name": "/Users/josephtaylor/CodeProjects3/ai-transcriber-06-01-25/logs/mcp-puppeteer-2026-06-08.log",
+            "hash": "f4c0cc5f43ab88900965769e41ffcf6e84ef2308c9cbfdc06b2097c63c5224a1"
+        }
+    ],
+    "hashType": "sha256"
+}

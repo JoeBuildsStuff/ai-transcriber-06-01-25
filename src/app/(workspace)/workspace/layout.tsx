@@ -2,7 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar"; 
 import { DynamicBreadcrumbs } from "@/components/dynamic-breadcrumbs";
-import { ChatProvider, ChatBubble, ChatPanel } from "@/components/chat";
+import { ChatProvider, ChatFooterBar, ChatPanel } from "@/components/chat";
 import { useChatStore } from "@/lib/chat/chat-store";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
@@ -30,7 +30,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <SidebarProvider> 
       <AppSidebar /> 
       <main className={cn(
-        "flex-1 overflow-auto px-4 grid grid-rows-[auto_1fr] transition-all duration-300 ease-in-out",
+        "flex-1 flex min-h-0 h-dvh flex-col overflow-hidden px-4 transition-all duration-300 ease-in-out",
         // Adjust right margin when chat is maximized
         isMaximized && "mr-96"
       )}> 
@@ -49,12 +49,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </UploadAudioProcess>
           </div>
         </header>
-        <div className="mb-4 overflow-auto">
+        <div className="min-h-0 flex-1 overflow-auto pb-2">
           {children}
         </div>
+        <ChatFooterBar />
       </main>
-      {/* Chat Components */}
-      <ChatBubble />
       <ChatPanel />
     </SidebarProvider>
   )

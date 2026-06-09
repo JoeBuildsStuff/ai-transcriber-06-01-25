@@ -29,6 +29,7 @@ interface ChatAPIRequest {
   clientTz?: string
   clientOffset?: string
   clientNowIso?: string
+  clientPath?: string
 }
 
 interface ChatAPIResponse {
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       const clientTz = ((formData.get('client_tz') as string) || '').trim()
       const clientOffset = ((formData.get('client_utc_offset') as string) || '').trim()
       const clientNowIso = ((formData.get('client_now_iso') as string) || '').trim()
+      const clientPath = ((formData.get('client_path') as string) || '').trim()
       const attachmentCount = parseInt((formData.get('attachmentCount') as string) || '0', 10)
 
       const context = contextStr && contextStr !== 'null' ? JSON.parse(contextStr) : null
@@ -197,7 +199,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
         if (file) attachments.push({ file, name, type, size })
       }
 
-      body = { message, context, messages, model, attachments, clientTz, clientOffset, clientNowIso }
+      body = { message, context, messages, model, attachments, clientTz, clientOffset, clientNowIso, clientPath }
     } else {
       body = await request.json()
     }
@@ -211,6 +213,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       clientTz = '',
       clientOffset = '',
       clientNowIso = '',
+      clientPath = '',
     } = body
 
     if (!message || typeof message !== 'string') {
@@ -226,6 +229,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ChatAPIRe
       clientTz,
       clientOffset,
       clientNowIso,
+      clientPath,
     )
 
     return NextResponse.json(response)
@@ -259,6 +263,7 @@ async function getLLMResponse(
   clientTz = '',
   clientOffset = '',
   clientNowIso = '',
+  clientPath = '',
 ): Promise<ChatAPIResponse> {
   // 1) System prompt
   let systemPrompt = `You are a helpful assistant for a contact and meeting management application. You can help users manage their contacts and meetings by filtering, sorting, navigating, creating new person contacts, creating new meetings, and searching for existing meetings.
@@ -299,6 +304,16 @@ User Locale Context:
 - Timezone: ${clientTz || 'unknown'}
 - UTC offset (at request): ${clientOffset || 'unknown'}
 - Local time at request: ${clientNowIso || 'unknown'}`
+  }
+
+  if (clientPath) {
+    systemPrompt += `
+
+User Navigation Context:
+- Current path: ${clientPath}
+- If the path is /workspace/notes/{id}, use that {id} as noteId for note tools.
+- If the path is /workspace/meetings/{id}, use that {id} as meetingId for meeting tools.
+- Contacts, tasks, and notes tables under /workspace provide page context when available.`
   }
 
   if (context) {
@@ -445,6 +460,7 @@ User Locale Context:
             client_tz: clientTz,
             client_utc_offset: clientOffset,
             client_now_iso: clientNowIso,
+            client_path: clientPath,
           }
           const result = await executeFunctionCall(tb.name, augmentedInput)
           allToolResults.push(result)
