@@ -427,18 +427,29 @@ export async function getMeetingsList(searchParams: SearchParams): Promise<{
 
   // Transform the data to flatten the nested speaker structure
   const transformedData = data?.map(meeting => {
-    const speakers = meeting.meeting_speakers?.map(speaker => ({
-      id: speaker.id,
-      meeting_id: speaker.meeting_id,
-      speaker_index: speaker.speaker_index,
-      speaker_name: speaker.speaker_name,
-      contact_id: speaker.contact_id,
-      first_name: speaker.new_contacts?.first_name || null,
-      last_name: speaker.new_contacts?.last_name || null,
-    })) || []
+    const speakers = meeting.meeting_speakers?.map(speaker => {
+      const contact = Array.isArray(speaker.new_contacts)
+        ? speaker.new_contacts[0]
+        : speaker.new_contacts
+
+      return {
+        id: speaker.id,
+        meeting_id: speaker.meeting_id,
+        speaker_index: speaker.speaker_index,
+        speaker_name: speaker.speaker_name,
+        contact_id: speaker.contact_id,
+        first_name: contact?.first_name || null,
+        last_name: contact?.last_name || null,
+      }
+    }) || []
 
     const tags = (meeting.meeting_tags ?? [])
-      .map(meetingTag => meetingTag.tag)
+      .map(meetingTag => {
+        const tag = Array.isArray(meetingTag.tag)
+          ? meetingTag.tag[0]
+          : meetingTag.tag
+        return tag
+      })
       .filter((tag): tag is NonNullable<typeof tag> => Boolean(tag))
       .map<Tag>(tag => ({
         id: tag.id,

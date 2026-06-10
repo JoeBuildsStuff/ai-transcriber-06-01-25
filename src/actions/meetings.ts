@@ -577,7 +577,7 @@ export async function getMeetingTags(meetingId: string) {
     throw new Error(`Failed to fetch meeting tags: ${error.message}`)
   }
 
-  const rows = (data ?? []) as Array<MeetingTagRow & { tag: TagRow | null }>
+  const rows = (data ?? []) as unknown as Array<MeetingTagRow & { tag: TagRow | null }>
   return rows
     .map((row) => row.tag)
     .filter((tag): tag is TagRow => Boolean(tag))
@@ -632,7 +632,7 @@ export async function addTagsToMeeting(meetingId: string, tagIds: string[]) {
 
   revalidatePath(`/workspace/meetings/${meetingId}`)
 
-  const attachedTags = ((inserted ?? []) as Array<{ tag: TagRow | null }>).map((row) => row.tag).filter((tag): tag is TagRow => Boolean(tag))
+  const attachedTags = ((inserted ?? []) as unknown as Array<{ tag: TagRow | null }>).map((row) => row.tag).filter((tag): tag is TagRow => Boolean(tag))
 
   return {
     data: attachedTags,

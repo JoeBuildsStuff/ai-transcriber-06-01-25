@@ -14,6 +14,11 @@
             "date": 1781073145780,
             "name": "/Users/josephtaylor/CodeProjects3/ai-transcriber-06-01-25/logs/mcp-puppeteer-2026-06-09.log",
             "hash": "118f73fac2c2b86e755e550a863a8ae51d48a005862a31ed52c058b226bfe8fd"
+        },
+        {
+            "date": 1781076650174,
+            "name": "/Users/josephtaylor/CodeProjects3/ai-transcriber-06-01-25/logs/mcp-puppeteer-2026-06-10.log",
+            "hash": "1f85184dc1db8c98e0efaa32db3802da4173b4f2aca19e9842d63e007cfce8cc"
         }
     ],
     "hashType": "sha256"

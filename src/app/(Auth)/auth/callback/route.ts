@@ -5,8 +5,7 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const supabase = await createClient()
-  const nextParam = requestUrl.searchParams.get('next')
-  const next = nextParam?.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/'
+  const next = requestUrl.searchParams.get('next') ?? '/'
 
   // OAuth callback handling & PKCE code exchange (e.g. password recovery, OAuth)
   const code = requestUrl.searchParams.get('code')

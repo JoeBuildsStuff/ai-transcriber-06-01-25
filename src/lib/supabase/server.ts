@@ -1,13 +1,20 @@
 import { createServerClient, type SetAllCookies } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { type Database } from '@/types/supabase'
 
+const supabaseKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+/**
+ * If using Fluid compute: Don't put this client in a global variable. Always create a new client within each
+ * function when using it.
+ */
 export async function createClient() {
   const cookieStore = await cookies()
 
-  return createServerClient<Database, 'ai_transcriber'>(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseKey,
     {
       db: {
         schema: 'ai_transcriber',

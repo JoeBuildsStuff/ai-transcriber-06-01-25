@@ -595,7 +595,7 @@ export async function upsertMeetingRecurrence(
       }) | null
     }
 
-    const meeting = meetingRecord as QueryMeeting
+    const meeting = meetingRecord as unknown as QueryMeeting
     const seriesHead = meeting.recurrence_parent ?? meeting
     const seriesHeadId = seriesHead.id
     const isSeriesHead = !meeting.recurrence_parent_id
