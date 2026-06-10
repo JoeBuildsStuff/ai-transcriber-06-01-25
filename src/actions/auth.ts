@@ -30,20 +30,43 @@ function getSafeNextPath(value: FormDataEntryValue | string | null | undefined) 
   return value
 }
 
+function normalizeAppUrl(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const url = value.startsWith('http') ? value : `https://${value}`
+
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname.endsWith('.supabase.co')) {
+      return null
+    }
+    return parsed.origin
+  } catch {
+    return null
+  }
+}
+
 function getProductionSiteUrl() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  const siteUrl = normalizeAppUrl(process.env.NEXT_PUBLIC_SITE_URL)
   if (siteUrl && !siteUrl.includes('localhost')) {
     return siteUrl
   }
 
-  const vercelProjectUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  const vercelProjectUrl = normalizeAppUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL)
   if (vercelProjectUrl) {
-    return `https://${vercelProjectUrl}`
+    return vercelProjectUrl
   }
 
-  const vercelUrl = process.env.VERCEL_URL
+  const publicVercelUrl = normalizeAppUrl(process.env.NEXT_PUBLIC_VERCEL_URL)
+  if (publicVercelUrl) {
+    return publicVercelUrl
+  }
+
+  const vercelUrl = normalizeAppUrl(process.env.VERCEL_URL)
   if (vercelUrl) {
-    return `https://${vercelUrl}`
+    return vercelUrl
   }
 
   return siteUrl
@@ -53,9 +76,8 @@ async function getAuthCallbackUrl(next?: string | null) {
   const headerStore = await headers()
   const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
   const protocol = headerStore.get('x-forwarded-proto') ?? (host?.includes('localhost') ? 'http' : 'https')
-  const origin = host
-    ? `${protocol}://${host}`
-    : getProductionSiteUrl()
+  const requestOrigin = normalizeAppUrl(host ? `${protocol}://${host}` : null)
+  const origin = getProductionSiteUrl() ?? requestOrigin
 
   if (!origin) {
     throw new Error('Missing NEXT_PUBLIC_SITE_URL and request host for auth redirect.')
