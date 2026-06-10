@@ -41,6 +41,7 @@ export default async function signinPage({
           <div className="grid grid-cols-2 gap-4">
             {/* google button */}
             <form action={signInWithGoogle}>
+              {next && <input type="hidden" name="next" value={next} />}
               <Button 
                 type="submit"
                 variant="outline" 
@@ -58,6 +59,7 @@ export default async function signinPage({
 
             {/* github button */}
             <form action={signInWithGithub}>
+              {next && <input type="hidden" name="next" value={next} />}
               <Button 
                 type="submit"
                 variant="outline" 

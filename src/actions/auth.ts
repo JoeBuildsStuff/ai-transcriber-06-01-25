@@ -18,21 +18,53 @@ const authWithPasswordSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 })
 
-async function getAuthCallbackUrl(next?: string) {
+function getSafeNextPath(value: FormDataEntryValue | string | null | undefined) {
+  if (typeof value !== 'string' || !value.startsWith('/')) {
+    return null
+  }
+
+  if (value.startsWith('//')) {
+    return null
+  }
+
+  return value
+}
+
+function getProductionSiteUrl() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  if (siteUrl && !siteUrl.includes('localhost')) {
+    return siteUrl
+  }
+
+  const vercelProjectUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  if (vercelProjectUrl) {
+    return `https://${vercelProjectUrl}`
+  }
+
+  const vercelUrl = process.env.VERCEL_URL
+  if (vercelUrl) {
+    return `https://${vercelUrl}`
+  }
+
+  return siteUrl
+}
+
+async function getAuthCallbackUrl(next?: string | null) {
   const headerStore = await headers()
   const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
-  const protocol = headerStore.get('x-forwarded-proto') ?? 'http'
+  const protocol = headerStore.get('x-forwarded-proto') ?? (host?.includes('localhost') ? 'http' : 'https')
   const origin = host
     ? `${protocol}://${host}`
-    : process.env.NEXT_PUBLIC_SITE_URL
+    : getProductionSiteUrl()
 
   if (!origin) {
     throw new Error('Missing NEXT_PUBLIC_SITE_URL and request host for auth redirect.')
   }
 
   const callbackUrl = new URL('/auth/callback', origin)
-  if (next) {
-    callbackUrl.searchParams.set('next', next)
+  const safeNext = getSafeNextPath(next)
+  if (safeNext) {
+    callbackUrl.searchParams.set('next', safeNext)
   }
   return callbackUrl.toString()
 }
@@ -47,6 +79,7 @@ export async function signInWithMagicLink(formData: FormData) {
   const result = authSchema.safeParse({
     email: formData.get('email'),
   })
+  const next = getSafeNextPath(formData.get('next'))
 
   if (!result.success) {
     console.log("validation-error", result.error)
@@ -57,7 +90,7 @@ export async function signInWithMagicLink(formData: FormData) {
     email: result.data.email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: await getAuthCallbackUrl(),
+      emailRedirectTo: await getAuthCallbackUrl(next),
     },
   })
 
@@ -73,15 +106,16 @@ export async function signInWithMagicLink(formData: FormData) {
   redirect(`/verify-email?email=${result.data.email}`)
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
   'use server'
 
   const supabase = await createClient()
+  const next = getSafeNextPath(formData.get('next'))
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: await getAuthCallbackUrl()
+      redirectTo: await getAuthCallbackUrl(next)
     }
   })
 
@@ -97,15 +131,16 @@ export async function signInWithGoogle() {
   revalidatePath('/', 'layout')
 }
 
-export async function signInWithGithub() {
+export async function signInWithGithub(formData: FormData) {
   'use server'
   
   const supabase = await createClient()
+  const next = getSafeNextPath(formData.get('next'))
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: await getAuthCallbackUrl()
+      redirectTo: await getAuthCallbackUrl(next)
     }
   })
 
@@ -164,7 +199,7 @@ export async function signInWithPassword(formData: FormData) {
     email: formData.get('email'),
     password: formData.get('password'),
   })
-  const next = formData.get('next') as string | null;
+  const next = getSafeNextPath(formData.get('next'));
 
   if (!result.success) {
     console.log("validation-error", result.error)
