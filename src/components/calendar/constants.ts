@@ -22,7 +22,11 @@ export const CALENDAR_VIEWS = [
   { label: "Work Week", value: "work-week" },
   { label: "Week", value: "week" },
   { label: "Month", value: "month" },
+  { label: "Agenda", value: "agenda" },
   { label: "Year", value: "year" },
 ] as const
 
 export type CalendarView = (typeof CALENDAR_VIEWS)[number]["value"]
+
+/** Max meetings shown in a month cell before "+N more". */
+export const MONTH_VISIBLE_MEETING_COUNT = 3

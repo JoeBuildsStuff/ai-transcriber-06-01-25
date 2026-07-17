@@ -18,6 +18,20 @@ const getRoundedCurrentMinutes = () => {
   return roundedMinutes
 }
 
+export const getCurrentTimePercentage = () => {
+  const roundedMinutes = getRoundedCurrentMinutes()
+
+  if (roundedMinutes <= 0) {
+    return 0
+  }
+
+  if (roundedMinutes >= MINUTES_PER_DAY) {
+    return 100
+  }
+
+  return (roundedMinutes / MINUTES_PER_DAY) * 100
+}
+
 export const useCurrentTimePercentage = () => {
   const [roundedMinutes, setRoundedMinutes] = useState(getRoundedCurrentMinutes)
 

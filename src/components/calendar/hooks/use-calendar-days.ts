@@ -21,10 +21,14 @@ export const useCalendarDays = (currentDate: Date, view: CalendarView): Calendar
     }
 
     if (view === "week") {
-      return Array.from({ length: 5 }, (_, index): CalendarDay => {
+      return Array.from({ length: 7 }, (_, index): CalendarDay => {
         const date = new Date(year, month, weekViewStartDate + index)
         return { date, inCurrentMonth: date.getMonth() === month }
       })
+    }
+
+    if (view === "agenda" || view === "year" || view === "work-week") {
+      return []
     }
 
     const firstDayOfMonth = new Date(year, month, 1).getDay()

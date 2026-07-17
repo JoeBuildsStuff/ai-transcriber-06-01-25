@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react"
-
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import {
   CurrentTimeIndicator,
@@ -10,6 +9,7 @@ import {
 import { type CalendarDay } from "./hooks/use-calendar-days"
 import { type DayMeeting, makeDateKey } from "./hooks/use-calendar-meetings"
 import { CalendarMeetingDetailsSheet } from "./calendar-meeting-details-sheet"
+import { getCurrentTimePercentage } from "./hooks/use-current-time"
 
 type CalendarDayGridProps = {
   calendarDays: CalendarDay[]
@@ -27,14 +27,39 @@ export const CalendarDayGrid = ({
   isToday,
 }: CalendarDayGridProps) => {
   const [selectedMeeting, setSelectedMeeting] = useState<DayMeeting | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const showsToday = calendarDays.some(({ date }) => isToday(date))
+  const rangeKey = calendarDays.map(({ date }) => makeDateKey(date)).join("|")
+
+  useEffect(() => {
+    if (!showsToday) {
+      return
+    }
+
+    const container = scrollContainerRef.current
+    if (!container) {
+      return
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const percentage = getCurrentTimePercentage()
+      const target = (container.scrollHeight * percentage) / 100 - container.clientHeight / 3
+      container.scrollTop = Math.max(0, target)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
+  }, [rangeKey, showsToday])
 
   const timeZoneHourFormatters = useMemo(
     () =>
-      SCHEDULE_VIEW_TIME_ZONES.map(({ timeZone }) =>
-        new Intl.DateTimeFormat(undefined, {
-          hour: "numeric",
-          timeZone,
-        })
+      SCHEDULE_VIEW_TIME_ZONES.map(
+        ({ timeZone }) =>
+          new Intl.DateTimeFormat(undefined, {
+            hour: "numeric",
+            timeZone,
+          })
       ),
     []
   )
@@ -67,10 +92,10 @@ export const CalendarDayGrid = ({
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden">
-        <div className="grid grid-cols-[8rem_minmax(0,1fr)]">
-          <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-end">
-            <div className="flex justify-between w-full">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border">
+        <div className="grid shrink-0 grid-cols-[8rem_minmax(0,1fr)]">
+          <div className="flex items-end px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex w-full justify-between">
               {SCHEDULE_VIEW_TIME_ZONES.map(({ label, description }) => (
                 <span key={label} aria-label={description}>
                   {label}
@@ -117,7 +142,10 @@ export const CalendarDayGrid = ({
             )
           })}
         </div>
-        <div className="flex-1 overflow-auto">
+        <div
+          ref={scrollContainerRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        >
           <div className="relative grid min-h-192 grid-cols-[8rem_minmax(0,1fr)]">
             <div>
               <div className="grid h-full grid-rows-[repeat(24,minmax(3.5rem,1fr))] border-t border-border">
@@ -156,7 +184,7 @@ export const CalendarDayGrid = ({
                 onMeetingSelect={setSelectedMeeting}
               />
             ))}
-            <CurrentTimeIndicator />
+            {showsToday ? <CurrentTimeIndicator /> : null}
           </div>
         </div>
       </div>

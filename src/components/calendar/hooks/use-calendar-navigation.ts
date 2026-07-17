@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo } from "react"
 
 import { type CalendarView } from "../constants"
 
@@ -13,140 +13,157 @@ type UseCalendarNavigationResult = {
   selectYear: (yearValue: string) => void
   selectDay: (dayValue: string) => void
   selectWeekStart: (startDateKey: string) => void
+  selectDate: (nextDate: Date) => void
 }
 
-export const useCalendarNavigation = (
-  selectedView: CalendarView,
-  initialDate?: Date
-): UseCalendarNavigationResult => {
-  const [currentDate, setCurrentDate] = useState(() => initialDate ?? new Date())
+type UseCalendarNavigationOptions = {
+  selectedView: CalendarView
+  date: Date
+  onDateChange: (nextDate: Date) => void
+}
+
+export const useCalendarNavigation = ({
+  selectedView,
+  date,
+  onDateChange,
+}: UseCalendarNavigationOptions): UseCalendarNavigationResult => {
+  const currentDate = date
 
   const goToToday = useCallback(() => {
-    setCurrentDate(new Date())
-  }, [])
+    onDateChange(new Date())
+  }, [onDateChange])
+
+  const selectDate = useCallback(
+    (nextDate: Date) => {
+      onDateChange(nextDate)
+    },
+    [onDateChange]
+  )
 
   const goToPreviousRange = useCallback(() => {
-    setCurrentDate((previousDate) => {
-      if (selectedView === "day") {
-        return new Date(
-          previousDate.getFullYear(),
-          previousDate.getMonth(),
-          previousDate.getDate() - 1
-        )
-      }
+    if (selectedView === "day") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1)
+      )
+      return
+    }
 
-      if (selectedView === "week") {
-        return new Date(
-          previousDate.getFullYear(),
-          previousDate.getMonth(),
-          previousDate.getDate() - 7
-        )
-      }
+    if (selectedView === "week") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7)
+      )
+      return
+    }
 
-      return new Date(previousDate.getFullYear(), previousDate.getMonth() - 1, 1)
-    })
-  }, [selectedView])
+    if (selectedView === "agenda") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7)
+      )
+      return
+    }
+
+    onDateChange(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+  }, [currentDate, onDateChange, selectedView])
 
   const goToNextRange = useCallback(() => {
-    setCurrentDate((previousDate) => {
-      if (selectedView === "day") {
-        return new Date(
-          previousDate.getFullYear(),
-          previousDate.getMonth(),
-          previousDate.getDate() + 1
-        )
-      }
+    if (selectedView === "day") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1)
+      )
+      return
+    }
 
-      if (selectedView === "week") {
-        return new Date(
-          previousDate.getFullYear(),
-          previousDate.getMonth(),
-          previousDate.getDate() + 7
-        )
-      }
+    if (selectedView === "week") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7)
+      )
+      return
+    }
 
-      return new Date(previousDate.getFullYear(), previousDate.getMonth() + 1, 1)
-    })
-  }, [selectedView])
+    if (selectedView === "agenda") {
+      onDateChange(
+        new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7)
+      )
+      return
+    }
+
+    onDateChange(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+  }, [currentDate, onDateChange, selectedView])
 
   const selectMonth = useCallback(
     (monthValue: string) => {
       const numericMonth = Number(monthValue)
-      setCurrentDate((previousDate) => {
-        if (selectedView === "month") {
-          return new Date(previousDate.getFullYear(), numericMonth, 1)
-        }
+      if (selectedView === "month") {
+        onDateChange(new Date(currentDate.getFullYear(), numericMonth, 1))
+        return
+      }
 
-        const currentDay = previousDate.getDate()
-        const daysInTargetMonth = new Date(
-          previousDate.getFullYear(),
-          numericMonth + 1,
-          0
-        ).getDate()
-        const nextDay = Math.min(currentDay, daysInTargetMonth)
-        return new Date(previousDate.getFullYear(), numericMonth, nextDay)
-      })
+      const currentDay = currentDate.getDate()
+      const daysInTargetMonth = new Date(currentDate.getFullYear(), numericMonth + 1, 0).getDate()
+      const nextDay = Math.min(currentDay, daysInTargetMonth)
+      onDateChange(new Date(currentDate.getFullYear(), numericMonth, nextDay))
     },
-    [selectedView]
+    [currentDate, onDateChange, selectedView]
   )
 
   const selectYear = useCallback(
     (yearValue: string) => {
       const numericYear = Number(yearValue)
-      setCurrentDate((previousDate) => {
-        if (selectedView === "month") {
-          return new Date(numericYear, previousDate.getMonth(), 1)
-        }
+      if (selectedView === "month") {
+        onDateChange(new Date(numericYear, currentDate.getMonth(), 1))
+        return
+      }
 
-        const currentDay = previousDate.getDate()
-        const daysInTargetMonth = new Date(
-          numericYear,
-          previousDate.getMonth() + 1,
-          0
-        ).getDate()
-        const nextDay = Math.min(currentDay, daysInTargetMonth)
-        return new Date(numericYear, previousDate.getMonth(), nextDay)
-      })
+      const currentDay = currentDate.getDate()
+      const daysInTargetMonth = new Date(
+        numericYear,
+        currentDate.getMonth() + 1,
+        0
+      ).getDate()
+      const nextDay = Math.min(currentDay, daysInTargetMonth)
+      onDateChange(new Date(numericYear, currentDate.getMonth(), nextDay))
     },
-    [selectedView]
+    [currentDate, onDateChange, selectedView]
   )
 
   const { month, year } = useMemo(() => {
-    const nextYear = currentDate.getFullYear()
-    const nextMonth = currentDate.getMonth()
-    return { month: nextMonth, year: nextYear }
+    return { month: currentDate.getMonth(), year: currentDate.getFullYear() }
   }, [currentDate])
 
-  const selectDay = useCallback((dayValue: string) => {
-    const numericDay = Number(dayValue)
-    if (Number.isNaN(numericDay)) {
-      return
-    }
+  const selectDay = useCallback(
+    (dayValue: string) => {
+      const numericDay = Number(dayValue)
+      if (Number.isNaN(numericDay)) {
+        return
+      }
 
-    setCurrentDate((previousDate) => {
       const daysInTargetMonth = new Date(
-        previousDate.getFullYear(),
-        previousDate.getMonth() + 1,
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
         0
       ).getDate()
       const clampedDay = Math.min(Math.max(1, numericDay), daysInTargetMonth)
-      return new Date(previousDate.getFullYear(), previousDate.getMonth(), clampedDay)
-    })
-  }, [])
+      onDateChange(new Date(currentDate.getFullYear(), currentDate.getMonth(), clampedDay))
+    },
+    [currentDate, onDateChange]
+  )
 
-  const selectWeekStart = useCallback((startDateKey: string) => {
-    const parts = startDateKey.split("-")
-    if (parts.length !== 3) {
-      return
-    }
+  const selectWeekStart = useCallback(
+    (startDateKey: string) => {
+      const parts = startDateKey.split("-")
+      if (parts.length !== 3) {
+        return
+      }
 
-    const [yearPart, monthPart, dayPart] = parts.map((part) => Number(part))
-    if ([yearPart, monthPart, dayPart].some((part) => Number.isNaN(part))) {
-      return
-    }
+      const [yearPart, monthPart, dayPart] = parts.map((part) => Number(part))
+      if ([yearPart, monthPart, dayPart].some((part) => Number.isNaN(part))) {
+        return
+      }
 
-    setCurrentDate(new Date(yearPart, monthPart - 1, dayPart))
-  }, [])
+      onDateChange(new Date(yearPart, monthPart - 1, dayPart))
+    },
+    [onDateChange]
+  )
 
   return {
     currentDate,
@@ -159,5 +176,6 @@ export const useCalendarNavigation = (
     selectYear,
     selectDay,
     selectWeekStart,
+    selectDate,
   }
 }

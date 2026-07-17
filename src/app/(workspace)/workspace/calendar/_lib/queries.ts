@@ -1,39 +1,45 @@
 import { createClient } from "@/lib/supabase/server"
-import { MeetingSummary } from "@/components/calendar/types/meetings"
+import { mapMeetingRows, type MeetingRow } from "@/components/calendar/lib/map-meeting-rows"
+import type { MeetingSummary } from "@/components/calendar/types/meetings"
 
-/** PostgREST/Supabase default max rows; paginate past it so newer meetings aren't dropped. */
+/** PostgREST/Supabase default max rows; paginate past it so dense ranges aren't truncated. */
 const CALENDAR_PAGE_SIZE = 1000
 
-type MeetingRow = {
-  id: string
-  title: string | null
-  meeting_at: string | null
-  meeting_end_at: string | null
-  audio_file_path: string | null
-  original_file_name: string | null
-  created_at: string | null
+type GetMeetingsForCalendarArgs = {
+  from: Date
+  to: Date
 }
 
-export async function getMeetingsForCalendar(): Promise<MeetingSummary[]> {
+const MEETING_SELECT = `
+  id,
+  title,
+  meeting_at,
+  meeting_end_at,
+  audio_file_path,
+  original_file_name,
+  created_at
+`
+
+async function fetchMeetingPages(
+  buildQuery: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: any
+  ) => // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
+): Promise<MeetingRow[]> {
   const supabase = await createClient()
   const rows: MeetingRow[] = []
 
-  for (let from = 0; ; from += CALENDAR_PAGE_SIZE) {
-    const to = from + CALENDAR_PAGE_SIZE - 1
-    const { data, error } = await supabase
+  for (let offset = 0; ; offset += CALENDAR_PAGE_SIZE) {
+    const pageEnd = offset + CALENDAR_PAGE_SIZE - 1
+    const baseQuery = supabase
       .schema("ai_transcriber")
       .from("meetings")
-      .select(`
-        id,
-        title,
-        meeting_at,
-        meeting_end_at,
-        audio_file_path,
-        original_file_name,
-        created_at
-      `)
-      .order("meeting_at", { ascending: true })
-      .range(from, to)
+      .select(MEETING_SELECT)
+
+    const { data, error } = await buildQuery(baseQuery)
+      .order("meeting_at", { ascending: true, nullsFirst: false })
+      .range(offset, pageEnd)
 
     if (error) {
       console.error("Error fetching meetings for calendar:", error)
@@ -51,12 +57,33 @@ export async function getMeetingsForCalendar(): Promise<MeetingSummary[]> {
     }
   }
 
-  return rows.map((meeting) => ({
-    id: meeting.id,
-    title: meeting.title || "Untitled Meeting",
-    meetingAt: meeting.meeting_at || meeting.created_at || new Date().toISOString(),
-    meetingEndAt: meeting.meeting_end_at,
-    audioFilePath: meeting.audio_file_path,
-    originalFileName: meeting.original_file_name,
-  }))
+  return rows
+}
+
+export async function getMeetingsForCalendar({
+  from,
+  to,
+}: GetMeetingsForCalendarArgs): Promise<MeetingSummary[]> {
+  const fromIso = from.toISOString()
+  const toIso = to.toISOString()
+
+  const [datedMeetings, undatedMeetings] = await Promise.all([
+    fetchMeetingPages((query) => query.gte("meeting_at", fromIso).lt("meeting_at", toIso)),
+    fetchMeetingPages((query) =>
+      query.is("meeting_at", null).gte("created_at", fromIso).lt("created_at", toIso)
+    ),
+  ])
+
+  const byId = new Map<string, MeetingRow>()
+  for (const row of [...datedMeetings, ...undatedMeetings]) {
+    byId.set(row.id, row)
+  }
+
+  const merged = Array.from(byId.values()).sort((left, right) => {
+    const leftAt = left.meeting_at || left.created_at || ""
+    const rightAt = right.meeting_at || right.created_at || ""
+    return leftAt.localeCompare(rightAt)
+  })
+
+  return mapMeetingRows(merged)
 }

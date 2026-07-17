@@ -19,6 +19,7 @@ import {
   YEARS,
   type CalendarView,
 } from "./constants"
+import { SUPPORTED_CALENDAR_VIEWS } from "./lib/calendar-url"
 
 type CalendarHeaderProps = {
   month: number
@@ -84,10 +85,13 @@ export const CalendarHeader = ({
   } else if (selectedView === "week") {
     previousRangeLabel = "Previous week"
     nextRangeLabel = "Next week"
+  } else if (selectedView === "agenda") {
+    previousRangeLabel = "Previous week"
+    nextRangeLabel = "Next week"
   }
 
   const selectableViews = CALENDAR_VIEWS.filter(({ value }) =>
-    value === "day" || value === "week" || value === "month"
+    SUPPORTED_CALENDAR_VIEWS.includes(value as (typeof SUPPORTED_CALENDAR_VIEWS)[number])
   )
 
   const daysInCurrentMonth = useMemo(() => {
@@ -140,31 +144,35 @@ export const CalendarHeader = ({
       const weekEnd = new Date(
         weekStart.getFullYear(),
         weekStart.getMonth(),
-        weekStart.getDate() + 4
+        weekStart.getDate() + 6
       )
-      options.push({ value: getDateKey(weekStart), label: createWeekLabel(weekStart, weekEnd, month) })
+      options.push({
+        value: getDateKey(weekStart),
+        label: createWeekLabel(weekStart, weekEnd, month),
+      })
       cursor = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7)
     }
 
     return options
   }, [month, selectedView, year])
 
-  const dateControlLabel = selectedView === "week" && currentWeekStartDate
-    ? createWeekLabel(
-        currentWeekStartDate,
-        new Date(
-          currentWeekStartDate.getFullYear(),
-          currentWeekStartDate.getMonth(),
-          currentWeekStartDate.getDate() + 4
-        ),
-        month
-      )
-    : String(currentDate.getDate())
+  const dateControlLabel =
+    selectedView === "week" && currentWeekStartDate
+      ? createWeekLabel(
+          currentWeekStartDate,
+          new Date(
+            currentWeekStartDate.getFullYear(),
+            currentWeekStartDate.getMonth(),
+            currentWeekStartDate.getDate() + 6
+          ),
+          month
+        )
+      : String(currentDate.getDate())
 
   return (
     <div className="flex flex-col">
       <div className="flex items-center">
-        <div className="flex items-center gap-3 w-full justify-between">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
           <ButtonGroup aria-label="Calendar navigation and date selection">
             <Button type="button" variant="outline" size="sm" onClick={onPrevMonth}>
               <span className="sr-only">{previousRangeLabel}</span>
@@ -197,7 +205,10 @@ export const CalendarHeader = ({
                 </DropdownMenuTrigger>
                 {selectedView === "day" ? (
                   <DropdownMenuContent align="center" aria-label="Select day">
-                    <DropdownMenuRadioGroup value={String(currentDate.getDate())} onValueChange={onDaySelect}>
+                    <DropdownMenuRadioGroup
+                      value={String(currentDate.getDate())}
+                      onValueChange={onDaySelect}
+                    >
                       {daysInCurrentMonth.map((dayOption) => (
                         <DropdownMenuRadioItem key={dayOption} value={String(dayOption)}>
                           {dayOption}
@@ -207,7 +218,10 @@ export const CalendarHeader = ({
                   </DropdownMenuContent>
                 ) : (
                   <DropdownMenuContent align="center" aria-label="Select week range">
-                    <DropdownMenuRadioGroup value={currentWeekStartKey} onValueChange={onWeekSelect}>
+                    <DropdownMenuRadioGroup
+                      value={currentWeekStartKey}
+                      onValueChange={onWeekSelect}
+                    >
                       {weekOptions.map(({ value, label }) => (
                         <DropdownMenuRadioItem key={value} value={value}>
                           {label}
@@ -271,9 +285,12 @@ export const CalendarHeader = ({
         </div>
       </div>
       {selectedView === "month" && (
-        <div className="grid grid-cols-7 mt-4">
+        <div className="mt-4 grid grid-cols-7">
           {DAYS_OF_WEEK.map((day) => (
-            <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+            <div
+              key={day}
+              className="py-2 text-center text-sm font-medium text-muted-foreground"
+            >
               {day}
             </div>
           ))}

@@ -1,4 +1,4 @@
-
+import { CalendarAgenda } from "./calendar-agenda"
 import { CalendarDayGrid } from "./calendar-grid-day"
 import { CalendarMonthGrid } from "./calendar-grid-month"
 import { CalendarWeekGrid } from "./calendar-grid-week"
@@ -13,16 +13,65 @@ type CalendarGridProps = {
   dayDescriptionFormatter: Intl.DateTimeFormat
   isToday: (date: Date) => boolean
   view: CalendarView
+  currentDate: Date
+  onSelectDay: (date: Date) => void
 }
 
-export const CalendarGrid = ({ view, ...gridProps }: CalendarGridProps) => {
+export const CalendarGrid = ({
+  view,
+  currentDate,
+  onSelectDay,
+  calendarDays,
+  meetingsByDay,
+  meetingTimeFormatter,
+  dayDescriptionFormatter,
+  isToday,
+}: CalendarGridProps) => {
   if (view === "week") {
-    return <CalendarWeekGrid {...gridProps} />
+    return (
+      <CalendarWeekGrid
+        calendarDays={calendarDays}
+        meetingsByDay={meetingsByDay}
+        meetingTimeFormatter={meetingTimeFormatter}
+        dayDescriptionFormatter={dayDescriptionFormatter}
+        isToday={isToday}
+      />
+    )
   }
 
   if (view === "day") {
-    return <CalendarDayGrid {...gridProps} />
+    return (
+      <CalendarDayGrid
+        calendarDays={calendarDays}
+        meetingsByDay={meetingsByDay}
+        meetingTimeFormatter={meetingTimeFormatter}
+        dayDescriptionFormatter={dayDescriptionFormatter}
+        isToday={isToday}
+      />
+    )
   }
 
-  return <CalendarMonthGrid {...gridProps} />
+  if (view === "agenda") {
+    return (
+      <CalendarAgenda
+        meetingsByDay={meetingsByDay}
+        meetingTimeFormatter={meetingTimeFormatter}
+        dayDescriptionFormatter={dayDescriptionFormatter}
+        isToday={isToday}
+        currentDate={currentDate}
+        onSelectDay={onSelectDay}
+      />
+    )
+  }
+
+  return (
+    <CalendarMonthGrid
+      calendarDays={calendarDays}
+      meetingsByDay={meetingsByDay}
+      meetingTimeFormatter={meetingTimeFormatter}
+      dayDescriptionFormatter={dayDescriptionFormatter}
+      isToday={isToday}
+      onSelectDay={onSelectDay}
+    />
+  )
 }
