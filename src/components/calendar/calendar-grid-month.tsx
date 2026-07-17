@@ -67,7 +67,9 @@ export const CalendarMonthGrid = ({
             }
 
             const cornerClasses = cornerClassList.join(" ")
-            const dayMeetings = meetingsByDay.get(dateKey) ?? []
+            const dayMeetings = [...(meetingsByDay.get(dateKey) ?? [])].sort(
+              (left, right) => left.meetingDate.getTime() - right.meetingDate.getTime()
+            )
             const visibleMeetings = dayMeetings.slice(0, MONTH_VISIBLE_MEETING_COUNT)
             const hiddenCount = Math.max(0, dayMeetings.length - visibleMeetings.length)
             const today = isToday(date)
@@ -79,7 +81,7 @@ export const CalendarMonthGrid = ({
               <div
                 key={dateKey}
                 className={`
-                  flex min-h-0 flex-col overflow-hidden border-border p-2 text-sm font-medium transition-all
+                  flex min-h-0 flex-col overflow-hidden border-border p-1.5 text-sm font-medium transition-all
                   ${borderClasses}
                   ${inCurrentMonth ? "text-foreground" : "text-muted-foreground"}
                   ${today ? "bg-secondary/40" : "ring-inset hover:bg-accent/30"}
@@ -103,20 +105,22 @@ export const CalendarMonthGrid = ({
                     {dayLabel}
                   </button>
                 </div>
-                <div className="mt-2 min-h-0 flex-1 overflow-hidden pr-1">
-                  <ul className="space-y-1 text-xs">
+
+                <div className="mt-1 flex min-h-0 flex-1 flex-col gap-1">
+                  <ul className="min-h-0 flex-1 space-y-1 overflow-hidden text-xs">
                     {visibleMeetings.map((meeting) => {
                       const meetingStartLabel = meetingTimeFormatter.format(meeting.meetingDate)
                       const meetingAriaLabel = `${meeting.title} at ${meetingStartLabel}`
 
                       return (
-                        <li key={meeting.id}>
+                        <li key={meeting.id} className="min-h-0">
                           <MeetingBlock
                             as="button"
                             meetingTitle={meeting.title}
                             startTimeLabel={meetingStartLabel}
                             startDateTime={meeting.meetingDate.toISOString()}
                             variant={meeting.audioFilePath ? "green" : "default"}
+                            className="py-0.5"
                             aria-label={meetingAriaLabel}
                             onClick={() => {
                               setSelectedMeeting(meeting)
@@ -125,31 +129,32 @@ export const CalendarMonthGrid = ({
                         </li>
                       )
                     })}
-                    {hiddenCount > 0 ? (
-                      <li>
-                        <CalendarDayPopover
-                          date={date}
-                          meetings={dayMeetings}
-                          open={openDayKey === dateKey}
-                          onOpenChange={(open) => {
-                            setOpenDayKey(open ? dateKey : null)
-                          }}
-                          meetingTimeFormatter={meetingTimeFormatter}
-                          dayDescriptionFormatter={dayDescriptionFormatter}
-                          onMeetingSelect={setSelectedMeeting}
-                          onViewDay={onSelectDay}
-                          trigger={
-                            <button
-                              type="button"
-                              className="w-full rounded-md px-1.5 py-1 text-left text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                              +{hiddenCount} more
-                            </button>
-                          }
-                        />
-                      </li>
-                    ) : null}
                   </ul>
+
+                  {hiddenCount > 0 ? (
+                    <div className="shrink-0">
+                      <CalendarDayPopover
+                        date={date}
+                        meetings={dayMeetings}
+                        open={openDayKey === dateKey}
+                        onOpenChange={(open) => {
+                          setOpenDayKey(open ? dateKey : null)
+                        }}
+                        meetingTimeFormatter={meetingTimeFormatter}
+                        dayDescriptionFormatter={dayDescriptionFormatter}
+                        onMeetingSelect={setSelectedMeeting}
+                        onViewDay={onSelectDay}
+                        trigger={
+                          <button
+                            type="button"
+                            className="w-full rounded-md bg-muted/60 px-1.5 py-1 text-left text-xs font-semibold text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            +{hiddenCount} more
+                          </button>
+                        }
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
             )

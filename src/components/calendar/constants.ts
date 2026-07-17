@@ -29,4 +29,4 @@ export const CALENDAR_VIEWS = [
 export type CalendarView = (typeof CALENDAR_VIEWS)[number]["value"]
 
 /** Max meetings shown in a month cell before "+N more". */
-export const MONTH_VISIBLE_MEETING_COUNT = 3
+export const MONTH_VISIBLE_MEETING_COUNT = 2
