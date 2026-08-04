@@ -11,6 +11,28 @@ interface PersonWithExtras extends Omit<Person, "id" | "created_at" | "updated_a
   company_name?: string
 }
 
+const CONTACT_DB_FIELDS = [
+  "first_name",
+  "last_name",
+  "city",
+  "state",
+  "company_id",
+  "job_title",
+  "description",
+  "linkedin",
+  "is_favorite",
+] as const
+
+function pickContactDbFields(data: Record<string, unknown>): Record<string, unknown> {
+  const picked: Record<string, unknown> = {}
+  for (const key of CONTACT_DB_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && data[key] !== undefined) {
+      picked[key] = data[key]
+    }
+  }
+  return picked
+}
+
 async function findOrCreateCompany(supabase: Awaited<ReturnType<typeof createClient>>, companyName: string | undefined, userId: string): Promise<string | null> {
     if (!companyName) return null
 
@@ -67,10 +89,12 @@ export async function createPerson(data: Record<string, unknown>) {
     }
 
     // Extract emails, phones and company from the data
-    const { _emails, _phones, company_name, ...contactData } = data as PersonWithExtras
+    const { _emails, _phones, company_name, ...rawContactData } = data as PersonWithExtras
+    // Only persist real new_contacts columns (blocks leaked client_path / other junk)
+    const contactData = pickContactDbFields(rawContactData as Record<string, unknown>)
     
     // Include user_id in the contact data
-    const contactDataWithUserId = {
+    const contactDataWithUserId: Record<string, unknown> = {
       ...contactData,
       user_id: user.id
     }
@@ -161,7 +185,8 @@ export async function updatePerson(id: string, data: Record<string, unknown>) {
     }
 
     // Extract emails and phones from the data
-    const { _emails, _phones, company_name, ...contactData } = data as PersonWithExtras
+    const { _emails, _phones, company_name, ...rawContactData } = data as PersonWithExtras
+    const contactData = pickContactDbFields(rawContactData as Record<string, unknown>) as PersonWithExtras
     
     if (company_name !== undefined) {
       const companyId = await findOrCreateCompany(supabase, company_name, user.id)

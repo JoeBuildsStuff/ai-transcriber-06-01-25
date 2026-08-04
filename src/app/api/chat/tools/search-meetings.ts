@@ -1,5 +1,6 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { getMeetingsList } from '@/app/(workspace)/workspace/meetings/[id]/_lib/queries'
+import { stripClientContext } from './client-context'
 
 // Tool definition for searching meetings
 export const searchMeetingsTool: Anthropic.Tool = {
@@ -44,12 +45,9 @@ export const searchMeetingsTool: Anthropic.Tool = {
 // Function execution logic for the search_meetings tool
 export async function executeSearchMeetings(parameters: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
-    // Filter out client-specific parameters
-    const { speakerName, attendeeName, participantName, dateFrom, dateTo, title, limit = 10 } = Object.fromEntries(
-      Object.entries(parameters).filter(([key]) => 
-        !['client_tz', 'client_utc_offset', 'client_now_iso'].includes(key)
-      )
-    )
+    // Filter out injected client metadata (timezone + client_path)
+    const { speakerName, attendeeName, participantName, dateFrom, dateTo, title, limit = 10 } =
+      stripClientContext(parameters)
     
     // Type-safe parameter extraction
     const speakerNameStr = typeof speakerName === 'string' ? speakerName : undefined

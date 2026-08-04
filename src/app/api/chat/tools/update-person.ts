@@ -1,5 +1,19 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { updatePerson } from '@/app/(workspace)/workspace/contacts/_lib/actions'
+import { stripClientContext } from './client-context'
+
+const UPDATE_PERSON_FIELDS = new Set([
+  'first_name',
+  'last_name',
+  '_emails',
+  '_phones',
+  'company_name',
+  'job_title',
+  'city',
+  'state',
+  'linkedin',
+  'description',
+])
 
 // Tool definition for updating person contacts
 export const updatePersonTool: Anthropic.Tool = {
@@ -68,11 +82,11 @@ export async function executeUpdatePersonContact(parameters: Record<string, unkn
       return { success: false, error: 'Contact ID is required' }
     }
 
-    // Filter out undefined values and client-specific parameters to only update provided fields
+    // Filter out undefined values, injected client metadata (incl. client_path),
+    // and any non-contact fields so nothing unexpected is written to new_contacts.
     const filteredData = Object.fromEntries(
-      Object.entries(updateData).filter(([key, value]) => 
-        value !== undefined && 
-        !['client_tz', 'client_utc_offset', 'client_now_iso'].includes(key)
+      Object.entries(stripClientContext(updateData)).filter(
+        ([key, value]) => value !== undefined && UPDATE_PERSON_FIELDS.has(key)
       )
     )
 

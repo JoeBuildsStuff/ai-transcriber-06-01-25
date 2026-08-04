@@ -1,5 +1,19 @@
 import type { Anthropic } from '@anthropic-ai/sdk'
 import { createPerson } from '@/app/(workspace)/workspace/contacts/_lib/actions'
+import { stripClientContext } from './client-context'
+
+const CREATE_PERSON_FIELDS = new Set([
+  'first_name',
+  'last_name',
+  '_emails',
+  '_phones',
+  'company_name',
+  'job_title',
+  'city',
+  'state',
+  'linkedin',
+  'description',
+])
 
 // Tool definition for creating person contacts
 export const createPersonContactTool: Anthropic.Tool = {
@@ -63,10 +77,15 @@ export async function executeCreatePersonContact(parameters: Record<string, unkn
       return { success: false, error: 'At least first name or last name is required' }
     }
     
-    // Filter out client timezone parameters that shouldn't be passed to the database
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { client_tz, client_now_iso, client_utc_offset, ...filteredParameters } = parameters
-    
+    // Strip injected client metadata and keep only contact fields.
+    // Chat routes also inject client_path; if that leaks into the insert,
+    // PostgREST fails with: Could not find the 'client_path' column of 'new_contacts'.
+    const filteredParameters = Object.fromEntries(
+      Object.entries(stripClientContext(parameters)).filter(([key]) =>
+        CREATE_PERSON_FIELDS.has(key)
+      )
+    )
+
     const result = await createPerson(filteredParameters)
 
     if (result.success && result.data) {
